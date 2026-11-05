@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Label } from './label';
-import { findOrCreateLabel } from './labelOperations';
+import { findOrCreateLabel, renameLabel } from './labelOperations';
 
 const now = '2026-11-05T12:00:00.000Z';
 
@@ -40,6 +40,38 @@ describe('findOrCreateLabel', () => {
     expect(findOrCreateLabel([], '   ', { id: 'l1', now })).toEqual({
       ok: false,
       errors: ['required'],
+    });
+  });
+});
+
+describe('renameLabel', () => {
+  const labels = [label('l1', 'Leçon 7'), label('l2', 'Animaux')];
+
+  it('renames the label with a trimmed name and updates its timestamp', () => {
+    expect(renameLabel(labels, 'l1', ' Leçon 7 : la fête ', now)).toEqual({
+      ok: true,
+      value: [{ ...label('l1', 'Leçon 7 : la fête'), updatedAt: now }, label('l2', 'Animaux')],
+    });
+  });
+
+  it('allows changing only the case of its own name', () => {
+    const result = renameLabel(labels, 'l2', 'ANIMAUX', now);
+
+    expect(result.ok && result.value[1]?.name).toBe('ANIMAUX');
+  });
+
+  it('refuses a name already used by another label', () => {
+    expect(renameLabel(labels, 'l1', 'animaux', now)).toEqual({ ok: false, errors: ['nameTaken'] });
+  });
+
+  it('refuses an invalid name', () => {
+    expect(renameLabel(labels, 'l1', '', now)).toEqual({ ok: false, errors: ['required'] });
+  });
+
+  it('refuses to rename a label that does not exist', () => {
+    expect(renameLabel(labels, 'unknown', 'Verbes', now)).toEqual({
+      ok: false,
+      errors: ['labelNotFound'],
     });
   });
 });
