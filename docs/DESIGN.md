@@ -56,14 +56,14 @@ Conséquences :
 ## 3. Modèle de données
 
 ```ts
-Group         { id, title, language: 'zh' | 'en', color?, isCurrent: boolean,           // "Leçon 3", "Animaux"…
+Label         { id, name, color?, isFocus: boolean,                // "Leçon 7", "Animaux", "Verbes HSK 4"…
                 examDate?: string,                                // ISO date of the next test, optional
                 createdAt, updatedAt }
 Card          { id, language: 'zh' | 'en', term, pinyin?, translation, example?,
-                groupIds: string[],                               // many-to-many, Dexie multiEntry index *groupIds
+                labelIds: string[],                               // many-to-many, Dexie multiEntry index *labelIds
                 source: 'manual' | 'csv' | 'photo', createdAt, updatedAt }
 ReviewState   { cardId, due, stability, difficulty, reps, lapses, lastReviewAt }  // FSRS, one per card
-Session       { id, groupIds[], mode, startedAt, endedAt, results: SessionResult[] }
+Session       { id, labelIds[], language, mode, startedAt, endedAt, results: SessionResult[] }
 SessionResult { cardId, outcome: 'again'|'hard'|'good'|'easy'|'correct'|'wrong', answer? }
 Progress      { xp, level, streakDays, bestStreak, unlocks[], lastActiveDate }
 Settings      { voiceZh?, voiceEn?, ttsRate, dictationDelayMs,
@@ -77,17 +77,21 @@ Settings      { voiceZh?, voiceEn?, ttsRate, dictationDelayMs,
 - Pas de mot de passe : ce n'est pas une frontière de sécurité, juste du confort.
 - Le nom du profil est un **pseudo libre** ; aucun nom réel n'est demandé.
 
-**Groupes (plusieurs par mot) :**
+**Labels (plusieurs par mot) :**
 
-- Un mot est **unique** par couple `(language, term)` et peut appartenir à **plusieurs groupes**. Exemple : 猫 est à la fois dans « Leçon 3 » et dans « Animaux ».
-- Sa progression (SRS, plante du jardin) est **partagée** entre ses groupes. Réviser 猫 dans « Animaux » le fait aussi avancer dans « Leçon 3 ».
-- À l'import, un mot déjà présent n'est **pas dupliqué**. On lui ajoute simplement le groupe cible, après confirmation dans l'aperçu (« 3 mots existent déjà, ajoutés au groupe »).
-- Les entraînements (flashcards, dictée, jeux) se lancent sur **un ou plusieurs groupes**, sans doublon s'ils se chevauchent.
-- Supprimer un groupe ne supprime pas ses mots. Un mot orphelin reste visible dans « Tous les mots ».
+Il n'y a **pas d'entité « cours » ou « leçon »** : seulement des **mots** et des **labels** (étiquettes libres). Un label peut représenter le vocabulaire d'un cours (« Leçon 7 »), un thème (« Animaux »), une liste officielle (« HSK 4 »)… L'appli ne fait aucune différence.
+
+- Un mot est **unique** par couple `(language, term)` et peut porter **plusieurs labels**. Exemple : 猫 a les labels « Leçon 3 » et « Animaux ».
+- Un label **n'a pas de langue** : « Animaux » peut regrouper 猫 et *cat*. Les entraînements filtrent par langue (onglet Chinois / Anglais).
+- Sa progression (SRS, plante du jardin) appartient **au mot**, pas au label. Réviser 猫 via « Animaux » le fait aussi avancer dans « Leçon 3 ».
+- À l'import, un mot déjà présent n'est **pas dupliqué**. On lui ajoute simplement le ou les labels choisis, après confirmation dans l'aperçu (« 3 mots existent déjà, labels ajoutés »).
+- Les entraînements (flashcards, dictée, jeux) se lancent sur **un ou plusieurs labels** (ou sur tous les mots), sans doublon s'ils se chevauchent.
+- Supprimer un label ne supprime pas ses mots. Un mot sans label reste visible dans « Tous les mots ».
+- Un label se crée à la volée (saisie, import) et se renomme ou se fusionne avec un autre.
 
 ## 3 bis. Vocabulaire anglais
 
-L'anglais est une **langue de plein droit** (`language: 'en'`), pas une simple option. Les mêmes groupes, le même SRS, le même jardin (sur la parcelle anglaise) et les mêmes objectifs de contrôle s'appliquent.
+L'anglais est une **langue de plein droit** (`language: 'en'`), pas une simple option. Les mêmes labels, le même SRS, le même jardin (sur la parcelle anglaise) et les mêmes objectifs de contrôle s'appliquent.
 
 Adaptations par exercice :
 
@@ -99,7 +103,7 @@ Adaptations par exercice :
 | Voix | `zh-CN` | `en-GB` par défaut (programme scolaire FR), `en-US` en option |
 | Saisie en lot | `你好 \| nǐ hǎo \| bonjour` | `apple \| pomme` (langue détectée automatiquement : présence de hanzi ou non) |
 
-Un groupe est **monolingue** (chinois ou anglais) pour garder des sessions cohérentes. L'accueil sépare les deux langues, avec un onglet par langue.
+Une session porte sur **une seule langue** pour rester cohérente. L'accueil sépare les deux langues avec un onglet par langue ; un label mixte affiche ses mots chinois dans l'onglet Chinois et ses mots anglais dans l'onglet Anglais.
 
 ## 4. Arborescence
 
@@ -110,7 +114,7 @@ src/
               xp, mastery, events (SessionCompleted, CardMastered…)
   storage/    Dexie db, migrations, repositories, exportImport
   services/   tts (sélection de voix + repli), ocrClient
-  features/   groups, cards, import (manual, csv, photo), flashcards, dictation, sentences, minigames, photoCheck, garden
+  features/   labels, cards, import (manual, csv, photo), flashcards, dictation, sentences, minigames, photoCheck, garden
   i18n/       fr.json  (all UI strings in one file, French only)
   ui/         composants partagés
 worker/       Cloudflare Worker (proxy vision) — v1.4+
@@ -121,15 +125,15 @@ e2e/          Playwright
 Le module `garden` (jeu) **s'abonne aux événements du domaine** : il ne modifie jamais la logique
 d'apprentissage.
 
-## 5. Leçon en cours et objectif contrôle (cœur du produit)
+## 5. Labels « à travailler » et objectif contrôle (cœur du produit)
 
-- **Leçon en cours** : l'élève marque un ou plusieurs groupes comme « en cours » (`isCurrent`). L'accueil et la session du jour se concentrent **d'abord** sur eux, puis sur les révisions SRS des anciens mots.
-- **Objectif contrôle** : si une date de contrôle (`examDate`) est saisie, l'appli planifie pour que tous les mots du groupe soient maîtrisés **avant** cette date.
+- **Labels à travailler** : l'élève épingle un ou plusieurs labels comme « à travailler » (`isFocus`), typiquement le label du vocabulaire de son cours actuel. L'accueil et la session du jour se concentrent **d'abord** sur eux, puis sur les révisions SRS des anciens mots.
+- **Objectif contrôle** : si une date de contrôle (`examDate`) est saisie, l'appli planifie pour que tous les mots du label soient maîtrisés **avant** cette date.
   - Les intervalles SRS sont plafonnés pour que chaque mot soit revu dans les 1 à 2 jours qui précèdent le contrôle.
   - Le nombre de mots nouveaux par jour est calculé ainsi : `ceil(mots restants / jours restants)`.
   - Un compte à rebours s'affiche : « Contrôle dans 4 jours, 18/25 mots maîtrisés ».
-- **Jauge de maîtrise par groupe** (% de mots au stade « tige » ou plus). C'est **l'indicateur principal** affiché, avant l'XP.
-- **Parcours de leçon** : chaque groupe en cours est un petit chemin d'étapes à débloquer :
+- **Jauge de maîtrise par label** (% de mots au stade « tige » ou plus). C'est **l'indicateur principal** affiché, avant l'XP.
+- **Parcours** : chaque label à travailler est un petit chemin d'étapes à débloquer :
   1. découvrir (flashcards) ;
   2. écouter ;
   3. reconnaître ;
@@ -139,7 +143,7 @@ d'apprentissage.
   7. défi final.
 
   Une étape se termine quand ~80 % des mots y sont réussis. Le parcours garde le côté progression visible et satisfaisant des applis grand public, sans en copier l'apparence.
-- Après le contrôle, le groupe passe en « révision longue » (SRS normal) et les mots continuent de pousser dans le jardin.
+- Après le contrôle, le label est désépinglé et ses mots passent en « révision longue » (SRS normal) et les mots continuent de pousser dans le jardin.
 
 ## 5 bis. Côté jeu : « Île-Jardin »
 
@@ -220,7 +224,7 @@ Exercices « audio d'abord » sur ses mots :
 
 Trois façons d'importer. Toutes aboutissent au **même écran d'aperçu éditable** :
 
-- choix du ou des groupes cibles (existants ou nouveau) ;
+- choix du ou des labels à poser (existants ou nouveaux) ;
 - signalement des doublons ;
 - erreurs en rouge ;
 - bouton « Ajouter N mots ».
@@ -261,7 +265,7 @@ Polices système CJK. `lang="zh-CN"` sur les hanzi.
 
 ### 8.3 Partage de listes entre élèves
 
-- **Pack de vocabulaire** : un fichier `.vocab.json` (groupe(s) + mots, **sans** progression ni données personnelles), validé par zod à l'import.
+- **Pack de vocabulaire** : un fichier `.vocab.json` (mots + leurs labels, **sans** progression ni données personnelles), validé par zod à l'import.
 - Usage : un élève ou un professeur prépare la liste de la leçon et la partage avec la classe, par fichier, ENT ou messagerie.
 - **Plus tard** :
   - partage par lien, avec le pack encodé dans l'URL ou hébergé via le Worker ;
@@ -291,8 +295,8 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 1. **Côté élève** : bouton « Envoyer mon rapport » qui produit un fichier `report.vocab.json`. Ce fichier est signé avec un hash d'intégrité. Il ne contient pas une vraie signature, et ce n'est pas une preuve anti-triche.
 2. **Contenu du rapport** :
    - pseudo ;
-   - groupes ;
-   - % de maîtrise par groupe ;
+   - labels ;
+   - % de maîtrise par label ;
    - mots difficiles ;
    - temps passé ;
    - date.
@@ -329,11 +333,11 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | Version | Contenu |
 |---|---|
 | 0.1.0 | Squelette Vite/Svelte/TS, CI (lint, typecheck, Vitest, audit), déploiement Pages, CSP |
-| 0.2.0 | Mots et groupes (plusieurs groupes par mot), saisie manuelle et en lot, pinyin auto, dédoublonnage |
+| 0.2.0 | Mots et labels (plusieurs labels par mot), saisie manuelle et en lot, pinyin auto, dédoublonnage |
 | 0.3.0 | Flashcards + SRS (FSRS), dont flashcard audio, pinyin masqué par défaut |
 | 0.4.0 | Dictée vocale : réponse tapée en hanzi avec correction automatique, ou mode papier avec auto-correction |
-| 0.5.0 | **Leçon en cours + objectif contrôle + jauge de maîtrise**, jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
-| 0.6.0 | Parcours de leçon (étapes à débloquer), exercices adaptés à l'anglais |
+| 0.5.0 | **Labels à travailler + objectif contrôle + jauge de maîtrise**, jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
+| 0.6.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
 | 0.7.0 | PWA installable et hors ligne, import/export CSV et JSON, packs partageables, profils multiples, page Confidentialité |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
 | 1.1.0 | `ToneEcho`, `SentenceListen`, `BridgeMatch` |
