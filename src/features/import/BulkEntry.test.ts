@@ -125,6 +125,18 @@ describe('BulkEntry', () => {
     });
   });
 
+  it('blocks saving while the label name is too long', async () => {
+    const { user, onSave } = setup();
+
+    await typeLines(user, 'apple | pomme');
+    await user.click(screen.getByLabelText(fr.bulkEntry.labelInput));
+    await user.paste('L'.repeat(61));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(fr.bulkEntry.labelErrors.tooLong);
+    expect(screen.getByRole('button', { name: 'Ajouter 1 mot' })).toBeDisabled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it('refuses an input that is too long, without saving anything', async () => {
     const { user } = setup();
 
