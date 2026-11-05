@@ -1,18 +1,13 @@
 <script lang="ts">
   import { parseBulkEntry, type BulkLineError } from '../../domain/bulkEntryParser';
   import type { Card } from '../../domain/card';
-  import { applyImportPlan, planImport, type ImportChanges } from '../../domain/importPlan';
+  import { applyImportPlan, planImport } from '../../domain/importPlan';
   import type { Label } from '../../domain/label';
   import { findOrCreateLabel } from '../../domain/labelOperations';
   import { completeMissingPinyin, type PinyinGenerator } from '../../domain/pinyinGeneration';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
-
-  export interface BulkEntrySave {
-    /** Set when the typed label did not exist and must be stored with the words. */
-    newLabel: Label | undefined;
-    changes: ImportChanges;
-  }
+  import type { BulkEntrySave } from './bulkEntrySave';
 
   interface Props {
     existingCards: readonly Card[];
@@ -27,6 +22,7 @@
 
   let text = $state('');
   let labelName = $state('');
+  let status = $state<{ kind: 'saved'; count: number } | { kind: 'failed' } | undefined>();
 
   const parsed = $derived(parseBulkEntry(text));
   const batch = $derived(
@@ -68,10 +64,14 @@
     }
     const labelIds = label === undefined ? [] : [label.value.label.id];
     const plan = planImport(batch, existingCards, labelIds);
-    await onSave({
-      newLabel: label?.value.created ? label.value.label : undefined,
-      changes: applyImportPlan(plan, { nextId: newId, now, source: 'manual' }),
-    });
+    const changes = applyImportPlan(plan, { nextId: newId, now, source: 'manual' });
+    try {
+      await onSave({ newLabel: label?.value.created ? label.value.label : undefined, changes });
+      status = { kind: 'saved', count: changes.cardsToCreate.length };
+      text = '';
+    } catch {
+      status = { kind: 'failed' };
+    }
   }
 </script>
 
@@ -124,6 +124,12 @@
         <li>{describe(error)}</li>
       {/each}
     </ul>
+  {/if}
+
+  {#if status?.kind === 'saved'}
+    <p role="status">{format(fr.bulkEntry.saved, { count: status.count })}</p>
+  {:else if status?.kind === 'failed'}
+    <p role="alert" class="error">{fr.bulkEntry.saveFailed}</p>
   {/if}
 
   <button type="button" disabled={!canSave} onclick={save}>

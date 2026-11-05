@@ -33,6 +33,8 @@
       "required": "Le nom du label est vide.",
       "tooLong": "Le nom du label est trop long."
     },
+    "saved": "{count} mot(s) ajouté(s).",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie.",
     "addWordsOne": "Ajouter 1 mot",
     "addWordsMany": "Ajouter {count} mots"
   }
