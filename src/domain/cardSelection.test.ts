@@ -40,6 +40,6 @@ describe('selectCards', () => {
   });
 
   it('never returns the same word twice even if the list repeats it', () => {
-    expect(selectCards([cat, cat], { labelIds: ['animals', 'lesson-3'] })).toEqual([cat]);
+    expect(selectCards([cat, { ...cat }], { labelIds: ['animals', 'lesson-3'] })).toEqual([cat]);
   });
 });
