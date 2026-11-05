@@ -3,6 +3,7 @@
   import type { Card } from '../domain/card';
   import type { Label } from '../domain/label';
   import { pinyinProGenerator } from '../domain/pinyinProGenerator';
+  import WordList from '../features/cards/WordList.svelte';
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import type { BulkEntrySave } from '../features/import/bulkEntrySave';
   import fr from '../i18n/fr.json';
@@ -49,6 +50,8 @@
     clock={() => new Date().toISOString()}
     onSave={save}
   />
+
+  <WordList {cards} {labels} />
 </main>
 
 <style>

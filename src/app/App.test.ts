@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { render, screen } from '@testing-library/svelte';
+import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import fr from '../i18n/fr.json';
@@ -30,5 +30,26 @@ describe('App', () => {
     expect(
       await screen.findByText(fr.bulkEntry.existingWords.replace('{count}', '1')),
     ).toBeVisible();
+  });
+
+  it('lists the saved words with their new label, still there after a restart', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(App, { databaseName: 'app-test-word-list' });
+
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('狗 || chien\nhorse | cheval');
+    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Animaux');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
+    await screen.findByRole('status');
+    unmount();
+
+    render(App, { databaseName: 'app-test-word-list' });
+
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /狗/ })).toHaveTextContent('Animaux');
+    await user.selectOptions(screen.getByLabelText(fr.wordList.languageFilter), fr.languages.en);
+    expect(within(list).queryByRole('row', { name: /狗/ })).toBeNull();
+    expect(within(list).getByRole('row', { name: /horse/ })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Animaux' })).toBeInTheDocument();
   });
 });
