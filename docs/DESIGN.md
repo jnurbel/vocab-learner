@@ -156,7 +156,7 @@ La plante grandit avec la maîtrise réelle : graine → pousse → tige (≥3 j
 Rien ne meurt, aucune perte de progression.
 
 - **Session 5–15 min** : arrosage (flashcards SRS, ≤5 mots nouveaux) → mini-jeu → dictée ou atelier de phrases → retour au jardin.
-- **XP** : bonne réponse 10, avec indice 5, erreur 2 (effort), fin de session +30, stade gagné +15. Niveau n+1 : `100 + 50·(n−1)` XP. Objectif du jour 120 XP (réglable), XP divisés par 2 au-delà (anti-bachotage).
+- **XP** : barème détaillé dans [GAME_DESIGN.md §4](GAME_DESIGN.md). **Validé par l'autrice (2026-11-05)** : objectif du jour **300 XP** (réglable), XP ×0,5 au-delà puis ×0,25 au-delà du double ; défi final noté sur 20, réussi à **16/20** ; label **désépinglé automatiquement** le lendemain du contrôle (annulable).
 - **Série** : 2 jours « brume » gelés par semaine, record conservé, jamais de culpabilisation.
 - **Déblocages déterministes** affichés à l'avance (décor, lucioles tous les 10 mots en fleur). Pas de hasard, pas de classement, pas de notifications insistantes.
 - **Mini-jeux** (souris/clavier ET tactile, cibles ≥44 px) :
