@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_LIMITS, createCard } from './card';
+import { CARD_LIMITS, createCard, termKey } from './card';
 
 const context = { id: 'card-1', now: '2026-11-05T10:00:00.000Z' };
 
@@ -136,5 +136,19 @@ describe('createCard', () => {
     );
 
     expect(result.ok && result.value.labelIds).toEqual(['animals', 'lesson-3']);
+  });
+});
+
+describe('termKey', () => {
+  it('identifies an English word regardless of case and surrounding spaces', () => {
+    expect(termKey('en', ' Apple ')).toBe(termKey('en', 'apple'));
+  });
+
+  it('identifies a word regardless of its Unicode normalization form', () => {
+    expect(termKey('en', 'café')).toBe(termKey('en', 'café'));
+  });
+
+  it('distinguishes the same spelling in two languages', () => {
+    expect(termKey('zh', 'OK')).not.toBe(termKey('en', 'OK'));
   });
 });

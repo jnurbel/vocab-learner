@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseBulkEntry } from './bulkEntryParser';
+import { CARD_LIMITS } from './card';
 
 function parsed(text: string) {
   const result = parseBulkEntry(text);
@@ -65,6 +66,41 @@ describe('parseBulkEntry', () => {
 
   it('ignores a byte order mark pasted from a spreadsheet', () => {
     expect(parsed('﻿apple | pomme').entries[0]?.term).toBe('apple');
+  });
+
+  it.each([
+    ['a single column', 'apple', 'missingTranslation'],
+    ['an empty meaning', '你好 | nǐ hǎo |  ', 'missingTranslation'],
+    ['an empty term', ' | pomme', 'missingTerm'],
+    ['only separators', '| |', 'missingTerm'],
+    ['too many columns', '你好 | nǐ hǎo | bonjour | salut', 'tooManyColumns'],
+    ['a pinyin on an English word', 'apple | æpl | pomme', 'pinyinNotAllowed'],
+    ['a term that is too long', `${'a'.repeat(CARD_LIMITS.term + 1)} | x`, 'termTooLong'],
+    [
+      'a pinyin that is too long',
+      `你 | ${'a'.repeat(CARD_LIMITS.pinyin + 1)} | x`,
+      'pinyinTooLong',
+    ],
+    [
+      'a meaning that is too long',
+      `x | ${'a'.repeat(CARD_LIMITS.translation + 1)}`,
+      'translationTooLong',
+    ],
+  ])('reports %s as a line error instead of a word', (_name, line, reason) => {
+    expect(parsed(`apple | pomme\n${line}`)).toEqual({
+      entries: [{ lineNumber: 1, language: 'en', term: 'apple', translation: 'pomme' }],
+      errors: [{ lineNumber: 2, reason }],
+    });
+  });
+
+  it('reports a word repeated in the same batch, pointing to its first line', () => {
+    expect(parsed('猫 | māo | chat\nCat | chat\n猫 || chat (animal)')).toEqual({
+      entries: [
+        { lineNumber: 1, language: 'zh', term: '猫', pinyin: 'māo', translation: 'chat' },
+        { lineNumber: 2, language: 'en', term: 'Cat', translation: 'chat' },
+      ],
+      errors: [{ lineNumber: 3, reason: 'duplicateInBatch', firstLineNumber: 1 }],
+    });
   });
 
   it('returns nothing for an empty input', () => {

@@ -87,3 +87,12 @@ export function createCard(draft: CardDraft, context: CreationContext): Result<C
 function uniqueValues(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
+
+/**
+ * Identity of a word within a language: Unicode-normalized, and case-insensitive for English
+ * so that "Apple" and "apple" are the same word.
+ */
+export function termKey(language: Language, term: string): string {
+  const normalized = term.trim().normalize('NFC');
+  return `${language}:${language === 'en' ? normalized.toLowerCase() : normalized}`;
+}
