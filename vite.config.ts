@@ -1,5 +1,7 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { defineConfig, type Plugin } from 'vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
+import type { Plugin } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 /**
  * The CSP in index.html is the production policy. The dev server injects styles
@@ -21,8 +23,27 @@ function devCspRelaxation(): Plugin {
 export default defineConfig({
   // Served from https://<user>.github.io/vocab-learner/
   base: '/vocab-learner/',
-  plugins: [svelte(), devCspRelaxation()],
+  plugins: [svelte(), svelteTesting(), devCspRelaxation()],
   build: {
     sourcemap: false,
+  },
+  test: {
+    include: ['src/**/*.test.ts'],
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.ts'],
+    restoreMocks: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,svelte}'],
+      exclude: ['src/**/*.test.ts', 'src/setupTests.ts', 'src/main.ts', 'src/**/*.d.ts'],
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
+      thresholds: {
+        // The domain is written test-first: every line and branch must be covered.
+        'src/domain/**': {
+          100: true,
+          perFile: true,
+        },
+      },
+    },
   },
 });
