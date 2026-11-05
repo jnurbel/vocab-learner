@@ -3,28 +3,59 @@ import { CARD_LIMITS } from './card';
 import { LABEL_NAME_MAX_LENGTH } from './label';
 import { failure, success, type Result } from './result';
 
-const requiredText = (maxLength: number) => z.string().trim().min(1).max(maxLength);
+/** Bounds on an untrusted pack file, so that a hostile file cannot exhaust memory or storage. */
+export const PACK_LIMITS = {
+  characters: 2_000_000,
+  cards: 5_000,
+  labels: 500,
+  labelsPerCard: 50,
+} as const;
+
+/** Control characters and bidi overrides or isolates ("trojan source"). */
+const INVISIBLE_CONTROLS = /[\p{Cc}\p{Bidi_Control}]/u;
+/** Tolerated in multiline texts only. */
+const LINE_BREAKS = /[\t\n\r]/g;
+
+const safeText = (maxLength: number, { multiline }: { multiline: boolean }) =>
+  z
+    .string()
+    .trim()
+    .min(1)
+    .max(maxLength)
+    .refine(
+      (text) => !INVISIBLE_CONTROLS.test(multiline ? text.replace(LINE_BREAKS, '') : text),
+      'Control characters are not allowed',
+    );
+
+const singleLine = (maxLength: number) => safeText(maxLength, { multiline: false });
+
+/** Identifiers end up in IndexedDB keys and DOM attributes: short, plain tokens only. */
+const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 
 const packLabelSchema = z.strictObject({
-  id: z.string(),
-  name: requiredText(LABEL_NAME_MAX_LENGTH),
-  color: z.string().optional(),
+  id: identifier,
+  name: singleLine(LABEL_NAME_MAX_LENGTH),
+  // Used in a style directive: a strict hex code leaves no room for CSS injection.
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
 });
 
 const packCardSchema = z.strictObject({
   language: z.enum(['zh', 'en']),
-  term: requiredText(CARD_LIMITS.term),
-  pinyin: requiredText(CARD_LIMITS.pinyin).optional(),
-  translation: requiredText(CARD_LIMITS.translation),
-  example: requiredText(CARD_LIMITS.example).optional(),
-  labelIds: z.array(z.string()),
+  term: singleLine(CARD_LIMITS.term),
+  pinyin: singleLine(CARD_LIMITS.pinyin).optional(),
+  translation: singleLine(CARD_LIMITS.translation),
+  example: safeText(CARD_LIMITS.example, { multiline: true }).optional(),
+  labelIds: z.array(identifier).max(PACK_LIMITS.labelsPerCard),
 });
 
 const vocabPackSchema = z.strictObject({
   format: z.literal('vocab-learner-pack'),
   version: z.literal(1),
-  labels: z.array(packLabelSchema),
-  cards: z.array(packCardSchema),
+  labels: z.array(packLabelSchema).max(PACK_LIMITS.labels),
+  cards: z.array(packCardSchema).max(PACK_LIMITS.cards),
 });
 
 /** A shareable list of words and labels, without any progress or personal data. */
@@ -37,6 +68,9 @@ export interface PackIssue {
 
 /** Validates an untrusted pack file. Never throws. */
 export function parseVocabPack(text: string): Result<VocabPack, PackIssue> {
+  if (text.length > PACK_LIMITS.characters) {
+    return failure([{ path: '', code: 'fileTooLarge' }]);
+  }
   const json = parseJson(text);
   if (!json.ok) {
     return json;
