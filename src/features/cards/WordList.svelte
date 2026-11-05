@@ -38,24 +38,24 @@
   <h2 id="word-list-title">{fr.wordList.title}</h2>
 
   <div class="filters">
-    <label>
-      {fr.wordList.labelFilter}
-      <select bind:value={labelId}>
+    <div>
+      <label for="word-list-label">{fr.wordList.labelFilter}</label>
+      <select id="word-list-label" bind:value={labelId}>
         <option value="">{fr.wordList.allLabels}</option>
         {#each labels as label (label.id)}
           <option value={label.id}>{label.name}</option>
         {/each}
       </select>
-    </label>
-    <label>
-      {fr.wordList.languageFilter}
-      <select bind:value={language}>
+    </div>
+    <div>
+      <label for="word-list-language">{fr.wordList.languageFilter}</label>
+      <select id="word-list-language" bind:value={language}>
         <option value="">{fr.wordList.allLanguages}</option>
         {#each LANGUAGES as code (code)}
           <option value={code}>{fr.languages[code]}</option>
         {/each}
       </select>
-    </label>
+    </div>
   </div>
 
   {#if shown.length === 0}
