@@ -26,3 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import plan: new words, existing words that only receive the chosen labels (no duplicates), and errors, ready for the preview.
 - Label operations: create on the fly, rename, merge (words keep the union of their labels) and delete (words are kept); selection of the words of one or more labels, once each, by language.
 - Validation of shared vocabulary packs with zod: strict schema, size limits, control and bidi characters rejected, safe ids and colors, consistency checks.
+- IndexedDB storage with Dexie: words and labels repository, unique `(language, term)` index, multiEntry `*labelIds` index, atomic imports.
+- Bulk entry screen: paste a list, live preview (new words, existing words, errors per line), choose existing labels or create one, add the words.
+- Word list filtered by label and by language, persisted across reloads.
+- End-to-end test of the bulk entry journey on the production build.
+
+### Dependencies
+
+- pinyin-pro (MIT), zod (MIT), dexie (Apache-2.0); fake-indexeddb (Apache-2.0) for tests.
