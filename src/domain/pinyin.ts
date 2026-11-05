@@ -1,9 +1,9 @@
 /** Combining diacritics for tones 1 to 4 (macron, acute, caron, grave); 0 and 5 are neutral. */
 const TONE_MARKS: Readonly<Record<string, string>> = {
-  '1': '̄',
-  '2': '́',
-  '3': '̌',
-  '4': '̀',
+  '1': String.fromCodePoint(0x0304),
+  '2': String.fromCodePoint(0x0301),
+  '3': String.fromCodePoint(0x030c),
+  '4': String.fromCodePoint(0x0300),
 };
 
 /** Letters of one syllable (ü may be typed "v" or "u:"), followed by its tone digit. */
