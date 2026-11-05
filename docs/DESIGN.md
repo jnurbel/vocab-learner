@@ -148,6 +148,8 @@ d'apprentissage.
 
 ## 5 bis. Côté jeu : « Île-Jardin »
 
+> Détail complet (boucle de session, planification avant contrôle, économie, parcours, fiches des mini-jeux, écrans, événements, métriques d'équilibrage, `GameConfig`) : [`GAME_DESIGN.md`](GAME_DESIGN.md). En cas d'écart chiffré, ce document fait foi.
+
 Chaque mot est une **graine** sur une île (parcelle chinoise + parcelle anglaise).
 La plante grandit avec la maîtrise réelle : graine → pousse → tige (≥3 j) → bouton (≥7 j)
 → fleur (≥21 j) → lanterne (≥60 j). Un mot à réviser a **« soif »** : réviser = arroser.
