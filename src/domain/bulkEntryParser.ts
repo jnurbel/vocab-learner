@@ -40,8 +40,16 @@ export function parseBulkEntry(text: string): Result<BulkEntries, BulkInputError
   return success({ entries, errors: [] });
 }
 
+/** In order of priority, so that a meaning may contain the weaker separators. */
+const SEPARATORS = ['|', '\t', ';'] as const;
+
+function splitFields(line: string): string[] {
+  const separator = SEPARATORS.find((candidate) => line.includes(candidate)) ?? '|';
+  return line.split(separator).map((field) => field.trim());
+}
+
 function parseLine(line: string, lineNumber: number): BulkEntry {
-  const fields = line.split('|').map((field) => field.trim());
+  const fields = splitFields(line);
   const [term = '', pinyin = '', translation = ''] =
     fields.length === 2 ? [fields[0], '', fields[1]] : fields;
   return {

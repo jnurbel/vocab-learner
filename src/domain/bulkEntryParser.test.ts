@@ -39,6 +39,34 @@ describe('parseBulkEntry', () => {
     ]);
   });
 
+  it.each([
+    ['a pipe', '你好 | nǐ hǎo | bonjour'],
+    ['a tab', '你好\tnǐ hǎo\tbonjour'],
+    ['a semicolon', '你好 ; nǐ hǎo ; bonjour'],
+  ])('accepts %s as the separator', (_name, line) => {
+    expect(parsed(line).entries).toEqual([
+      { lineNumber: 1, language: 'zh', term: '你好', pinyin: 'nǐ hǎo', translation: 'bonjour' },
+    ]);
+  });
+
+  it('keeps semicolons and tabs inside a meaning when the line uses pipes', () => {
+    expect(parsed('apple | pomme; fruit').entries[0]?.translation).toBe('pomme; fruit');
+  });
+
+  it.each([
+    ['an empty pinyin column', '你好 || bonjour'],
+    ['a blank pinyin column', '你好 |   | bonjour'],
+    ['no pinyin column', '你好 | bonjour'],
+  ])('leaves the pinyin to generate when given %s', (_name, line) => {
+    expect(parsed(line).entries).toEqual([
+      { lineNumber: 1, language: 'zh', term: '你好', translation: 'bonjour' },
+    ]);
+  });
+
+  it('ignores a byte order mark pasted from a spreadsheet', () => {
+    expect(parsed('﻿apple | pomme').entries[0]?.term).toBe('apple');
+  });
+
   it('returns nothing for an empty input', () => {
     expect(parsed('')).toEqual({ entries: [], errors: [] });
     expect(parsed(' \n\n ')).toEqual({ entries: [], errors: [] });
