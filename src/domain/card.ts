@@ -1,3 +1,4 @@
+import { uniqueValues } from './collections';
 import { failure, success, type Result } from './result';
 import { checkText, type TextFieldReason } from './text';
 
@@ -82,10 +83,6 @@ export function createCard(draft: CardDraft, context: CreationContext): Result<C
     createdAt: context.now,
     updatedAt: context.now,
   });
-}
-
-function uniqueValues(values: readonly string[]): string[] {
-  return [...new Set(values)];
 }
 
 /**
