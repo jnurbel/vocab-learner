@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          # Pull requests opened with the default GITHUB_TOKEN do not trigger CI.
+          # Provide a GitHub App or fine-grained token as RELEASE_PLEASE_TOKEN so the
+          # release PR gets its required status checks.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: master
