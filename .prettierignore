@@ -1,0 +1,7 @@
+dist/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+# Prose is reviewed by hand; CHANGELOG.md is also rewritten by release-please.
+*.md

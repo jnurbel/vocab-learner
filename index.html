@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Strict Content Security Policy (production policy).
+      GitHub Pages cannot send HTTP headers, so the policy lives here.
+      Limitations of the meta form: frame-ancestors, report-uri and sandbox are ignored.
+      The dev server relaxes it on the fly (see vite.config.ts); the built app never does.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>vocab-learner</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
