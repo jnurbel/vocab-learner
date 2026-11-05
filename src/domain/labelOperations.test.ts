@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { Card, Language } from './card';
 import type { Label } from './label';
-import { findOrCreateLabel, renameLabel } from './labelOperations';
+import { deleteLabel, findOrCreateLabel, mergeLabels, renameLabel } from './labelOperations';
 
 const now = '2026-11-05T12:00:00.000Z';
 
@@ -70,6 +71,91 @@ describe('renameLabel', () => {
 
   it('refuses to rename a label that does not exist', () => {
     expect(renameLabel(labels, 'unknown', 'Verbes', now)).toEqual({
+      ok: false,
+      errors: ['labelNotFound'],
+    });
+  });
+});
+
+function card(id: string, labelIds: string[], language: Language = 'zh'): Card {
+  return {
+    id,
+    language,
+    term: id,
+    translation: id,
+    labelIds,
+    source: 'manual',
+    createdAt: '2026-11-01T00:00:00.000Z',
+    updatedAt: '2026-11-01T00:00:00.000Z',
+  };
+}
+
+describe('mergeLabels', () => {
+  const lesson = label('lesson', 'Leçon 3');
+  const animals = label('animals', 'Animaux');
+  const verbs = label('verbs', 'Verbes');
+
+  it('moves the words of the merged label to the kept label, without duplicate labels', () => {
+    const cat = card('cat', ['lesson', 'animals']);
+    const dog = card('dog', ['animals']);
+    const run = card('run', ['verbs']);
+
+    const result = mergeLabels([lesson, animals, verbs], [cat, dog, run], 'animals', 'lesson', now);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        labels: [lesson, verbs],
+        cardsToUpdate: [
+          { ...cat, labelIds: ['lesson'], updatedAt: now },
+          { ...dog, labelIds: ['lesson'], updatedAt: now },
+        ],
+      },
+    });
+  });
+
+  it('refuses to merge a label into itself', () => {
+    expect(mergeLabels([lesson], [], 'lesson', 'lesson', now)).toEqual({
+      ok: false,
+      errors: ['sameLabel'],
+    });
+  });
+
+  it('refuses to merge labels that do not exist', () => {
+    expect(mergeLabels([lesson], [], 'unknown', 'lesson', now)).toEqual({
+      ok: false,
+      errors: ['labelNotFound'],
+    });
+    expect(mergeLabels([lesson], [], 'lesson', 'unknown', now)).toEqual({
+      ok: false,
+      errors: ['labelNotFound'],
+    });
+  });
+});
+
+describe('deleteLabel', () => {
+  const lesson = label('lesson', 'Leçon 3');
+  const animals = label('animals', 'Animaux');
+
+  it('removes the label from its words but keeps the words, even without any label left', () => {
+    const cat = card('cat', ['lesson', 'animals']);
+    const dog = card('dog', ['animals']);
+    const book = card('book', ['lesson']);
+
+    expect(deleteLabel([lesson, animals], [cat, dog, book], 'animals', now)).toEqual({
+      ok: true,
+      value: {
+        labels: [lesson],
+        cardsToUpdate: [
+          { ...cat, labelIds: ['lesson'], updatedAt: now },
+          { ...dog, labelIds: [], updatedAt: now },
+        ],
+      },
+    });
+  });
+
+  it('refuses to delete a label that does not exist', () => {
+    expect(deleteLabel([lesson], [], 'unknown', now)).toEqual({
       ok: false,
       errors: ['labelNotFound'],
     });

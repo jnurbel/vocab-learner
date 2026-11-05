@@ -1,4 +1,5 @@
-import type { CreationContext } from './card';
+import type { Card, CreationContext } from './card';
+import { uniqueValues } from './collections';
 import { checkLabelName, createLabel, type Label, type LabelError } from './label';
 import { failure, success, type Result } from './result';
 
@@ -38,7 +39,7 @@ export function renameLabel(
   rawName: string,
   now: string,
 ): Result<Label[], LabelOperationError> {
-  if (!labels.some((candidate) => candidate.id === labelId)) {
+  if (!hasLabel(labels, labelId)) {
     return failure(['labelNotFound']);
   }
   const name = checkLabelName(rawName);
@@ -54,4 +55,65 @@ export function renameLabel(
       candidate.id === labelId ? { ...candidate, name: name.value, updatedAt: now } : candidate,
     ),
   );
+}
+
+export interface LabelChanges {
+  labels: Label[];
+  cardsToUpdate: Card[];
+}
+
+/** Rewrites the labels of the words carrying `labelId`; the words themselves are never removed. */
+function relabelCards(
+  cards: readonly Card[],
+  labelId: string,
+  replacement: readonly string[],
+  now: string,
+): Card[] {
+  return cards
+    .filter((card) => card.labelIds.includes(labelId))
+    .map((card) => ({
+      ...card,
+      labelIds: uniqueValues(card.labelIds.flatMap((id) => (id === labelId ? replacement : [id]))),
+      updatedAt: now,
+    }));
+}
+
+function hasLabel(labels: readonly Label[], labelId: string): boolean {
+  return labels.some((candidate) => candidate.id === labelId);
+}
+
+/** Merges `sourceId` into `targetId`: every word keeps the union of its labels. */
+export function mergeLabels(
+  labels: readonly Label[],
+  cards: readonly Card[],
+  sourceId: string,
+  targetId: string,
+  now: string,
+): Result<LabelChanges, LabelOperationError | 'sameLabel'> {
+  if (sourceId === targetId) {
+    return failure(['sameLabel']);
+  }
+  if (!hasLabel(labels, sourceId) || !hasLabel(labels, targetId)) {
+    return failure(['labelNotFound']);
+  }
+  return success({
+    labels: labels.filter((candidate) => candidate.id !== sourceId),
+    cardsToUpdate: relabelCards(cards, sourceId, [targetId], now),
+  });
+}
+
+/** Deletes a label; its words stay, possibly without any label ("Tous les mots"). */
+export function deleteLabel(
+  labels: readonly Label[],
+  cards: readonly Card[],
+  labelId: string,
+  now: string,
+): Result<LabelChanges, LabelOperationError> {
+  if (!hasLabel(labels, labelId)) {
+    return failure(['labelNotFound']);
+  }
+  return success({
+    labels: labels.filter((candidate) => candidate.id !== labelId),
+    cardsToUpdate: relabelCards(cards, labelId, [], now),
+  });
 }
