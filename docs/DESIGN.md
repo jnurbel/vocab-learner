@@ -65,6 +65,7 @@ Card          { id, language: 'zh' | 'en', term, pinyin?, translation, example?,
 ReviewState   { cardId, due, stability, difficulty, reps, lapses, lastReviewAt }  // FSRS, one per card
 Session       { id, labelIds[], language, mode, startedAt, endedAt, results: SessionResult[] }
 SessionResult { cardId, outcome: 'again'|'hard'|'good'|'easy'|'correct'|'wrong', answer? }
+IgnoredTerm   { language, term }                                  // "je le connais déjà": never proposed again by text import
 Progress      { xp, level, streakDays, bestStreak, unlocks[], lastActiveDate }
 Settings      { voiceZh?, voiceEn?, ttsRate, dictationDelayMs,
                 dailyGoalXp, photoCheckEnabled, speedGameEnabled }
@@ -271,6 +272,31 @@ Polices système CJK. `lang="zh-CN"` sur les hanzi.
   - partage par lien, avec le pack encodé dans l'URL ou hébergé via le Worker ;
   - packs de référence fournis avec l'appli (ex. listes HSK), **uniquement s'ils sont sous licence compatible** (à vérifier).
 
+### 8.4 Import depuis un texte : extraire les mots nouveaux
+
+L'élève **colle un texte** (article, texte du manuel, paroles…) ou le **photographie**. L'appli en extrait les mots et ne propose que **ceux qui ne sont pas déjà dans sa liste**.
+
+1. **Récupération du texte** :
+   - copier-coller (hors ligne, gratuit) ;
+   - ou photo, avec le même OCR que §8.1 : Tesseract local pour de l'imprimé, ou LLM vision via le Worker (option activée).
+2. **Découpage en mots** :
+   - **chinois** (pas d'espaces entre les mots) : `Intl.Segmenter('zh', { granularity: 'word' })`, intégré aux navigateurs, hors ligne, avec un dictionnaire ICU. Le découpage n'est pas parfait, donc l'élève peut **fusionner ou couper** un mot dans l'aperçu ;
+   - **anglais** : `Intl.Segmenter('en')`, mise en minuscules, et regroupement simple des formes (pluriel, -ing, -ed) proposé mais modifiable.
+3. **Filtrage** :
+   - on retire la ponctuation, les nombres et les noms propres évidents ;
+   - on retire **les mots déjà dans la liste** (`(language, term)` existant) ;
+   - on retire les mots marqués « je le connais déjà » (`IgnoredTerm`) ;
+   - option « masquer les mots très courants » (的, 了, 是, the, a…) via une petite liste embarquée.
+4. **Aperçu** (même écran que les autres imports) :
+   - chaque mot nouveau, avec son **nombre d'occurrences** et **la phrase du texte où il apparaît**. Cette phrase devient l'**exemple** de la carte (`example`), ce qui nourrit `SentenceListen` et l'atelier de phrases ;
+   - le pinyin est automatique (pinyin-pro, en tenant compte du contexte) ;
+   - le sens est à compléter. On peut le pré-remplir :
+     - (a) hors ligne, plus tard, avec un dictionnaire libre chinois-français, par exemple CFDICT sous CC BY-SA (licence et couverture à vérifier, données distribuées à part avec attribution) ;
+     - (b) avec l'option LLM du Worker, qui propose une traduction **dans le contexte de la phrase**, toujours modifiable.
+   - Pour chaque mot, trois actions : ✓ ajouter, « je le connais déjà » (va dans `IgnoredTerm`), ou ignorer pour cette fois.
+   - Le ou les labels sont posés sur tout le lot (ex. « Texte : la fête de la lune »).
+5. **Sécurité** : le texte collé est traité **comme du texte brut**, jamais interprété comme du HTML. Sa taille est limitée (environ 20 000 caractères). Rien ne quitte l'appareil sans l'option cloud.
+
 ## 9. Synchro PC ↔ téléphone
 
 - **MVP** : export/import JSON versionné (Web Share API ou fichier), avec rappel de sauvegarde.
@@ -338,12 +364,12 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.4.0 | Dictée vocale : réponse tapée en hanzi avec correction automatique, ou mode papier avec auto-correction |
 | 0.5.0 | **Labels à travailler + objectif contrôle + jauge de maîtrise**, jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
 | 0.6.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
-| 0.7.0 | PWA installable et hors ligne, import/export CSV et JSON, packs partageables, profils multiples, page Confidentialité |
+| 0.7.0 | PWA installable et hors ligne, import/export CSV et JSON, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
 | 1.1.0 | `ToneEcho`, `SentenceListen`, `BridgeMatch` |
 | 1.2.0 | Atelier de phrases, `SentenceShuffle`, vue parent |
 | 1.3.0 | Répéter à voix haute (reconnaissance vocale, option), ordre des traits en bonus |
-| 1.4.0 | Worker vision + **import de vocabulaire par photo** (le plus fiable, donc en premier) |
+| 1.4.0 | Worker vision + **import par photo** : liste de vocabulaire (§8.1) et texte (§8.4), traduction suggérée en contexte |
 | 1.5.0 | Correction de dictée par photo (réutilise le Worker) |
 | 1.6.0 | Synchro chiffrée |
 | 1.7.0 | **Suivi professeur, étape 1** : rapport de progression partageable + tableau de bord professeur local (§9 ter) |
