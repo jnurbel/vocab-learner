@@ -1,5 +1,5 @@
 import type { BulkEntries, BulkEntry, BulkLineError } from './bulkEntryParser';
-import { termKey, type Card } from './card';
+import { termKey, type Card, type CardSource } from './card';
 import { uniqueValues } from './collections';
 
 export interface PlannedNewWord extends BulkEntry {
@@ -41,4 +41,40 @@ export function planImport(
     }
   }
   return plan;
+}
+
+export interface ApplyContext {
+  nextId: () => string;
+  now: string;
+  source: CardSource;
+}
+
+export interface ImportChanges {
+  cardsToCreate: Card[];
+  cardsToUpdate: Card[];
+}
+
+/** Turns a confirmed plan into the cards to save; entries were validated by the parser. */
+export function applyImportPlan(plan: ImportPlan, context: ApplyContext): ImportChanges {
+  const cardsToCreate = plan.newWords.map(
+    ({ language, term, pinyin, translation, labelIds }): Card => ({
+      id: context.nextId(),
+      language,
+      term,
+      ...(pinyin === undefined ? {} : { pinyin }),
+      translation,
+      labelIds,
+      source: context.source,
+      createdAt: context.now,
+      updatedAt: context.now,
+    }),
+  );
+  const cardsToUpdate = plan.existingWords
+    .filter(({ addedLabelIds }) => addedLabelIds.length > 0)
+    .map(({ card, addedLabelIds }) => ({
+      ...card,
+      labelIds: [...card.labelIds, ...addedLabelIds],
+      updatedAt: context.now,
+    }));
+  return { cardsToCreate, cardsToUpdate };
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BulkEntries } from './bulkEntryParser';
 import type { Card } from './card';
-import { planImport } from './importPlan';
+import { applyImportPlan, planImport } from './importPlan';
 
 function existingCard(overrides: Partial<Card> & Pick<Card, 'id' | 'term'>): Card {
   return {
@@ -83,5 +83,65 @@ describe('planImport', () => {
 
     expect(plan.errors).toEqual([{ lineNumber: 2, reason: 'missingTranslation' }]);
     expect(plan.newWords[0]?.labelIds).toEqual(['fruits']);
+  });
+});
+
+describe('applyImportPlan', () => {
+  const now = '2026-11-05T12:00:00.000Z';
+  let sequence = 0;
+  const nextId = () => {
+    sequence += 1;
+    return `new-${String(sequence)}`;
+  };
+
+  it('creates the new words and updates only the existing words that gain labels', () => {
+    sequence = 0;
+    const cat = existingCard({ id: 'card-cat', term: '猫', labelIds: ['lesson-3'] });
+    const dog = existingCard({ id: 'card-dog', term: '狗', labelIds: ['animals'] });
+    const plan = planImport(
+      {
+        entries: [
+          { lineNumber: 1, language: 'zh', term: '鸟', pinyin: 'niǎo', translation: 'oiseau' },
+          { lineNumber: 2, language: 'zh', term: '猫', translation: 'chat' },
+          { lineNumber: 3, language: 'zh', term: '狗', translation: 'chien' },
+        ],
+        errors: [],
+      },
+      [cat, dog],
+      ['animals'],
+    );
+
+    expect(applyImportPlan(plan, { nextId, now, source: 'manual' })).toEqual({
+      cardsToCreate: [
+        {
+          id: 'new-1',
+          language: 'zh',
+          term: '鸟',
+          pinyin: 'niǎo',
+          translation: 'oiseau',
+          labelIds: ['animals'],
+          source: 'manual',
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+      cardsToUpdate: [{ ...cat, labelIds: ['lesson-3', 'animals'], updatedAt: now }],
+    });
+  });
+
+  it('creates an English word without any pinyin field', () => {
+    const plan = planImport(
+      {
+        entries: [{ lineNumber: 1, language: 'en', term: 'pear', translation: 'poire' }],
+        errors: [],
+      },
+      [],
+      [],
+    );
+
+    const [pear] = applyImportPlan(plan, { nextId, now, source: 'csv' }).cardsToCreate;
+
+    expect(pear).not.toHaveProperty('pinyin');
+    expect(pear?.source).toBe('csv');
   });
 });
