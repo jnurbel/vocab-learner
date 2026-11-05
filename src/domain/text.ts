@@ -1,3 +1,5 @@
+import { failure, success, type Result } from './result';
+
 export type TextFieldReason = 'required' | 'tooLong';
 
 /** Length in Unicode code points, so that a rare hanzi outside the BMP counts as one character. */
@@ -9,13 +11,13 @@ export function codePointLength(value: string): number {
 export function checkText(
   raw: string | undefined,
   maxLength: number,
-): { value: string | undefined; problem: TextFieldReason | undefined } {
+): Result<string, TextFieldReason> {
   const value = raw?.trim() ?? '';
   if (value === '') {
-    return { value: undefined, problem: 'required' };
+    return failure(['required']);
   }
   if (codePointLength(value) > maxLength) {
-    return { value, problem: 'tooLong' };
+    return failure(['tooLong']);
   }
-  return { value, problem: undefined };
+  return success(value);
 }

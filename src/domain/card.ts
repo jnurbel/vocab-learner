@@ -52,11 +52,14 @@ export interface CardError {
 export function createCard(draft: CardDraft, context: CreationContext): Result<Card, CardError> {
   const errors: CardError[] = [];
   const field = (name: CardTextField, raw: string | undefined, required: boolean) => {
-    const { value, problem } = checkText(raw, CARD_LIMITS[name]);
-    if (problem === 'tooLong' || (problem === 'required' && required)) {
-      errors.push({ field: name, reason: problem });
+    const checked = checkText(raw, CARD_LIMITS[name]);
+    if (checked.ok) {
+      return checked.value;
     }
-    return value;
+    // A blank optional field is simply absent; any other problem is reported.
+    const reported = checked.errors.filter((reason) => required || reason !== 'required');
+    errors.push(...reported.map((reason) => ({ field: name, reason })));
+    return undefined;
   };
 
   const term = field('term', draft.term, true);
