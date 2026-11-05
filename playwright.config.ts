@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 4173;
-const isCi = Boolean(process.env['CI']);
+const isCi = Boolean(process.env.CI);
 
 /**
  * E2E tests run against the production build served by `vite preview`, so the

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Optional local hook. Enable it once with: git config core.hooksPath .githooks
+# Validates the commit message against Conventional Commits (same rules as CI).
+exec npx --no-install commitlint --edit "$1"
