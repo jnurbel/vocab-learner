@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CARD_LIMITS } from './card';
+import { CARD_LIMITS, termKey } from './card';
 import { LABEL_NAME_MAX_LENGTH } from './label';
 import { failure, success, type Result } from './result';
 
@@ -81,7 +81,8 @@ export function parseVocabPack(text: string): Result<VocabPack, PackIssue> {
       parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), code: issue.code })),
     );
   }
-  return success(parsed.data);
+  const inconsistencies = findInconsistencies(parsed.data);
+  return inconsistencies.length > 0 ? failure(inconsistencies) : success(parsed.data);
 }
 
 function parseJson(text: string): Result<unknown, PackIssue> {
@@ -90,4 +91,32 @@ function parseJson(text: string): Result<unknown, PackIssue> {
   } catch {
     return failure([{ path: '', code: 'invalidJson' }]);
   }
+}
+
+/** Cross-references that a schema cannot express: unique ids, unique words, known labels. */
+function findInconsistencies(pack: VocabPack): PackIssue[] {
+  const issues: PackIssue[] = [];
+  const labelIds = new Set<string>();
+  pack.labels.forEach((label, index) => {
+    if (labelIds.has(label.id)) {
+      issues.push({ path: `labels.${String(index)}.id`, code: 'duplicateLabel' });
+    }
+    labelIds.add(label.id);
+  });
+
+  const wordKeys = new Set<string>();
+  pack.cards.forEach((card, cardIndex) => {
+    const key = termKey(card.language, card.term);
+    if (wordKeys.has(key)) {
+      issues.push({ path: `cards.${String(cardIndex)}.term`, code: 'duplicateWord' });
+    }
+    wordKeys.add(key);
+    card.labelIds.forEach((labelId, labelIndex) => {
+      if (!labelIds.has(labelId)) {
+        const path = `cards.${String(cardIndex)}.labelIds.${String(labelIndex)}`;
+        issues.push({ path, code: 'unknownLabel' });
+      }
+    });
+  });
+  return issues;
 }

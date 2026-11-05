@@ -216,3 +216,30 @@ describe('parseVocabPack hostile content', () => {
     expect(parseVocabPack(text).ok).toBe(false);
   });
 });
+
+describe('parseVocabPack consistency', () => {
+  it('reports a word that refers to a label missing from the pack', () => {
+    expect(issuesOf(withCard({ labelIds: ['lesson-7', 'ghost'] }))).toEqual([
+      { path: 'cards.0.labelIds.1', code: 'unknownLabel' },
+    ]);
+  });
+
+  it('reports two labels sharing the same id', () => {
+    const pack = validPack();
+    const labels = [...pack.labels, { id: 'lesson-7', name: 'Autre' }];
+
+    expect(issuesOf({ ...pack, labels })).toEqual([
+      { path: 'labels.1.id', code: 'duplicateLabel' },
+    ]);
+  });
+
+  it('reports a word present twice in the same language', () => {
+    const pack = validPack();
+    const cards = [
+      ...pack.cards,
+      { language: 'en', term: 'Apple', translation: 'x', labelIds: [] },
+    ];
+
+    expect(issuesOf({ ...pack, cards })).toEqual([{ path: 'cards.2.term', code: 'duplicateWord' }]);
+  });
+});
