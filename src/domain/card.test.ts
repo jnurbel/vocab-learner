@@ -145,7 +145,7 @@ describe('termKey', () => {
   });
 
   it('identifies a word regardless of its Unicode normalization form', () => {
-    expect(termKey('en', 'café')).toBe(termKey('en', 'café'));
+    expect(termKey('en', 'cafe' + String.fromCodePoint(0x0301))).toBe(termKey('en', 'café'));
   });
 
   it('distinguishes the same spelling in two languages', () => {

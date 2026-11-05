@@ -30,8 +30,15 @@ export interface BulkEntries {
   errors: BulkLineError[];
 }
 
-export type BulkInputError = never;
+export type BulkInputError = 'inputTooLong' | 'tooManyLines';
 
+/** Bounds on untrusted pasted text, checked before any parsing work. */
+export const BULK_ENTRY_LIMITS = {
+  characters: 20_000,
+  lines: 500,
+} as const;
+
+const LINE_BREAK = /\r\n|\r|\n/;
 const HAN_CHARACTER = /\p{Script=Han}/u;
 
 export function detectLanguage(term: string): Language {
@@ -40,31 +47,36 @@ export function detectLanguage(term: string): Language {
 
 /** Parses the bulk entry text, one word per line. Never throws: problems are reported per line. */
 export function parseBulkEntry(text: string): Result<BulkEntries, BulkInputError> {
+  if (text.length > BULK_ENTRY_LIMITS.characters) {
+    return failure(['inputTooLong']);
+  }
+  const lines = text
+    .split(LINE_BREAK)
+    .map((line, index) => ({ line, lineNumber: index + 1 }))
+    .filter(({ line }) => line.trim() !== '');
+  if (lines.length > BULK_ENTRY_LIMITS.lines) {
+    return failure(['tooManyLines']);
+  }
+
   const entries: BulkEntry[] = [];
   const errors: BulkLineError[] = [];
   const firstLineByKey = new Map<string, number>();
-
-  text.split(/\r\n|\r|\n/).forEach((line, index) => {
-    const lineNumber = index + 1;
-    if (line.trim() === '') {
-      return;
-    }
+  for (const { line, lineNumber } of lines) {
     const parsedLine = parseLine(line, lineNumber);
     if (!parsedLine.ok) {
       errors.push(...parsedLine.errors.map((reason) => ({ lineNumber, reason })));
-      return;
+      continue;
     }
     const entry = parsedLine.value;
     const key = termKey(entry.language, entry.term);
     const firstLineNumber = firstLineByKey.get(key);
     if (firstLineNumber !== undefined) {
       errors.push({ lineNumber, reason: 'duplicateInBatch', firstLineNumber });
-      return;
+      continue;
     }
     firstLineByKey.set(key, lineNumber);
     entries.push(entry);
-  });
-
+  }
   return success({ entries, errors });
 }
 

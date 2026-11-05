@@ -70,7 +70,7 @@ describe('numericToDiacritic', () => {
   });
 
   it('returns composed characters even when the input is decomposed', () => {
-    expect(numericToDiacritic('nǐ hao3')).toBe('nǐ hǎo');
+    expect(numericToDiacritic('ni' + String.fromCodePoint(0x030c) + ' hao3')).toBe('nǐ hǎo');
   });
 
   it('puts the tone on a syllabic nasal when there is no vowel', () => {

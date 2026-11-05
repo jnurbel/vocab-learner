@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBulkEntry } from './bulkEntryParser';
+import { BULK_ENTRY_LIMITS, parseBulkEntry } from './bulkEntryParser';
 import { CARD_LIMITS } from './card';
 
 function parsed(text: string) {
@@ -65,7 +65,7 @@ describe('parseBulkEntry', () => {
   });
 
   it('ignores a byte order mark pasted from a spreadsheet', () => {
-    expect(parsed('﻿apple | pomme').entries[0]?.term).toBe('apple');
+    expect(parsed(String.fromCodePoint(0xfeff) + 'apple | pomme').entries[0]?.term).toBe('apple');
   });
 
   it.each([
@@ -106,5 +106,56 @@ describe('parseBulkEntry', () => {
   it('returns nothing for an empty input', () => {
     expect(parsed('')).toEqual({ entries: [], errors: [] });
     expect(parsed(' \n\n ')).toEqual({ entries: [], errors: [] });
+  });
+});
+
+describe('parseBulkEntry limits and hostile input', () => {
+  it('accepts an input exactly at the maximum length and number of words', () => {
+    const lineLength = BULK_ENTRY_LIMITS.characters / BULK_ENTRY_LIMITS.lines;
+    const lines = Array.from({ length: BULK_ENTRY_LIMITS.lines }, (_, index) =>
+      `w${String(index)} | `.padEnd(lineLength - 1, 'x'),
+    );
+    const text = lines.join('\n') + '\n';
+
+    expect(text).toHaveLength(BULK_ENTRY_LIMITS.characters);
+    expect(parsed(text).entries).toHaveLength(BULK_ENTRY_LIMITS.lines);
+  });
+
+  it('rejects the whole input when it is longer than the maximum length', () => {
+    const text = 'a'.repeat(BULK_ENTRY_LIMITS.characters + 1);
+
+    expect(parseBulkEntry(text)).toEqual({ ok: false, errors: ['inputTooLong'] });
+  });
+
+  it('rejects the whole input when it has more words than allowed', () => {
+    const text = Array.from(
+      { length: BULK_ENTRY_LIMITS.lines + 1 },
+      (_, index) => `w${String(index)}|x`,
+    );
+
+    expect(parseBulkEntry(text.join('\n'))).toEqual({ ok: false, errors: ['tooManyLines'] });
+  });
+
+  it('keeps markup as plain text: escaping is left to the display', () => {
+    const entries = parsed('<img src=x onerror=alert(1)> | <script>alert(1)</script>').entries;
+
+    expect(entries).toEqual([
+      {
+        lineNumber: 1,
+        language: 'en',
+        term: '<img src=x onerror=alert(1)>',
+        translation: '<script>alert(1)</script>',
+      },
+    ]);
+  });
+
+  it.each([
+    ['NUL characters', '\u0000 | \u0000'],
+    ['a lone surrogate', '\uD800 | x'],
+    ['right-to-left overrides', String.fromCodePoint(0x202e) + 'apple | pomme'],
+    ['only separators', '|||||\n;;;;\n\t\t\t'],
+    ['a prototype key', '__proto__ | constructor'],
+  ])('never throws on %s', (_name, text) => {
+    expect(() => parseBulkEntry(text)).not.toThrow();
   });
 });
