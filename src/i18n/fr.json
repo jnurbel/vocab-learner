@@ -41,5 +41,23 @@
     "addLabelsOnly": "Ajouter les labels aux mots existants",
     "addWordsOne": "Ajouter 1 mot",
     "addWordsMany": "Ajouter {count} mots"
+  },
+  "languages": {
+    "zh": "Chinois",
+    "en": "Anglais"
+  },
+  "wordList": {
+    "title": "Mes mots",
+    "caption": "Liste des mots",
+    "labelFilter": "Label",
+    "allLabels": "Tous les mots",
+    "languageFilter": "Langue",
+    "allLanguages": "Toutes les langues",
+    "columnTerm": "Mot",
+    "columnPinyin": "Pinyin",
+    "columnTranslation": "Sens",
+    "columnLabels": "Labels",
+    "count": "{count} mot(s)",
+    "empty": "Aucun mot pour ce filtre."
   }
 }
