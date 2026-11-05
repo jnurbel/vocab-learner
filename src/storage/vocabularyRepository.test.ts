@@ -45,6 +45,31 @@ describe('VocabularyRepository', () => {
     expect(await repository.allCards()).toEqual([cat]);
   });
 
+  it('saves the label created during an import together with its words', async () => {
+    const fruits = label('fruits', 'Fruits');
+    const apple = card('c1', 'apple', ['fruits'], 'en');
+
+    await repository.saveImport({ cardsToCreate: [apple], cardsToUpdate: [] }, fruits);
+
+    expect(await repository.allLabels()).toEqual([fruits]);
+    expect(await repository.cardsWithLabels(['fruits'])).toEqual([apple]);
+  });
+
+  it('keeps neither the label nor the words when the import fails', async () => {
+    await repository.saveImport({
+      cardsToCreate: [card('c1', 'apple', [], 'en')],
+      cardsToUpdate: [],
+    });
+
+    await expect(
+      repository.saveImport(
+        { cardsToCreate: [card('c2', 'APPLE', ['fruits'], 'en')], cardsToUpdate: [] },
+        label('fruits', 'Fruits'),
+      ),
+    ).rejects.toThrow();
+    expect(await repository.allLabels()).toEqual([]);
+  });
+
   it('updates the labels of existing words in the same import', async () => {
     const cat = card('c1', '猫', ['lesson-3']);
     await repository.saveImport({ cardsToCreate: [cat], cardsToUpdate: [] });

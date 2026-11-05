@@ -23,8 +23,12 @@ export class VocabularyRepository {
     this.db = new VocabularyDatabase(databaseName);
   }
 
-  async saveImport(changes: ImportChanges): Promise<void> {
-    await this.db.transaction('rw', this.db.cards, async () => {
+  /** Saves an import atomically, with the label created on the fly if any. */
+  async saveImport(changes: ImportChanges, newLabel?: Label): Promise<void> {
+    await this.db.transaction('rw', this.db.cards, this.db.labels, async () => {
+      if (newLabel !== undefined) {
+        await this.db.labels.add(newLabel);
+      }
       await this.db.cards.bulkAdd(changes.cardsToCreate.map(toStored));
       await this.db.cards.bulkPut(changes.cardsToUpdate.map(toStored));
     });
