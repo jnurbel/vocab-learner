@@ -145,4 +145,62 @@ describe('BulkEntry', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(fr.bulkEntry.inputErrors.inputTooLong);
     expect(screen.getByRole('button', { name: /Ajouter/ })).toBeDisabled();
   });
+
+  it('puts several existing labels, chosen with checkboxes, and a new one on the words', async () => {
+    const animals = makeLabel('label-animals', 'Animaux');
+    const lesson = makeLabel('label-lesson', 'Leçon 3');
+    const { user, onSave } = setup({ labels: [animals, lesson] });
+
+    await typeLines(user, '狗 || chien');
+    await user.click(screen.getByRole('checkbox', { name: 'Animaux' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 3' }));
+    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Verbes');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+
+    expect(onSave).toHaveBeenCalledWith({
+      newLabel: makeLabel('id-1', 'Verbes'),
+      changes: {
+        cardsToCreate: [
+          expect.objectContaining({ labelIds: ['label-animals', 'label-lesson', 'id-1'] }),
+        ],
+        cardsToUpdate: [],
+      },
+    });
+  });
+
+  it('only adds the chosen labels when every word already exists', async () => {
+    const animals = makeLabel('label-animals', 'Animaux');
+    const cat = makeCard('card-cat', '猫');
+    const { user, onSave } = setup({ cards: [cat], labels: [animals] });
+
+    await typeLines(user, '猫 || chat');
+    expect(screen.getByRole('button', { name: fr.bulkEntry.addLabelsOnly })).toBeDisabled();
+    await user.click(screen.getByRole('checkbox', { name: 'Animaux' }));
+    await user.click(screen.getByRole('button', { name: fr.bulkEntry.addLabelsOnly }));
+
+    expect(onSave).toHaveBeenCalledWith({
+      newLabel: undefined,
+      changes: {
+        cardsToCreate: [],
+        cardsToUpdate: [{ ...cat, labelIds: ['label-animals'], updatedAt: now }],
+      },
+    });
+  });
 });
+
+function makeLabel(id: string, name: string): Label {
+  return { id, name, isFocus: false, createdAt: now, updatedAt: now };
+}
+
+function makeCard(id: string, term: string): Card {
+  return {
+    id,
+    language: 'zh',
+    term,
+    translation: term,
+    labelIds: [],
+    source: 'manual',
+    createdAt: now,
+    updatedAt: now,
+  };
+}

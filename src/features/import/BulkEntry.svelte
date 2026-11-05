@@ -1,6 +1,7 @@
 <script lang="ts">
   import { parseBulkEntry, type BulkLineError } from '../../domain/bulkEntryParser';
   import type { Card } from '../../domain/card';
+  import { uniqueValues } from '../../domain/collections';
   import { applyImportPlan, planImport } from '../../domain/importPlan';
   import type { Label } from '../../domain/label';
   import { findOrCreateLabel } from '../../domain/labelOperations';
@@ -20,9 +21,15 @@
 
   const { existingCards, existingLabels, generatePinyin, newId, clock, onSave }: Props = $props();
 
+  /** Stands for the label being typed until it receives a real id on save. */
+  const PENDING_LABEL_ID = 'pending-new-label';
+
   let text = $state('');
+  let chosenLabelIds = $state<string[]>([]);
   let labelName = $state('');
-  let status = $state<{ kind: 'saved'; count: number } | { kind: 'failed' } | undefined>();
+  let status = $state<
+    { kind: 'saved'; created: number; updated: number } | { kind: 'failed' } | undefined
+  >();
 
   const parsed = $derived(parseBulkEntry(text));
   const batch = $derived(
@@ -33,14 +40,32 @@
         }
       : undefined,
   );
-  const preview = $derived(batch && planImport(batch, existingCards, []));
-  const newWordCount = $derived(preview?.newWords.length ?? 0);
-  const labelError = $derived(
+  const typedLabel = $derived(
     labelName.trim() === ''
       ? undefined
-      : findOrCreateLabel(existingLabels, labelName, { id: 'preview', now: '' }),
+      : findOrCreateLabel(existingLabels, labelName, { id: PENDING_LABEL_ID, now: '' }),
   );
-  const canSave = $derived(newWordCount > 0 && (labelError === undefined || labelError.ok));
+  const preview = $derived(
+    batch &&
+      planImport(
+        batch,
+        existingCards,
+        typedLabel?.ok ? [...chosenLabelIds, typedLabel.value.label.id] : chosenLabelIds,
+      ),
+  );
+  const newWordCount = $derived(preview?.newWords.length ?? 0);
+  const relabelledCount = $derived(
+    preview?.existingWords.filter(({ addedLabelIds }) => addedLabelIds.length > 0).length ?? 0,
+  );
+  const canSave = $derived(typedLabel?.ok !== false && (newWordCount > 0 || relabelledCount > 0));
+  const saveText = $derived.by(() => {
+    if (newWordCount === 0 && (preview?.existingWords.length ?? 0) > 0) {
+      return fr.bulkEntry.addLabelsOnly;
+    }
+    return newWordCount === 1
+      ? fr.bulkEntry.addWordsOne
+      : format(fr.bulkEntry.addWordsMany, { count: newWordCount });
+  });
 
   function describe(error: BulkLineError): string {
     const reason =
@@ -62,12 +87,18 @@
     if (label?.ok === false) {
       return;
     }
-    const labelIds = label === undefined ? [] : [label.value.label.id];
+    const labelIds = uniqueValues(
+      label === undefined ? chosenLabelIds : [...chosenLabelIds, label.value.label.id],
+    );
     const plan = planImport(batch, existingCards, labelIds);
     const changes = applyImportPlan(plan, { nextId: newId, now, source: 'manual' });
     try {
       await onSave({ newLabel: label?.value.created ? label.value.label : undefined, changes });
-      status = { kind: 'saved', count: changes.cardsToCreate.length };
+      status = {
+        kind: 'saved',
+        created: changes.cardsToCreate.length,
+        updated: changes.cardsToUpdate.length,
+      };
       text = '';
     } catch {
       status = { kind: 'failed' };
@@ -75,17 +106,31 @@
   }
 </script>
 
-<section>
-  <h2>{fr.bulkEntry.title}</h2>
+<section aria-labelledby="bulk-entry-title">
+  <h2 id="bulk-entry-title">{fr.bulkEntry.title}</h2>
   <label for="bulk-entry-input">{fr.bulkEntry.inputLabel}</label>
-  <textarea id="bulk-entry-input" rows="8" bind:value={text}></textarea>
-  <p class="help">{fr.bulkEntry.inputHelp}</p>
+  <textarea id="bulk-entry-input" rows="8" aria-describedby="bulk-entry-help" bind:value={text}
+  ></textarea>
+  <p id="bulk-entry-help" class="help">{fr.bulkEntry.inputHelp}</p>
 
-  <label for="bulk-entry-label">{fr.bulkEntry.labelInput}</label>
-  <input id="bulk-entry-label" type="text" bind:value={labelName} />
-  {#if labelError?.ok === false}
-    <p role="alert" class="error">{fr.bulkEntry.labelErrors[labelError.errors[0] ?? 'required']}</p>
-  {/if}
+  <fieldset>
+    <legend>{fr.bulkEntry.labelsLegend}</legend>
+    {#each existingLabels as label (label.id)}
+      <label class="choice">
+        <input type="checkbox" value={label.id} bind:group={chosenLabelIds} />
+        {label.name}
+      </label>
+    {:else}
+      <p>{fr.bulkEntry.noLabels}</p>
+    {/each}
+    <label for="bulk-entry-label">{fr.bulkEntry.labelInput}</label>
+    <input id="bulk-entry-label" type="text" maxlength="200" bind:value={labelName} />
+    {#if typedLabel?.ok === false}
+      <p role="alert" class="error">
+        {fr.bulkEntry.labelErrors[typedLabel.errors[0] ?? 'required']}
+      </p>
+    {/if}
+  </fieldset>
 
   {#if !parsed.ok}
     <p role="alert" class="error">{fr.bulkEntry.inputErrors[parsed.errors[0] ?? 'inputTooLong']}</p>
@@ -127,23 +172,29 @@
   {/if}
 
   {#if status?.kind === 'saved'}
-    <p role="status">{format(fr.bulkEntry.saved, { count: status.count })}</p>
+    <p role="status">
+      {status.created > 0
+        ? format(fr.bulkEntry.saved, { count: status.created })
+        : format(fr.bulkEntry.labelsAdded, { count: status.updated })}
+    </p>
   {:else if status?.kind === 'failed'}
     <p role="alert" class="error">{fr.bulkEntry.saveFailed}</p>
   {/if}
 
-  <button type="button" disabled={!canSave} onclick={save}>
-    {newWordCount === 1
-      ? fr.bulkEntry.addWordsOne
-      : format(fr.bulkEntry.addWordsMany, { count: newWordCount })}
-  </button>
+  <button type="button" disabled={!canSave} onclick={save}>{saveText}</button>
 </section>
 
 <style>
   textarea,
-  input {
+  input[type='text'] {
     display: block;
     width: 100%;
+  }
+
+  .choice {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-right: 1rem;
   }
 
   .help {

@@ -7,7 +7,9 @@
     "title": "Saisie en lot",
     "inputLabel": "Un mot par ligne",
     "inputHelp": "Formats : 你好 | nǐ hǎo | bonjour, 你好 || bonjour (pinyin automatique), apple | pomme. Séparateurs : |, tabulation ou ;.",
-    "labelInput": "Label à poser sur ces mots (facultatif)",
+    "labelsLegend": "Labels à poser sur ces mots",
+    "noLabels": "Aucun label pour l'instant.",
+    "labelInput": "Nouveau label ou label existant (facultatif)",
     "newWordsCaption": "Mots nouveaux",
     "columnTerm": "Mot",
     "columnPinyin": "Pinyin",
@@ -35,6 +37,8 @@
     },
     "saved": "{count} mot(s) ajouté(s).",
     "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie.",
+    "labelsAdded": "Labels ajoutés à {count} mot(s) existant(s).",
+    "addLabelsOnly": "Ajouter les labels aux mots existants",
     "addWordsOne": "Ajouter 1 mot",
     "addWordsMany": "Ajouter {count} mots"
   }
