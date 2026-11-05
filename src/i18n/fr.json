@@ -2,5 +2,38 @@
   "app": {
     "title": "vocab-learner",
     "tagline": "Maîtrise le vocabulaire de ta leçon, en chinois et en anglais."
+  },
+  "bulkEntry": {
+    "title": "Saisie en lot",
+    "inputLabel": "Un mot par ligne",
+    "inputHelp": "Formats : 你好 | nǐ hǎo | bonjour, 你好 || bonjour (pinyin automatique), apple | pomme. Séparateurs : |, tabulation ou ;.",
+    "labelInput": "Label à poser sur ces mots (facultatif)",
+    "newWordsCaption": "Mots nouveaux",
+    "columnTerm": "Mot",
+    "columnPinyin": "Pinyin",
+    "columnTranslation": "Sens",
+    "existingWords": "{count} mot(s) existent déjà : ils ne seront pas dupliqués, ils recevront seulement le label.",
+    "errorsTitle": "Lignes à corriger",
+    "errorLine": "Ligne {line} : {reason}",
+    "errors": {
+      "missingTerm": "mot manquant",
+      "missingTranslation": "sens manquant",
+      "tooManyColumns": "trop de colonnes (3 au maximum : mot, pinyin, sens)",
+      "pinyinNotAllowed": "le pinyin est réservé aux mots chinois",
+      "termTooLong": "mot trop long",
+      "pinyinTooLong": "pinyin trop long",
+      "translationTooLong": "sens trop long",
+      "duplicateInBatch": "déjà saisi ligne {first}"
+    },
+    "inputErrors": {
+      "inputTooLong": "Le texte est trop long : 20 000 caractères au maximum.",
+      "tooManyLines": "Trop de lignes : 500 mots au maximum par saisie."
+    },
+    "labelErrors": {
+      "required": "Le nom du label est vide.",
+      "tooLong": "Le nom du label est trop long."
+    },
+    "addWordsOne": "Ajouter 1 mot",
+    "addWordsMany": "Ajouter {count} mots"
   }
 }
