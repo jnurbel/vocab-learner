@@ -5,7 +5,7 @@ import {
   fingerprint,
   type BackupDocument,
 } from './backupDocument';
-import { BACKUP_LIMITS } from './backupSchema';
+import { BACKUP_LIMITS, backupDocumentSchema } from './backupSchema';
 import type { Sha256 } from './sha256';
 
 export interface BackupIssue {
@@ -32,6 +32,10 @@ export async function parseBackup(text: string, sha256: Sha256): Promise<Outcome
   if (!json.ok) {
     return json;
   }
+  const forbiddenKeys = findForbiddenKeys(json.value);
+  if (forbiddenKeys.length > 0) {
+    return failure(forbiddenKeys);
+  }
   const envelope = readEnvelope(json.value);
   if (!envelope.ok) {
     return envelope;
@@ -45,7 +49,28 @@ export async function parseBackup(text: string, sha256: Sha256): Promise<Outcome
   if (claimed !== (await fingerprint(content, sha256))) {
     return failure([{ path: 'sha256', code: 'fingerprintMismatch' }]);
   }
-  return success(document as unknown as BackupDocument);
+  const parsed = backupDocumentSchema.safeParse(document);
+  if (!parsed.success) {
+    return failure(
+      parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), code: issue.code })),
+    );
+  }
+  return success(parsed.data);
+}
+
+/**
+ * `__proto__` keys could pollute prototypes once copied by a careless merge: refused anywhere.
+ * The depth is already bounded, so the recursion is too.
+ */
+function findForbiddenKeys(value: unknown, path: string[] = []): BackupIssue[] {
+  if (typeof value !== 'object' || value === null) {
+    return [];
+  }
+  return Object.entries(value).flatMap(([key, member]) =>
+    key === '__proto__'
+      ? [{ path: [...path, key].join('.'), code: 'forbiddenKey' }]
+      : findForbiddenKeys(member, [...path, key]),
+  );
 }
 
 interface Envelope {

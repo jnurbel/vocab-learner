@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBackup, serializeBackup, type BackupDocument } from './backupDocument';
-import { card, metadata, sampleData, sha256 } from './backup.fixtures';
+import { card, emptyData, metadata, sampleData, sha256 } from './backup.fixtures';
 import { BACKUP_LIMITS } from './backupSchema';
 import { canonicalJson } from './canonicalJson';
 import { parseBackup } from './parseBackup';
@@ -130,5 +130,132 @@ describe('parseBackup', () => {
     });
 
     expect(codes(await parseBackup(text, sha256))).toEqual(['fingerprintMismatch']);
+  });
+
+  describe('content validation', () => {
+    const data = (document: Record<string, unknown>) => document['data'] as Record<string, unknown>;
+    const member = (value: unknown, key: string | number) =>
+      (value as Record<string | number, unknown>)[key] as Record<string, unknown>;
+    const firstCard = (document: Record<string, unknown>) => member(data(document)['cards'], 0);
+
+    it('accepts a backup without progress nor settings yet', async () => {
+      const backup = await createBackup(emptyData(), metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
+    it('refuses an unknown field, wherever it is', async () => {
+      const text = await resealed((document) => {
+        firstCard(document)['script'] = 'alert(1)';
+      });
+
+      expect(await parseBackup(text, sha256)).toEqual({
+        ok: false,
+        errors: [{ path: 'data.cards.0', code: 'unrecognized_keys' }],
+      });
+    });
+
+    it('refuses a __proto__ key and leaves the object prototype untouched', async () => {
+      const text = (await backupText()).replace(
+        '"term":"猫"',
+        '"__proto__":{"polluted":true},"term":"猫"',
+      );
+
+      const parsed = await parseBackup(text, sha256);
+
+      expect(parsed).toEqual({
+        ok: false,
+        errors: [{ path: 'data.cards.0.__proto__', code: 'forbiddenKey' }],
+      });
+      expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+    });
+
+    it.each([
+      ['a control character in a word', 'term', `猫${String.fromCodePoint(0x1b)}`, 'custom'],
+      [
+        'a bidi override in a translation',
+        'translation',
+        `a${String.fromCodePoint(0x202e)}b`,
+        'custom',
+      ],
+      ['a too long translation', 'translation', 'x'.repeat(301), 'too_big'],
+      ['an empty word', 'term', '   ', 'too_small'],
+      ['an unknown language', 'language', 'fr', 'invalid_value'],
+      ['an identifier with markup', 'id', '<img onerror=x>', 'invalid_format'],
+      ['a date that is not ISO', 'createdAt', 'yesterday', 'invalid_format'],
+      ['a number instead of a text', 'translation', 42, 'invalid_type'],
+    ])('refuses %s', async (_case, field, value, code) => {
+      const text = await resealed((document) => {
+        firstCard(document)[field] = value;
+      });
+
+      expect(await parseBackup(text, sha256)).toEqual({
+        ok: false,
+        errors: [{ path: `data.cards.0.${field}`, code }],
+      });
+    });
+
+    it.each([
+      ['a label colour that could inject CSS', ['labels', 0, 'color'], 'red;background:url(x)'],
+      ['a negative stability', ['reviewStates', 0, 'stability'], -1],
+      ['a fractional review count', ['reviewStates', 0, 'reps'], 1.5],
+      ['an unknown stage', ['reviewStates', 0, 'peakStage'], 'tree'],
+      ['an invalid day', ['reviewStates', 0, 'lastSuccessDay'], '2026-13-45'],
+      ['an unknown session outcome', ['sessions', 0, 'results', 0, 'outcome'], 'perfect'],
+      ['a negative xp', ['progress', 'xp'], -5],
+      ['a volume above 100 %', ['settings', 'sfxVolume'], 1.5],
+      ['an unknown path step status', ['pathProgress', 0, 'steps', 'listen'], 'flying'],
+      ['a final challenge score above 20', ['pathProgress', 0, 'finalChallengeBest'], 21],
+    ])('refuses %s', async (_case, path, value) => {
+      const text = await resealed((document) => {
+        let target = data(document);
+        for (const key of path.slice(0, -1)) {
+          target = target[key] as Record<string, unknown>;
+        }
+        target[path.at(-1) as string] = value;
+      });
+
+      const parsed = await parseBackup(text, sha256);
+
+      expect(parsed.ok).toBe(false);
+      expect(parsed.ok ? [] : parsed.errors.map((issue) => issue.path)).toEqual([
+        `data.${path.join('.')}`,
+      ]);
+    });
+
+    it('refuses an unknown path step', async () => {
+      const text = await resealed((document) => {
+        member(data(document)['pathProgress'], 0)['steps'] = { fly: 'current' };
+      });
+
+      expect(await parseBackup(text, sha256)).toMatchObject({
+        ok: false,
+        errors: [{ path: 'data.pathProgress.0.steps' }],
+      });
+    });
+
+    it('refuses more words than a profile can hold', async () => {
+      const text = await resealed((document) => {
+        data(document)['cards'] = Array.from({ length: BACKUP_LIMITS.cards + 1 }, (_, index) =>
+          card(`c${String(index)}`, `word${String(index)}`, [], 'en'),
+        );
+      });
+
+      expect(await parseBackup(text, sha256)).toEqual({
+        ok: false,
+        errors: [{ path: 'data.cards', code: 'too_big' }],
+      });
+    });
+
+    it('refuses a profile name with control characters', async () => {
+      const text = await resealed((document) => {
+        document['profileName'] = `Léa${String.fromCodePoint(0x07)}`;
+      });
+
+      expect(codes(await parseBackup(text, sha256))).toEqual(['custom']);
+    });
   });
 });
