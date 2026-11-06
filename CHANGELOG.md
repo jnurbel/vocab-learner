@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-06
+
 ### Added
 
 - Design document (`docs/DESIGN.md`).
@@ -34,3 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 
 - pinyin-pro (MIT), zod (MIT), dexie (Apache-2.0); fake-indexeddb (Apache-2.0) for tests.
+
+[Unreleased]: https://github.com/jnurbel/vocab-learner/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/jnurbel/vocab-learner/releases/tag/v0.1.0
