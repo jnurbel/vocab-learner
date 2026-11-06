@@ -10,6 +10,7 @@ import {
   emptyData,
   label,
   metadata,
+  now,
   reviewState,
   sampleData,
   sha256,
@@ -153,6 +154,20 @@ describe('parseBackup', () => {
 
     it('accepts a backup without progress nor settings yet', async () => {
       const backup = await createBackup(emptyData(), metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
+    it('accepts the typed answers of the flashcards, meaning or word', async () => {
+      const data = sampleData();
+      data.sessions[0]?.results.push(
+        { cardId: 'c1', outcome: 'almost', exercise: 'typeMeaning', rating: 'hard', at: now },
+        { cardId: 'c2', outcome: 'wrong', exercise: 'typeEcho', rating: 'again', at: now },
+      );
+      const backup = await createBackup(data, metadata, sha256);
 
       expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
         ok: true,

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CARD_LIMITS } from '../card';
 import { LABEL_NAME_MAX_LENGTH } from '../label';
+import { EXERCISE_TYPES } from '../progressRecords';
 import { hexColor, identifier, safeText, singleLine } from '../safeText';
 import { BACKUP_FORMAT } from './backupDocument';
 
@@ -87,20 +88,7 @@ const rating = z.enum(['again', 'hard', 'good', 'easy']);
 const sessionResultSchema = z.strictObject({
   cardId: identifier,
   outcome: z.enum([...rating.options, 'correct', 'correctWithHint', 'almost', 'wrong']),
-  exercise: z
-    .enum([
-      'discovery',
-      'audioFlashcard',
-      'listenMeaning',
-      'listenType',
-      'toneEcho',
-      'bridgeMatch',
-      'sentenceListen',
-      'sentenceShuffle',
-      'typeEcho',
-      'seasonRush',
-    ])
-    .optional(),
+  exercise: z.enum(EXERCISE_TYPES).optional(),
   rating: rating.optional(),
   hintsUsed: count.optional(),
   responseMs: count.optional(),
