@@ -51,4 +51,34 @@ describe('dictationPlan', () => {
     expect(dictationPlan(cards, options({ wordCount: 6.5 })).words).toHaveLength(6);
     expect(dictationPlan(cards, options({ language: 'en' })).words).toHaveLength(2);
   });
+
+  it('shuffles the words with a seed: the same seed gives the same dictation', () => {
+    const first = dictationPlan(cards, options({ shuffle: true, seed: 'monday' }));
+    const again = dictationPlan(cards, options({ shuffle: true, seed: 'monday' }));
+    const other = dictationPlan(cards, options({ shuffle: true, seed: 'tuesday' }));
+
+    expect(ids(first.words)).toEqual(ids(again.words));
+    expect(ids(first.words)).not.toEqual(ids(other.words));
+    expect(ids(first.words)).not.toEqual(ids(chinese.slice(0, 10)));
+    expect(new Set(ids(first.words)).size).toBe(10);
+    expect(first.words.every((word) => word.language === 'zh')).toBe(true);
+  });
+
+  it('reads each word once, or twice on request', () => {
+    expect(dictationPlan(cards, options()).readingsPerWord).toBe(1);
+    expect(dictationPlan(cards, options({ readTwice: true })).readingsPerWord).toBe(2);
+  });
+
+  it('waits 5 seconds between words by default, 3, 8 or 12 on request, or for the learner', () => {
+    expect(dictationPlan(cards, options()).delayMs).toBe(5_000);
+    expect(dictationPlan(cards, options({ delay: 3 })).delayMs).toBe(3_000);
+    expect(dictationPlan(cards, options({ delay: 12 })).delayMs).toBe(12_000);
+    expect(dictationPlan(cards, options({ delay: 'manual' })).delayMs).toBeUndefined();
+  });
+
+  it('reads at a normal pace by default, slower or faster on request', () => {
+    expect(dictationPlan(cards, options()).rate).toBe(0.85);
+    expect(dictationPlan(cards, options({ speed: 'slow' })).rate).toBe(0.6);
+    expect(dictationPlan(cards, options({ speed: 'fast' })).rate).toBe(1);
+  });
 });
