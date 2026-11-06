@@ -1,6 +1,7 @@
 import type { Language } from '../card';
 import type { PinyinGenerator } from '../pinyinGeneration';
 import { characterDiff, type DiffPart } from './characterDiff';
+import { canonicalEnglish, normalizeEnglish } from './englishAnswer';
 
 export type CompareOutcome = 'correct' | 'almost' | 'wrong';
 
@@ -34,6 +35,25 @@ const ONLY_HAN = /^\p{Script=Han}+$/u;
 
 /** Checks a dictated word typed by the learner (GAME_DESIGN.md 6.2). */
 export async function compareAnswer(
+  answer: AnswerToCompare,
+  dependencies: CompareDependencies,
+): Promise<Comparison> {
+  return answer.language === 'zh'
+    ? compareChinese(answer, dependencies)
+    : Promise.resolve(compareEnglish(answer));
+}
+
+function compareEnglish({ expected, given }: AnswerToCompare): Comparison {
+  const wanted = normalizeEnglish(expected);
+  const typed = normalizeEnglish(given);
+  if (canonicalEnglish(typed) === canonicalEnglish(wanted)) {
+    // An accepted spelling is right as typed, even where it differs from the stored one.
+    return { outcome: 'correct', diff: characterDiff(typed, typed) };
+  }
+  return { outcome: 'wrong', diff: characterDiff(wanted, typed) };
+}
+
+async function compareChinese(
   { expected, given }: AnswerToCompare,
   { loadPinyin }: CompareDependencies,
 ): Promise<Comparison> {

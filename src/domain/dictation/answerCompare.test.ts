@@ -114,3 +114,39 @@ describe('compareAnswer in Chinese', () => {
     expect(loadPinyin).not.toHaveBeenCalled();
   });
 });
+
+const en = (expected: string, given: string, loadPinyin = pinyinLoader()) =>
+  compareAnswer({ language: 'en', expected, given }, { loadPinyin });
+
+describe('compareAnswer in English', () => {
+  it('ignores case, extra spaces and typographic apostrophes', async () => {
+    expect((await en('ice cream', '  Ice   CREAM ')).outcome).toBe('correct');
+    expect((await en("don't", 'don’t')).outcome).toBe('correct');
+    expect((await en('don’t', "DON'T")).outcome).toBe('correct');
+  });
+
+  it('accepts a verb with or without "to"', async () => {
+    expect((await en('to run', 'run')).outcome).toBe('correct');
+    expect((await en('run', 'to run')).outcome).toBe('correct');
+    expect((await en('to', '')).outcome).toBe('wrong');
+  });
+
+  it('marks a different word as wrong, with the diff of the letters', async () => {
+    const result = await en('cat', 'cut');
+
+    expect(result.outcome).toBe('wrong');
+    expect(result.diff).toEqual([
+      { kind: 'correct', given: 'c', expected: 'c' },
+      { kind: 'wrong', given: 'u', expected: 'a' },
+      { kind: 'correct', given: 't', expected: 't' },
+    ]);
+  });
+
+  it('never loads the pinyin', async () => {
+    const loadPinyin = pinyinLoader();
+
+    await en('cat', 'cut', loadPinyin);
+
+    expect(loadPinyin).not.toHaveBeenCalled();
+  });
+});
