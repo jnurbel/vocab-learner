@@ -68,14 +68,16 @@ export class VocabularyRepository {
     return this.db.labels.toArray();
   }
 
-  /** Stores the outcome of a rename, merge or deletion atomically. */
+  /** Stores the outcome of a rename, merge or deletion atomically; a removed label loses its path. */
   async applyLabelChanges(changes: LabelChanges): Promise<void> {
-    await this.db.transaction('rw', this.db.labels, this.db.cards, async () => {
+    const { labels, cards, pathProgress } = this.db;
+    await this.db.transaction('rw', labels, cards, pathProgress, async () => {
       const keptIds = new Set(changes.labels.map(({ id }) => id));
       const removedIds = (await this.db.labels.toCollection().primaryKeys()).filter(
         (id) => !keptIds.has(id),
       );
       await this.db.labels.bulkDelete(removedIds);
+      await this.db.pathProgress.where('labelId').anyOf(removedIds).delete();
       await this.db.labels.bulkPut(changes.labels);
       await this.db.cards.bulkPut(changes.cardsToUpdate.map(toStored));
     });

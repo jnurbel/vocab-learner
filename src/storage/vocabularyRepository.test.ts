@@ -153,6 +153,25 @@ describe('VocabularyRepository', () => {
     expect(await repository.cardsWithLabels(['animals'])).toEqual([]);
   });
 
+  it('drops the path progress of a removed label and keeps that of the others', async () => {
+    const lesson = label('lesson-3', 'Leçon 3');
+    await repository.saveLabel(lesson);
+    await repository.saveLabel(label('animals', 'Animaux'));
+    const database = new VocabularyDatabase(databaseName);
+    await database.pathProgress.bulkAdd([
+      { labelId: 'lesson-3', language: 'zh' },
+      { labelId: 'animals', language: 'zh' },
+      { labelId: 'animals', language: 'en' },
+    ]);
+
+    await repository.applyLabelChanges({ labels: [lesson], cardsToUpdate: [] });
+
+    expect(await database.pathProgress.toArray()).toEqual([
+      { labelId: 'lesson-3', language: 'zh' },
+    ]);
+    database.close();
+  });
+
   it('deletes a word and keeps the others', async () => {
     const cat = card('c1', '猫', []);
     const dog = card('c2', '狗', []);
