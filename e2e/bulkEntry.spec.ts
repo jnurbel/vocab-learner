@@ -29,7 +29,11 @@ test('a learner pastes a lesson, labels it, saves it and finds it again after a 
   // Keyboard only from here: tab to the label field, then to the save button.
   await page.getByLabel('Un mot par ligne').focus();
   await page.keyboard.press('Tab');
-  await expect(page.getByLabel('Nouveau label ou label existant (facultatif)')).toBeFocused();
+  await expect(
+    page
+      .getByRole('region', { name: 'Saisie en lot' })
+      .getByLabel('Nouveau label ou label existant (facultatif)'),
+  ).toBeFocused();
   await page.keyboard.type('Leçon 1');
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: 'Ajouter 3 mots' })).toBeFocused();

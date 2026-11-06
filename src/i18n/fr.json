@@ -3,6 +3,29 @@
     "title": "vocab-learner",
     "tagline": "Maîtrise le vocabulaire de ta leçon, en chinois et en anglais."
   },
+  "wordForm": {
+    "title": "Ajouter un mot",
+    "editTitle": "Modifier « {term} »",
+    "term": "Mot (hanzi ou anglais)",
+    "pinyin": "Pinyin",
+    "pinyinHelp": "Proposé automatiquement et modifiable. Tu peux aussi taper les tons en chiffres : ni3 hao3.",
+    "translation": "Sens",
+    "example": "Exemple (facultatif)",
+    "labelsLegend": "Labels de ce mot",
+    "add": "Ajouter le mot",
+    "saveChanges": "Enregistrer les modifications",
+    "cancel": "Annuler",
+    "created": "« {term} » ajouté.",
+    "labelsAdded": "« {term} » existait déjà : labels ajoutés.",
+    "alreadyPresent": "« {term} » existe déjà avec ces labels : rien à ajouter.",
+    "updated": "« {term} » modifié.",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été modifié. Réessaie.",
+    "errors": {
+      "required": "Champ obligatoire.",
+      "tooLong": "Texte trop long.",
+      "duplicate": "Ce mot existe déjà dans ta liste."
+    }
+  },
   "bulkEntry": {
     "title": "Saisie en lot",
     "inputLabel": "Un mot par ligne",

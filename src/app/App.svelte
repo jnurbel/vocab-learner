@@ -2,9 +2,10 @@
   import { onMount } from 'svelte';
   import type { Card } from '../domain/card';
   import type { Label } from '../domain/label';
+  import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
   import BulkEntry from '../features/import/BulkEntry.svelte';
-  import type { BulkEntrySave } from '../features/import/bulkEntrySave';
+  import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
   import { loadPinyinGenerator } from '../services/pinyinLoader';
   import { persistenceRequester } from '../services/storagePersistence';
@@ -37,7 +38,10 @@
     void reload(repository);
   });
 
-  async function save({ newLabel, changes }: BulkEntrySave) {
+  const newId = () => crypto.randomUUID();
+  const clock = () => new Date().toISOString();
+
+  async function save({ newLabel, changes }: VocabularySave) {
     if (repository === undefined) {
       throw new Error('Storage is not ready');
     }
@@ -51,12 +55,22 @@
   <h1>{fr.app.title}</h1>
   <p>{fr.app.tagline}</p>
 
+  <WordForm
+    idPrefix="word-entry"
+    existingCards={cards}
+    existingLabels={labels}
+    loadPinyin={loadPinyinGenerator}
+    {newId}
+    {clock}
+    onSave={save}
+  />
+
   <BulkEntry
     existingCards={cards}
     existingLabels={labels}
     loadPinyin={loadPinyinGenerator}
-    newId={() => crypto.randomUUID()}
-    clock={() => new Date().toISOString()}
+    {newId}
+    {clock}
     onSave={save}
   />
 

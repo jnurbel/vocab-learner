@@ -5,6 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import fr from '../i18n/fr.json';
 import App from './App.svelte';
 
+function bulkEntry(): HTMLElement {
+  return screen.getByRole('region', { name: fr.bulkEntry.title });
+}
+
 describe('App', () => {
   it('renders the application title from the French strings', () => {
     render(App, { databaseName: 'app-test-title' });
@@ -38,7 +42,7 @@ describe('App', () => {
 
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('狗 || chien\nhorse | cheval');
-    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'Animaux');
+    await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), 'Animaux');
     await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
     await screen.findByRole('status');
     unmount();
@@ -50,7 +54,7 @@ describe('App', () => {
     await user.selectOptions(screen.getByLabelText(fr.wordList.languageFilter), fr.languages.en);
     expect(within(list).queryByRole('row', { name: /狗/ })).toBeNull();
     expect(within(list).getByRole('row', { name: /horse/ })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: 'Animaux' })).toBeInTheDocument();
+    expect(within(bulkEntry()).getByRole('checkbox', { name: 'Animaux' })).toBeInTheDocument();
   });
 
   it('asks the browser to keep the data once a first word is saved', async () => {
@@ -65,5 +69,20 @@ describe('App', () => {
     await screen.findByRole('status');
 
     expect(requestPersistence).toHaveBeenCalled();
+  });
+
+  it('stores a word entered alone and lists it with its proposed pinyin', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-word-form' });
+
+    await user.type(screen.getByLabelText(fr.wordForm.term), '书');
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText(fr.wordForm.pinyin)).toHaveValue('shū');
+    });
+    await user.type(screen.getByLabelText(fr.wordForm.translation), 'livre');
+    await user.click(screen.getByRole('button', { name: fr.wordForm.add }));
+
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /书/ })).toHaveTextContent('shū');
   });
 });

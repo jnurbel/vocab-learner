@@ -13,7 +13,7 @@
   import { PinyinSource } from '../pinyinSource.svelte';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
-  import type { BulkEntrySave } from './bulkEntrySave';
+  import type { VocabularySave } from '../vocabularySave';
 
   interface Props {
     existingCards: readonly Card[];
@@ -21,7 +21,7 @@
     loadPinyin: () => Promise<PinyinGenerator>;
     newId: () => string;
     clock: () => string;
-    onSave: (save: BulkEntrySave) => Promise<void>;
+    onSave: (save: VocabularySave) => Promise<void>;
   }
 
   const { existingCards, existingLabels, loadPinyin, newId, clock, onSave }: Props = $props();
