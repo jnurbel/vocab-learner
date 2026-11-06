@@ -34,6 +34,6 @@ test('the first load does not download the pinyin library, fetched only when a p
 
   await page.getByLabel('Un mot par ligne').fill('你好 || bonjour');
 
-  await expect(page.getByRole('table', { name: 'Mots nouveaux' })).toContainText('nǐ hǎo');
+  await expect(page.getByLabel('Pinyin, ligne 1')).toHaveValue('nǐ hǎo');
   expect(scripts.some((url) => url.includes('pinyinProGenerator'))).toBe(true);
 });

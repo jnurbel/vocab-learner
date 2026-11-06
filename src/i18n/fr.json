@@ -31,10 +31,22 @@
     "inputLabel": "Un mot par ligne",
     "inputHelp": "Formats : 你好 | nǐ hǎo | bonjour, 你好 || bonjour (pinyin automatique), apple | pomme. Séparateurs : |, tabulation ou ;.",
     "labelsLegend": "Labels à poser sur ces mots",
-    "newWordsCaption": "Mots nouveaux",
-    "columnTerm": "Mot",
-    "columnPinyin": "Pinyin",
-    "columnTranslation": "Sens",
+    "previewCaption": "Aperçu, modifiable avant l’ajout",
+    "columnLine": "Ligne",
+    "columns": {
+      "term": "Mot",
+      "pinyin": "Pinyin",
+      "translation": "Sens"
+    },
+    "columnStatus": "État",
+    "columnExclude": "Exclure",
+    "cellLabel": "{column}, ligne {line}",
+    "excludeLine": "Exclure la ligne {line}",
+    "status": {
+      "new": "Nouveau",
+      "existing": "Existe déjà",
+      "excluded": "Exclu"
+    },
     "existingWords": "{count} mot(s) existent déjà : ils ne seront pas dupliqués, ils recevront seulement le label.",
     "errorsTitle": "Lignes à corriger",
     "errorLine": "Ligne {line} : {reason}",
