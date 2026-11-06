@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- One-word entry form: term, pinyin proposed automatically and editable (`ni3` converted to `nǐ`), meaning, optional example and labels (existing or new). An existing word is never duplicated: it only receives the missing labels.
+- Editable bulk entry preview: correct the term, pinyin or meaning of a line, or exclude it; the import plan is recalculated and corrected lines are checked again.
+- Edit a word from the word list (term, pinyin, meaning, example, labels); a new term that duplicates another word is refused. Delete a word after confirmation.
+- Label management screen: labels in alphabetical order with their word count; rename, merge and delete (words are kept).
+- Pinyin tones in colour (1 red, 2 green, 3 blue, 4 purple, neutral grey), always alongside the tone mark, with an AA contrast in light and dark themes; syllables written together are split.
+- Persistent storage requested from the browser (`navigator.storage.persist()`) after the first save; a refusal or a missing API is silent.
+- `THIRD_PARTY_LICENSES` with the licenses of pinyin-pro, zod and dexie, linked from the README.
+- End-to-end tests of the one-word entry, word editing and deletion, and label management journeys.
+
+### Changed
+
+- pinyin-pro is loaded on demand, only when a Chinese word needs a pinyin: the initial JavaScript drops from 441.46 kB (195.32 kB gzip) to 182.64 kB (61.57 kB gzip), new screens included; pinyin-pro is a separate 287.49 kB (141.98 kB gzip) chunk.
+- In the bulk entry, the label choice now comes after the preview, in the order of the task.
+
 ## [0.1.0] - 2026-11-06
 
 ### Added
