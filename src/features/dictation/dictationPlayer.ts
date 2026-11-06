@@ -1,5 +1,5 @@
 import type { Language } from '../../domain/card';
-import type { DictationPlan } from '../../domain/dictation/dictationPlan';
+import { DICTATION_RATES, type DictationPlan } from '../../domain/dictation/dictationPlan';
 import type { Speaker } from '../../services/tts/speaker';
 
 export interface DictationWord {
@@ -51,6 +51,8 @@ export class DictationPlayer {
   private readonly listeners = new Set<(snapshot: PlayerSnapshot) => void>();
   private readonly timers: PlayerTimers;
   private timer: unknown;
+  /** What a resume goes back to. */
+  private pausedFrom: 'speaking' | 'waiting' = 'speaking';
   /** Bumped by every action, so that a reading ended by that action is ignored. */
   private run = 0;
 
@@ -81,12 +83,68 @@ export class DictationPlayer {
   }
 
   next(): void {
-    if (this.state.status !== 'finished') {
+    if (this.isStarted()) {
       this.read(this.state.index + 1);
     }
   }
 
-  private read(index: number): void {
+  previous(): void {
+    if (this.isStarted()) {
+      this.read(Math.max(0, this.state.index - 1));
+    }
+  }
+
+  pause(): void {
+    const { status } = this.state;
+    if (status === 'speaking' || status === 'waiting') {
+      this.interrupt();
+      this.pausedFrom = status;
+      this.update({ status: 'paused' });
+    }
+  }
+
+  resume(): void {
+    if (this.state.status !== 'paused') {
+      return;
+    }
+    if (this.pausedFrom === 'speaking') {
+      this.read(this.state.index);
+    } else {
+      this.wait(this.state.remainingMs);
+    }
+  }
+
+  togglePause(): void {
+    if (this.state.status === 'paused') {
+      this.resume();
+    } else {
+      this.pause();
+    }
+  }
+
+  /** Reads the current word once more, slowly on request; replaying is never a hint. */
+  repeat({ slow = false }: { slow?: boolean } = {}): void {
+    if (!this.isStarted()) {
+      return;
+    }
+    const rate = slow ? DICTATION_RATES.slow : this.settings.rate;
+    this.read(this.state.index, { times: 1, rate });
+  }
+
+  /** Ends the dictation: nothing more is read. */
+  stop(): void {
+    this.interrupt();
+    this.update({ status: 'finished', remainingMs: undefined });
+  }
+
+  private isStarted(): boolean {
+    return this.state.status !== 'idle' && this.state.status !== 'finished';
+  }
+
+  private read(
+    index: number,
+    { times = this.settings.readingsPerWord, rate = this.settings.rate } = {},
+  ): void {
     this.interrupt();
     const word = this.words[index];
     if (word === undefined) {
@@ -95,12 +153,16 @@ export class DictationPlayer {
     }
     const run = this.run;
     this.update({ status: 'speaking', index, remainingMs: undefined });
-    void this.speakTimes(word, this.settings.readingsPerWord, run);
+    void this.speakTimes(word, { times, rate }, run);
   }
 
-  private async speakTimes(word: DictationWord, times: number, run: number): Promise<void> {
+  private async speakTimes(
+    word: DictationWord,
+    { times, rate }: { times: number; rate: number },
+    run: number,
+  ): Promise<void> {
     for (let reading = 0; reading < times && run === this.run; reading++) {
-      await this.deps.speaker.speak(word.text, word.language, { rate: this.settings.rate });
+      await this.deps.speaker.speak(word.text, word.language, { rate });
     }
     if (run === this.run) {
       this.wait(this.settings.delayMs);
