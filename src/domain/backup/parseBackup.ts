@@ -5,6 +5,7 @@ import {
   fingerprint,
   type BackupDocument,
 } from './backupDocument';
+import { findInconsistencies } from './backupConsistency';
 import { BACKUP_LIMITS, backupDocumentSchema } from './backupSchema';
 import type { Sha256 } from './sha256';
 
@@ -55,7 +56,8 @@ export async function parseBackup(text: string, sha256: Sha256): Promise<Outcome
       parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), code: issue.code })),
     );
   }
-  return success(parsed.data);
+  const inconsistencies = findInconsistencies(parsed.data.data);
+  return inconsistencies.length > 0 ? failure(inconsistencies) : success(parsed.data);
 }
 
 /**

@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { createBackup, serializeBackup, type BackupDocument } from './backupDocument';
-import { card, emptyData, metadata, sampleData, sha256 } from './backup.fixtures';
+import {
+  createBackup,
+  serializeBackup,
+  type BackupData,
+  type BackupDocument,
+} from './backupDocument';
+import {
+  card,
+  emptyData,
+  label,
+  metadata,
+  reviewState,
+  sampleData,
+  sha256,
+} from './backup.fixtures';
 import { BACKUP_LIMITS } from './backupSchema';
 import { canonicalJson } from './canonicalJson';
 import { parseBackup } from './parseBackup';
@@ -256,6 +269,107 @@ describe('parseBackup', () => {
       });
 
       expect(codes(await parseBackup(text, sha256))).toEqual(['custom']);
+    });
+  });
+
+  describe('consistency', () => {
+    async function issuesOf(edit: (data: BackupData) => void) {
+      const data = sampleData();
+      edit(data);
+      const backup = await createBackup(data, metadata, sha256);
+      const parsed = await parseBackup(serializeBackup(backup), sha256);
+      return parsed.ok ? [] : parsed.errors;
+    }
+
+    it.each<[string, (data: BackupData) => void, string, string]>([
+      [
+        'the same word twice',
+        (data) => data.cards.push(card('c3', '猫')),
+        'data.cards.2.term',
+        'duplicateWord',
+      ],
+      [
+        'the same English word with another case',
+        (data) => data.cards.push(card('c3', 'Apple', [], 'en')),
+        'data.cards.2.term',
+        'duplicateWord',
+      ],
+      [
+        'two words with the same id',
+        (data) => data.cards.push(card('c1', '狗')),
+        'data.cards.2.id',
+        'duplicateCard',
+      ],
+      [
+        'two labels with the same id',
+        (data) => data.labels.push(label('animals', 'Autres')),
+        'data.labels.1.id',
+        'duplicateLabel',
+      ],
+      [
+        'a word carrying an unknown label',
+        (data) => data.cards.push(card('c3', '狗', ['ghost'])),
+        'data.cards.2.labelIds.0',
+        'unknownLabel',
+      ],
+      [
+        'the progress of an unknown word',
+        (data) => data.reviewStates.push(reviewState('ghost')),
+        'data.reviewStates.1.cardId',
+        'unknownCard',
+      ],
+      [
+        'two progress records for one word',
+        (data) => data.reviewStates.push(reviewState('c1')),
+        'data.reviewStates.1.cardId',
+        'duplicateReviewState',
+      ],
+      [
+        'the same ignored term twice',
+        (data) => data.ignoredTerms.push({ language: 'en', term: 'the' }),
+        'data.ignoredTerms.1.term',
+        'duplicateIgnoredTerm',
+      ],
+      [
+        'two sessions with the same id',
+        (data) =>
+          data.sessions.push({
+            id: 's1',
+            language: 'en',
+            startedAt: '2026-11-04T10:00:00Z',
+            results: [],
+          }),
+        'data.sessions.1.id',
+        'duplicateSession',
+      ],
+      [
+        'the path of an unknown label',
+        (data) => data.pathProgress.push({ labelId: 'ghost', language: 'zh' }),
+        'data.pathProgress.1.labelId',
+        'unknownLabel',
+      ],
+      [
+        'the same path twice',
+        (data) => data.pathProgress.push({ labelId: 'animals', language: 'zh' }),
+        'data.pathProgress.1.labelId',
+        'duplicatePath',
+      ],
+    ])('refuses %s', async (_case, edit, path, code) => {
+      expect(await issuesOf(edit)).toEqual([{ path, code }]);
+    });
+
+    it('accepts the same path for both languages and sessions about deleted words', async () => {
+      const issues = await issuesOf((data) => {
+        data.pathProgress.push({ labelId: 'animals', language: 'en' });
+        data.sessions.push({
+          id: 's2',
+          language: 'zh',
+          startedAt: '2026-11-04T10:00:00Z',
+          results: [{ cardId: 'deleted-word', outcome: 'wrong' }],
+        });
+      });
+
+      expect(issues).toEqual([]);
     });
   });
 });
