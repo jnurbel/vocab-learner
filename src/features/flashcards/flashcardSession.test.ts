@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Card } from '../../domain/card';
 import type { SessionRecord } from '../../domain/progressRecords';
 import { card, FakeStore, reviewed, srs } from './flashcards.fixtures';
-import { startFlashcardSession, type FlashcardStore } from './flashcardSession';
+import { loadStudyOutlook, startFlashcardSession, type FlashcardStore } from './flashcardSession';
 
 const morning = new Date('2026-11-06T08:00:00Z');
 
@@ -206,5 +206,36 @@ describe('a flashcard session', () => {
     const session = await start(new FakeStore(), []);
 
     await expect(session.answer('good')).rejects.toThrow('finished');
+  });
+});
+
+describe('the study outlook', () => {
+  it('explains the queue of the selection from the stored progress and the daily quota', async () => {
+    const earlier: SessionRecord = {
+      id: 'earlier',
+      language: 'zh',
+      startedAt: '2026-11-06T07:00:00.000Z',
+      results: [
+        { cardId: 'x', outcome: 'correct', exercise: 'discovery', at: '2026-11-06T07:01:00.000Z' },
+      ],
+    };
+    const store = new FakeStore({
+      reviewStates: [reviewed('due'), reviewed('done', { lastRatedDay: '2026-11-06' })],
+      recentSessions: [earlier],
+      settings: { newPerDay: 3 },
+    });
+    const cards = [card('due'), card('done'), card('n1'), card('n2'), card('n3')];
+
+    const outlook = await loadStudyOutlook(
+      { cards, language: 'zh', labelIds: [] },
+      { store, srs, clock: () => morning },
+    );
+
+    expect(outlook).toMatchObject({
+      dueToday: 1,
+      reviewedToday: 1,
+      newAvailableToday: 2,
+      newWaiting: 1,
+    });
   });
 });

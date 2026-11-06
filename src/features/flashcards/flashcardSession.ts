@@ -9,6 +9,7 @@ import { buildReviewQueue, type ReviewQueueItem } from '../../domain/srs/reviewQ
 import type { Outcome, Stage } from '../../domain/srs/reviewState';
 import { stageOf } from '../../domain/srs/stage';
 import { studyDay } from '../../domain/srs/studyDay';
+import { summarizeStudyOutlook, type StudyOutlook } from '../../domain/srs/studyOutlook';
 import { newPerDayOf } from '../../domain/studySettings';
 import type { StudyRepository } from '../../storage/studyRepository';
 
@@ -61,31 +62,44 @@ export interface AnswerOptions {
   hintsUsed?: number;
 }
 
+/** What today's queue is built from: the stored progress read now, and the learner's day. */
+async function loadStudyContext(
+  selection: FlashcardSelection,
+  { store, srs, clock }: Pick<FlashcardSessionDependencies, 'store' | 'srs' | 'clock'>,
+) {
+  const now = clock();
+  const since = new Date(now.getTime() - RECENT_SESSIONS_MS).toISOString();
+  const data = await store.load(since);
+  const today = studyDay(now, data.progress?.lastActiveDate, srs);
+  return {
+    now,
+    today,
+    cards: selection.cards,
+    states: data.reviewStates,
+    newPerDay: newPerDayOf(data.settings),
+    newIntroducedToday: countNewWordsIntroduced(data.recentSessions, today, srs),
+    language: selection.language,
+    labelIds: selection.labelIds,
+  };
+}
+
 /** Starts today's flashcards: the day and the queue are fixed now, for the whole session. */
 export async function startFlashcardSession(
   selection: FlashcardSelection,
   deps: FlashcardSessionDependencies,
 ): Promise<FlashcardSession> {
-  const now = deps.clock();
-  const since = new Date(now.getTime() - RECENT_SESSIONS_MS).toISOString();
-  const data = await deps.store.load(since);
-  const today = studyDay(now, data.progress?.lastActiveDate, deps.srs);
+  const context = await loadStudyContext(selection, deps);
   const id = deps.newId();
-  const items = buildReviewQueue(
-    {
-      cards: selection.cards,
-      states: data.reviewStates,
-      now,
-      today,
-      newPerDay: newPerDayOf(data.settings),
-      newIntroducedToday: countNewWordsIntroduced(data.recentSessions, today, deps.srs),
-      language: selection.language,
-      labelIds: selection.labelIds,
-      seed: id,
-    },
-    deps.srs,
-  );
-  return new FlashcardSession(id, today, items, selection, deps);
+  const items = buildReviewQueue({ ...context, seed: id }, deps.srs);
+  return new FlashcardSession(id, context.today, items, selection, deps);
+}
+
+/** Explains what a session on this selection would hold today, and what comes next. */
+export async function loadStudyOutlook(
+  selection: FlashcardSelection,
+  deps: Pick<FlashcardSessionDependencies, 'store' | 'srs' | 'clock'>,
+): Promise<StudyOutlook> {
+  return summarizeStudyOutlook(await loadStudyContext(selection, deps), deps.srs);
 }
 
 /** One pass through the queue; every answer is stored as soon as it is given. */
