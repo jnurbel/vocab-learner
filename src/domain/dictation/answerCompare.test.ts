@@ -185,6 +185,22 @@ describe('compareAnswer in English', () => {
     ]);
   });
 
+  it('tolerates one typo in a word of six letters or more as almost right', async () => {
+    const result = await en('necessary', 'neccessary');
+
+    expect(result.outcome).toBe('almost');
+    expect(result.diff).toContainEqual({ kind: 'extra', given: 'c' });
+    expect((await en('purple', 'purpel')).outcome).toBe('wrong');
+    expect((await en('orange', 'orang')).outcome).toBe('almost');
+    expect((await en('to listen', 'lisen')).outcome).toBe('almost');
+  });
+
+  it('does not tolerate a typo in a word shorter than six letters', async () => {
+    expect((await en('house', 'hause')).outcome).toBe('wrong');
+    expect((await en('a cat', 'a cut')).outcome).toBe('wrong');
+    expect((await en('1000000', '1000001')).outcome).toBe('wrong');
+  });
+
   it('never loads the pinyin', async () => {
     const loadPinyin = pinyinLoader();
 

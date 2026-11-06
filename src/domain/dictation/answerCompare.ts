@@ -1,6 +1,6 @@
 import type { Language } from '../card';
 import type { PinyinGenerator } from '../pinyinGeneration';
-import { characterDiff, type DiffPart } from './characterDiff';
+import { characterDiff, editDistance, type DiffPart } from './characterDiff';
 import { canonicalEnglish, normalizeEnglish } from './englishAnswer';
 
 export type CompareOutcome = 'correct' | 'almost' | 'wrong';
@@ -31,6 +31,9 @@ export interface Comparison {
 const FULL_WIDTH = /[！-～]/g;
 const FULL_WIDTH_OFFSET = 0xfee0;
 const WHITESPACE = /\s+/gu;
+const LETTER = /\p{L}/gu;
+/** A single typo is tolerated in words at least this long (GAME_DESIGN.md 6.2). */
+const TYPO_MIN_LETTERS = 6;
 const ONLY_HAN = /^\p{Script=Han}+$/u;
 
 /** Checks a dictated word typed by the learner (GAME_DESIGN.md 6.2). */
@@ -46,11 +49,16 @@ export async function compareAnswer(
 function compareEnglish({ expected, given }: AnswerToCompare): Comparison {
   const wanted = normalizeEnglish(expected);
   const typed = normalizeEnglish(given);
-  if (canonicalEnglish(typed) === canonicalEnglish(wanted)) {
+  const canonicalWanted = canonicalEnglish(wanted);
+  const canonicalTyped = canonicalEnglish(typed);
+  if (canonicalTyped === canonicalWanted) {
     // An accepted spelling is right as typed, even where it differs from the stored one.
     return { outcome: 'correct', diff: characterDiff(typed, typed) };
   }
-  return { outcome: 'wrong', diff: characterDiff(wanted, typed) };
+  const isTypo =
+    letterCount(canonicalWanted) >= TYPO_MIN_LETTERS &&
+    editDistance(canonicalWanted, canonicalTyped) === 1;
+  return { outcome: isTypo ? 'almost' : 'wrong', diff: characterDiff(wanted, typed) };
 }
 
 async function compareChinese(
@@ -78,6 +86,10 @@ async function soundsAlike(
   const sound = (hanzi: string) =>
     pinyin(hanzi).normalize('NFC').toLowerCase().replace(WHITESPACE, '');
   return sound(typed) === sound(wanted);
+}
+
+function letterCount(text: string): number {
+  return text.match(LETTER)?.length ?? 0;
 }
 
 function normalizeChinese(text: string): string {

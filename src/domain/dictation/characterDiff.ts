@@ -31,6 +31,10 @@ class DistanceTable {
     return Number(this.cells[row * this.width + column]);
   }
 
+  get distance(): number {
+    return this.cost(this.expected.length, this.given.length);
+  }
+
   private computed(row: number, column: number): number {
     if (row === 0 || column === 0) {
       return row + column;
@@ -42,6 +46,11 @@ class DistanceTable {
       this.cost(row, column - 1) + 1,
     );
   }
+}
+
+/** Number of characters to insert, delete or replace to turn `given` into `expected`. */
+export function editDistance(expected: string, given: string): number {
+  return new DistanceTable(Array.from(expected), Array.from(given)).distance;
 }
 
 /** The character before `position`, empty at the start. */
