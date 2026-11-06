@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+    # 'edited' re-runs the checks when the PR title is fixed (the title is linted below).
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [dev, master]
 
@@ -160,6 +162,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: npx --no-install commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
       - name: Lint the pull request title (used as the squash-merge commit message)
+        # Dependabot titles ('Bump x from a to b') are generated and not under our control.
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: printf '%s\n' "$PR_TITLE" | npx --no-install commitlint --verbose
