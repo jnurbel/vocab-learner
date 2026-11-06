@@ -96,6 +96,23 @@ function parseLine(line: string, lineNumber: number): Result<BulkEntry, BulkLine
   }
   const [term = '', pinyin = '', translation = ''] =
     fields.length === 2 ? [fields[0], '', fields[1]] : fields;
+  return checkEntry(lineNumber, { term, pinyin, translation });
+}
+
+export interface EntryFields {
+  term: string;
+  pinyin: string;
+  translation: string;
+}
+
+/** Checks the fields of one line, typed or corrected in the preview; blank pinyin is absent. */
+export function checkEntry(
+  lineNumber: number,
+  fields: EntryFields,
+): Result<BulkEntry, BulkLineReason> {
+  const term = fields.term.trim();
+  const pinyin = fields.pinyin.trim();
+  const translation = fields.translation.trim();
   const language = detectLanguage(term);
   const problem = findProblem(language, term, pinyin, translation);
   if (problem !== undefined) {
