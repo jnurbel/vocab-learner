@@ -22,7 +22,13 @@ export interface Reading {
 /** A speaker whose readings end only when the test says so. */
 export class FakeSpeaker implements Speaker {
   readonly readings: Reading[] = [];
-  voice = true;
+
+  /** `autoEnd`: every reading ends at once, for screen tests. */
+  constructor(
+    public voice = true,
+    private readonly autoEnd = false,
+  ) {}
+
   readonly cancel = vi.fn(() => {
     // A cancelled reading resolves quietly, like an interrupted utterance.
     for (const reading of this.readings) {
@@ -35,7 +41,20 @@ export class FakeSpeaker implements Speaker {
   }
 
   speak(text: string, language: Language, options: SpeakOptions = {}): Promise<void> {
+    if (!this.voice) {
+      this.readings.push({
+        text,
+        language,
+        rate: options.rate,
+        end: () => undefined,
+        fail: () => undefined,
+      });
+      return Promise.reject(new Error(`No voice for ${language}`));
+    }
     return new Promise((resolve, reject) => {
+      if (this.autoEnd) {
+        resolve();
+      }
       this.readings.push({
         text,
         language,

@@ -1,0 +1,362 @@
+import { fireEvent, render, screen, within } from '@testing-library/svelte';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import type { Card } from '../../domain/card';
+import type { Label } from '../../domain/label';
+import type { PinyinGenerator } from '../../domain/pinyinGeneration';
+import fr from '../../i18n/fr.json';
+import type { StudyData } from '../../storage/studyRepository';
+import { card, FakeSpeaker, FakeStore, srs } from './dictation.fixtures';
+import Dictation from './Dictation.svelte';
+import { startDictationSession, type DictationSelection } from './dictationSession';
+
+const morning = new Date('2026-11-06T08:00:00Z');
+
+const zai = card('zai', { term: '再', pinyin: 'zài', translation: 'encore', labelIds: ['l7'] });
+const cat = card('cat', { term: '猫', pinyin: 'māo', translation: 'chat', labelIds: ['l7'] });
+const dog = card('dog', { term: '狗', pinyin: 'gǒu', translation: 'chien' });
+const necessary = card('necessary', {
+  language: 'en',
+  term: 'necessary',
+  translation: 'nécessaire',
+});
+const lesson: Label = {
+  id: 'l7',
+  name: 'Leçon 7',
+  isFocus: false,
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+};
+
+const PINYIN: Readonly<Record<string, string>> = { 再: 'zài', 在: 'zài', 猫: 'māo', 狗: 'gǒu' };
+const fakePinyin: PinyinGenerator = (hanzi) =>
+  Array.from(hanzi, (char) => PINYIN[char] ?? char).join(' ');
+
+function setup({
+  cards = [zai, cat, dog, necessary],
+  data = {},
+  speaker = new FakeSpeaker(true, true),
+  defaultMode,
+}: {
+  cards?: Card[];
+  data?: Partial<StudyData>;
+  speaker?: FakeSpeaker;
+  defaultMode?: 'keyboard' | 'paper';
+} = {}) {
+  const store = new FakeStore(data);
+  const startSession = vi.fn((selection: DictationSelection) =>
+    startDictationSession(selection, { store, srs, clock: () => morning, newId: () => 'd1' }),
+  );
+  const onSessionEnd = vi.fn();
+  render(Dictation, {
+    cards,
+    labels: [lesson],
+    speaker,
+    startSession,
+    loadPinyin: () => Promise.resolve(fakePinyin),
+    onSessionEnd,
+    newSeed: () => 'seed',
+    ...(defaultMode === undefined ? {} : { defaultMode }),
+  });
+  return { store, startSession, speaker, onSessionEnd, user: userEvent.setup() };
+}
+
+const region = () => screen.getByRole('region', { name: fr.dictation.title });
+const answerField = () => screen.getByRole('textbox', { name: fr.dictation.answerLabel });
+
+async function startDictation(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: fr.dictation.start }));
+  return screen.findByRole('textbox', { name: fr.dictation.answerLabel });
+}
+
+describe('Dictation, start screen', () => {
+  it('offers the language, labels, word count, reading options and answer mode', () => {
+    setup();
+
+    expect(screen.getByRole('radio', { name: fr.languages.zh })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Leçon 7' })).not.toBeChecked();
+    expect(screen.getByRole('spinbutton', { name: fr.dictation.wordCount })).toHaveValue(10);
+    expect(screen.getByRole('checkbox', { name: fr.dictation.shuffle })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: fr.dictation.readTwice })).not.toBeChecked();
+    expect(screen.getByRole('combobox', { name: fr.dictation.delay })).toHaveValue('5');
+    expect(screen.getByRole('radio', { name: fr.dictation.speeds.normal })).toBeChecked();
+    expect(screen.getByRole('radio', { name: fr.dictation.modes.keyboard })).toBeChecked();
+  });
+
+  it('can default to answering on paper, e.g. on a phone', () => {
+    setup({ defaultMode: 'paper' });
+
+    expect(screen.getByRole('radio', { name: fr.dictation.modes.paper })).toBeChecked();
+  });
+
+  it('dictates the words of the chosen labels', async () => {
+    const { user, startSession } = setup();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7' }));
+    await startDictation(user);
+
+    expect(startSession).toHaveBeenCalledWith({
+      language: 'zh',
+      labelIds: ['l7'],
+      words: [zai, cat],
+    });
+  });
+
+  it('says so when no word matches the choice', async () => {
+    const { user, startSession } = setup({ cards: [necessary] });
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.start }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(fr.dictation.noWords);
+    expect(startSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('Dictation, answering with the keyboard', () => {
+  it('reads the word, focuses the answer field, and accepts the right hanzi', async () => {
+    const { user, speaker, store } = setup();
+    const field = await startDictation(user);
+
+    expect(field).toHaveFocus();
+    expect(field).toHaveAttribute('lang', 'zh-CN');
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 1 sur 3');
+    expect(speaker.last()).toMatchObject({ text: '再', language: 'zh', rate: 0.85 });
+    expect(within(region()).queryByText('再')).toBeNull();
+
+    await user.type(field, '再{Enter}');
+
+    expect(await screen.findByText(fr.dictation.correct)).toBeVisible();
+    expect(store.answers[0]?.result).toMatchObject({
+      cardId: 'zai',
+      outcome: 'correct',
+      rating: 'good',
+      exercise: 'listenType',
+      answer: '再',
+    });
+    await user.click(screen.getByRole('button', { name: fr.dictation.continue }));
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 2 sur 3');
+    expect(answerField()).toHaveValue('');
+    expect(answerField()).toHaveFocus();
+    expect(speaker.last().text).toBe('猫');
+  });
+});
+
+describe('Dictation, input method (IME)', () => {
+  it('never validates on the Enter that confirms a composition', async () => {
+    const { user, store } = setup();
+    const field = await startDictation(user);
+
+    await fireEvent.compositionStart(field);
+    await fireEvent.input(field, { target: { value: '再' } });
+    await fireEvent.keyDown(field, { key: 'Enter' });
+    await fireEvent.compositionEnd(field);
+    await fireEvent.keyDown(field, { key: 'Enter', isComposing: true });
+    await fireEvent.keyDown(field, { key: 'Enter', keyCode: 229 });
+    expect(screen.queryByText(fr.dictation.correct)).toBeNull();
+    expect(store.answers).toHaveLength(0);
+
+    await fireEvent.keyDown(field, { key: 'Enter' });
+    expect(await screen.findByText(fr.dictation.correct)).toBeVisible();
+  });
+
+  it('does not validate a blank answer', async () => {
+    const { user, store } = setup();
+    const field = await startDictation(user);
+
+    await user.type(field, '   {Enter}');
+
+    expect(store.answers).toHaveLength(0);
+    expect(field).toHaveFocus();
+  });
+});
+
+describe('Dictation, feedback', () => {
+  it('explains a same-sounding character, shows the diff, and stores a wrong answer', async () => {
+    const { user, store, speaker } = setup();
+    const field = await startDictation(user);
+
+    await user.type(field, '在{Enter}');
+
+    expect(await screen.findByText('Faux. La réponse était 再.')).toBeVisible();
+    expect(screen.getByText('Bon son, mauvais caractère : 在 au lieu de 再.')).toBeVisible();
+    expect(screen.getByRole('listitem', { name: '在, faux, attendu 再' })).toBeVisible();
+    expect(within(region()).getByText('zài')).toBeVisible();
+    expect(within(region()).getByText('encore')).toBeVisible();
+    expect(store.answers[0]?.result).toMatchObject({ outcome: 'wrong', rating: 'again' });
+    // The word is read again after a mistake.
+    expect(speaker.texts).toEqual(['再', '再']);
+    expect(screen.getByRole('button', { name: fr.dictation.continue })).toHaveFocus();
+  });
+
+  it('says almost for one typo in a long English word', async () => {
+    const { user, store } = setup({ cards: [necessary] });
+    await user.click(screen.getByRole('radio', { name: fr.languages.en }));
+    const field = await startDictation(user);
+    expect(field).toHaveAttribute('lang', 'en');
+
+    await user.type(field, 'neccessary{Enter}');
+
+    expect(await screen.findByText('Presque : necessary.')).toBeVisible();
+    expect(store.answers[0]?.result).toMatchObject({ outcome: 'almost', rating: 'hard' });
+  });
+
+  it('records "I do not know" as wrong and shows the answer', async () => {
+    const { user, store } = setup();
+    await startDictation(user);
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.dontKnow }));
+
+    expect(await screen.findByText('Faux. La réponse était 再.')).toBeVisible();
+    expect(store.answers[0]?.result).toMatchObject({ outcome: 'wrong', rating: 'again' });
+    expect(store.answers[0]?.result.answer).toBeUndefined();
+  });
+
+  it('shows the pinyin as a hint, which turns a right answer into a right answer with hint', async () => {
+    const { user, store } = setup();
+    const field = await startDictation(user);
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.hint }));
+    expect(within(region()).getByText('zài')).toBeVisible();
+    expect(screen.getByText(fr.dictation.hintUsed)).toBeVisible();
+    await user.type(field, '再{Enter}');
+
+    expect(await screen.findByText(fr.dictation.correct)).toBeVisible();
+    expect(store.answers[0]?.result).toMatchObject({
+      outcome: 'correctWithHint',
+      rating: 'hard',
+      hintsUsed: 1,
+    });
+  });
+
+  it('gives the first letter and the length as a hint in English', async () => {
+    const { user } = setup({ cards: [necessary] });
+    await user.click(screen.getByRole('radio', { name: fr.languages.en }));
+    await startDictation(user);
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.hint }));
+
+    expect(screen.getByText('Commence par « n », 9 lettres.')).toBeVisible();
+  });
+});
+
+describe('Dictation, listening again', () => {
+  it('replays the word with the button, the up arrow, and slowly with the down arrow', async () => {
+    const { user, speaker } = setup();
+    const field = await startDictation(user);
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.replay }));
+    expect(speaker.readings).toHaveLength(2);
+    field.focus();
+    await user.keyboard('{ArrowUp}');
+    expect(speaker.readings).toHaveLength(3);
+    await user.keyboard('{ArrowDown}');
+    expect(speaker.last()).toMatchObject({ text: '再', rate: 0.6 });
+
+    // The arrows belong to the input method while it composes.
+    await fireEvent.compositionStart(field);
+    await fireEvent.keyDown(field, { key: 'ArrowUp' });
+    expect(speaker.readings).toHaveLength(4);
+  });
+
+  it('replays with R outside the answer field only', async () => {
+    const { user, speaker } = setup();
+    const field = await startDictation(user);
+
+    await user.type(field, 'r');
+    expect(speaker.readings).toHaveLength(1);
+    await user.click(screen.getByRole('heading', { name: fr.dictation.title }));
+    await user.keyboard('r');
+    expect(speaker.readings).toHaveLength(2);
+  });
+});
+
+describe('Dictation without a voice', () => {
+  it('shows the pinyin in Chinese as the instruction, and the word is typed', async () => {
+    const { user, store } = setup({ speaker: new FakeSpeaker(false) });
+    const field = await startDictation(user);
+
+    expect(screen.getByText(fr.dictation.writtenPrompt.zh)).toBeVisible();
+    expect(within(region()).getByText('zài')).toBeVisible();
+    expect(screen.queryByRole('button', { name: fr.dictation.replay })).toBeNull();
+    await user.type(field, '再{Enter}');
+
+    expect(store.answers[0]?.result.outcome).toBe('correct');
+  });
+
+  it('shows the meaning in English as the instruction', async () => {
+    const { user } = setup({ cards: [necessary], speaker: new FakeSpeaker(false) });
+    await user.click(screen.getByRole('radio', { name: fr.languages.en }));
+    await startDictation(user);
+
+    expect(screen.getByText(fr.dictation.writtenPrompt.en)).toBeVisible();
+    expect(within(region()).getByText('nécessaire')).toBeVisible();
+  });
+
+  it('falls back to the written instruction when a reading fails', async () => {
+    const speaker = new FakeSpeaker(true, true);
+    vi.spyOn(speaker, 'speak').mockRejectedValue(new Error('Speech failed'));
+    const { user } = setup({ speaker });
+    await startDictation(user);
+
+    expect(await screen.findByText(fr.dictation.audioError)).toBeVisible();
+    expect(within(region()).getByText('zài')).toBeVisible();
+  });
+});
+
+describe('Dictation, end', () => {
+  async function answerAll(user: ReturnType<typeof userEvent.setup>, answers: string[]) {
+    for (const answer of answers) {
+      await user.type(answerField(), `${answer}{Enter}`);
+      await user.click(await screen.findByRole('button', { name: fr.dictation.continue }));
+    }
+  }
+
+  it('shows the score and the mistakes with their audio, then retries the missed words', async () => {
+    const { user, speaker, onSessionEnd, startSession, store } = setup();
+    await startDictation(user);
+
+    await answerAll(user, ['再', '描', '狗']);
+
+    expect(await screen.findByRole('heading', { name: fr.dictation.summaryTitle })).toBeVisible();
+    expect(screen.getByText('Score : 2 / 3')).toBeVisible();
+    const mistakes = screen.getByRole('list', { name: fr.dictation.mistakesTitle });
+    expect(within(mistakes).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(mistakes).getByText('猫')).toBeVisible();
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
+    expect(store.sessions[0]?.endedAt).toBeDefined();
+
+    await user.click(within(mistakes).getByRole('button', { name: fr.dictation.listen }));
+    expect(speaker.last().text).toBe('猫');
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.retryMissed }));
+    expect(await screen.findByRole('textbox', { name: fr.dictation.answerLabel })).toBeVisible();
+    expect(startSession).toHaveBeenLastCalledWith(expect.objectContaining({ words: [cat] }));
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 1 sur 1');
+  });
+
+  it('can stop early: the answers given are kept', async () => {
+    const { user, onSessionEnd } = setup();
+    await startDictation(user);
+    await answerAll(user, ['再']);
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.quit }));
+
+    expect(await screen.findByText('Score : 1 / 1')).toBeVisible();
+    expect(screen.getByText(fr.dictation.noMistakes)).toBeVisible();
+    expect(screen.queryByRole('button', { name: fr.dictation.retryMissed })).toBeNull();
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: fr.dictation.restart }));
+    expect(screen.getByRole('button', { name: fr.dictation.start })).toBeVisible();
+  });
+
+  it('reports an answer that could not be saved', async () => {
+    const { user, store } = setup();
+    vi.spyOn(store, 'recordAnswer').mockRejectedValue(new Error('Quota exceeded'));
+    const field = await startDictation(user);
+
+    await user.type(field, '再{Enter}');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(fr.dictation.saveFailed);
+    expect(screen.queryByText(fr.dictation.correct)).toBeNull();
+  });
+});
