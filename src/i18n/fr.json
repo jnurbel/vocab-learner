@@ -95,6 +95,18 @@
     "columnTranslation": "Sens",
     "columnLabels": "Labels",
     "count": "{count} mot(s)",
-    "empty": "Aucun mot pour ce filtre."
+    "empty": "Aucun mot pour ce filtre.",
+    "columnActions": "Actions",
+    "edit": "Modifier",
+    "editWord": "Modifier {term}",
+    "delete": "Supprimer",
+    "deleteWord": "Supprimer {term}",
+    "confirmDelete": "Supprimer « {term} » ? Le mot sera effacé définitivement ; ses labels restent.",
+    "confirmDeleteButton": "Confirmer la suppression",
+    "deleted": "« {term} » supprimé.",
+    "deleteFailed": "La suppression a échoué. Réessaie."
+  },
+  "confirm": {
+    "cancel": "Annuler"
   }
 }
