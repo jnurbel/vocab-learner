@@ -18,6 +18,8 @@ export interface PlayerSnapshot {
   total: number;
   /** Countdown before the next word; undefined when the learner moves on (manual mode). */
   remainingMs: number | undefined;
+  /** A reading failed: the screen falls back to the written variant (GAME_DESIGN.md 6.2). */
+  audioFailed: boolean;
 }
 
 export interface PlayerTimers {
@@ -62,7 +64,13 @@ export class DictationPlayer {
     private readonly deps: PlayerDependencies,
   ) {
     this.timers = deps.timers ?? browserTimers;
-    this.state = { status: 'idle', index: 0, total: words.length, remainingMs: undefined };
+    this.state = {
+      status: 'idle',
+      index: 0,
+      total: words.length,
+      remainingMs: undefined,
+      audioFailed: false,
+    };
   }
 
   get snapshot(): PlayerSnapshot {
@@ -161,8 +169,14 @@ export class DictationPlayer {
     { times, rate }: { times: number; rate: number },
     run: number,
   ): Promise<void> {
-    for (let reading = 0; reading < times && run === this.run; reading++) {
-      await this.deps.speaker.speak(word.text, word.language, { rate });
+    try {
+      for (let reading = 0; reading < times && run === this.run; reading++) {
+        await this.deps.speaker.speak(word.text, word.language, { rate });
+      }
+    } catch {
+      if (run === this.run) {
+        this.update({ audioFailed: true });
+      }
     }
     if (run === this.run) {
       this.wait(this.settings.delayMs);
@@ -205,4 +219,30 @@ export class DictationPlayer {
       listener(this.state);
     }
   }
+}
+
+/** The part of `document` that tells whether the tab is visible. */
+export interface VisibilitySource {
+  readonly hidden: boolean;
+  addEventListener(type: 'visibilitychange', listener: () => void): void;
+  removeEventListener(type: 'visibilitychange', listener: () => void): void;
+}
+
+/**
+ * Pauses the dictation when the tab is hidden, so that no word is missed; the learner resumes
+ * it. Returns the function that stops watching.
+ */
+export function pauseWhenHidden(
+  player: Pick<DictationPlayer, 'pause'>,
+  page: VisibilitySource,
+): () => void {
+  const onChange = () => {
+    if (page.hidden) {
+      player.pause();
+    }
+  };
+  page.addEventListener('visibilitychange', onChange);
+  return () => {
+    page.removeEventListener('visibilitychange', onChange);
+  };
 }

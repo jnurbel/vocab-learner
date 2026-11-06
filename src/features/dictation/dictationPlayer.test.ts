@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeSpeaker } from './dictation.fixtures';
-import { DictationPlayer, type PlayerSettings } from './dictationPlayer';
+import { DictationPlayer, pauseWhenHidden, type PlayerSettings } from './dictationPlayer';
 
 const WORDS = [
   { text: '猫', language: 'zh' as const },
@@ -234,5 +234,72 @@ describe('DictationPlayer', () => {
     player.play();
     player.play();
     expect(speaker.readings).toHaveLength(1);
+  });
+
+  it('reports a reading that failed and still counts down, so that the dictation goes on', async () => {
+    const { speaker, player } = setup();
+    player.play();
+    expect(player.snapshot.audioFailed).toBe(false);
+
+    speaker.last().fail();
+    await settle();
+
+    expect(player.snapshot).toMatchObject({ status: 'waiting', audioFailed: true });
+  });
+
+  it('ignores the failure of a reading that was already left for another word', async () => {
+    const { speaker, player } = setup();
+    speaker.cancel.mockImplementation(() => undefined);
+    player.play();
+    const first = speaker.last();
+
+    player.next();
+    first.fail();
+    await settle();
+
+    expect(player.snapshot).toMatchObject({ status: 'speaking', index: 1, audioFailed: false });
+  });
+});
+
+/** A document whose visibility the test changes. */
+class FakeDocument extends EventTarget {
+  hidden = false;
+
+  hide() {
+    this.hidden = true;
+    this.dispatchEvent(new Event('visibilitychange'));
+  }
+
+  show() {
+    this.hidden = false;
+    this.dispatchEvent(new Event('visibilitychange'));
+  }
+}
+
+describe('pauseWhenHidden', () => {
+  it('pauses the dictation when the tab is hidden, and leaves the resume to the learner', async () => {
+    const { speaker, player } = setup();
+    const page = new FakeDocument();
+    pauseWhenHidden(player, page);
+    player.play();
+    speaker.last().end();
+    await settle();
+
+    page.hide();
+    expect(player.snapshot.status).toBe('paused');
+    page.show();
+    expect(player.snapshot.status).toBe('paused');
+  });
+
+  it('stops watching the tab once released', () => {
+    const { player } = setup();
+    const page = new FakeDocument();
+    const release = pauseWhenHidden(player, page);
+    player.play();
+
+    release();
+    page.hide();
+
+    expect(player.snapshot.status).toBe('speaking');
   });
 });
