@@ -3,10 +3,33 @@ import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import fr from '../i18n/fr.json';
+import packageJson from '../../package.json';
+import type { BackupFile } from '../services/backup/backupService';
+import { BackupMetaStore } from '../storage/backupMetaStore';
 import App from './App.svelte';
 
 function bulkEntry(): HTMLElement {
   return screen.getByRole('region', { name: fr.bulkEntry.title });
+}
+
+type User = ReturnType<typeof userEvent.setup>;
+
+async function addWord(user: User, line: string, labelName?: string) {
+  await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+  await user.paste(line);
+  if (labelName !== undefined) {
+    await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), labelName);
+  }
+  await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+  await within(bulkEntry()).findByRole('status');
+}
+
+async function studyOneCard(user: User) {
+  await user.click(screen.getByRole('button', { name: fr.nav.flashcards }));
+  await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+  await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
+  await user.click(screen.getByRole('button', { name: fr.flashcards.evaluations.good }));
+  await screen.findByRole('heading', { name: fr.flashcards.summaryTitle });
 }
 
 describe('App', () => {
@@ -183,5 +206,98 @@ describe('App', () => {
     await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
     const list = screen.getByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
+  });
+
+  it('reminds to back up once something changed, and the reminder can be hidden', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-reminder', download: vi.fn() });
+    expect(screen.queryByText(fr.backup.reminder)).toBeNull();
+
+    await addWord(user, 'apple | pomme');
+
+    expect(await screen.findByText(fr.backup.reminder)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: fr.backup.reminderDismiss }));
+    expect(screen.queryByText(fr.backup.reminder)).toBeNull();
+  });
+
+  it('saves a backup from the reminder, which then goes away', async () => {
+    const user = userEvent.setup();
+    const download = vi.fn();
+    render(App, { databaseName: 'app-test-save-backup', download });
+    await addWord(user, 'apple | pomme');
+
+    await user.click(await screen.findByRole('button', { name: fr.backup.reminderAction }));
+    expect(screen.getByRole('heading', { name: fr.backup.title })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: fr.backup.saveNow }));
+
+    await vi.waitFor(() => {
+      expect(download).toHaveBeenCalledOnce();
+    });
+    const [file] = download.mock.calls[0] as [BackupFile];
+    expect(file.fileName).toMatch(/^vocab-learner-profil-\d{4}-\d{2}-\d{2}\.vocab-backup\.json$/);
+    expect(JSON.parse(file.text)).toMatchObject({ appVersion: packageJson.version });
+    await vi.waitFor(() => {
+      expect(screen.queryByText(fr.backup.reminder)).toBeNull();
+    });
+  });
+
+  it('finds the words and their progress back from a backup on an empty device', async () => {
+    const user = userEvent.setup();
+    const download = vi.fn();
+    const first = render(App, { databaseName: 'app-test-backup-source', download });
+    await addWord(user, '猫 | māo | chat');
+    await studyOneCard(user);
+    await user.click(screen.getByRole('button', { name: fr.nav.backup }));
+    await user.click(screen.getByRole('button', { name: fr.backup.saveNow }));
+    await vi.waitFor(() => {
+      expect(download).toHaveBeenCalledOnce();
+    });
+    const [file] = download.mock.calls[0] as [BackupFile];
+    first.unmount();
+
+    render(App, { databaseName: 'app-test-backup-target', download: vi.fn() });
+    await user.click(screen.getByRole('button', { name: fr.nav.backup }));
+    await user.upload(
+      screen.getByLabelText(fr.backup.chooseFile),
+      new File([file.text], file.fileName, { type: 'application/json' }),
+    );
+    await user.click(await screen.findByRole('button', { name: fr.backup.merge }));
+    expect(await screen.findByText(fr.backup.merged)).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: fr.nav.words }));
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
+  });
+
+  it('records a change after an entry, a flashcard answer, a label change and a deletion', async () => {
+    const user = userEvent.setup();
+    let tick = 0;
+    const now = () => new Date(Date.UTC(2026, 10, 6, 10, 0, tick++));
+    const databaseName = 'app-test-record-change';
+    const meta = new BackupMetaStore(databaseName);
+    render(App, { databaseName, download: vi.fn(), now });
+    const changes: (string | undefined)[] = [];
+    const lastChange = async () => {
+      await vi.waitFor(async () => {
+        expect(await meta.lastChangeAt()).not.toBe(changes.at(-1));
+      });
+      changes.push(await meta.lastChangeAt());
+    };
+
+    await addWord(user, '猫 | māo | chat', 'Animaux');
+    await lastChange();
+    await studyOneCard(user);
+    await lastChange();
+    await user.click(screen.getByRole('button', { name: fr.nav.words }));
+    const manager = screen.getByRole('region', { name: fr.labelManager.title });
+    await user.type(within(manager).getByLabelText('Nouveau nom pour Animaux'), 'Bêtes');
+    await user.click(within(manager).getByRole('button', { name: 'Renommer Animaux' }));
+    await lastChange();
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    await user.click(within(list).getByRole('button', { name: 'Supprimer 猫' }));
+    await user.click(screen.getByRole('button', { name: fr.wordList.confirmDeleteButton }));
+    await lastChange();
+
+    expect(new Set(changes).size).toBe(4);
   });
 });

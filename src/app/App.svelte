@@ -1,28 +1,43 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { shouldRemindBackup } from '../domain/backup/backupReminder';
+  import { sha256With } from '../domain/backup/sha256';
   import type { Card } from '../domain/card';
   import type { Label } from '../domain/label';
   import type { LabelChanges } from '../domain/labelOperations';
+  import type { ReviewStateRecord } from '../domain/progressRecords';
+  import { studyDay } from '../domain/srs/studyDay';
+  import BackupPanel from '../features/backup/BackupPanel.svelte';
   import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
-  import BulkEntry from '../features/import/BulkEntry.svelte';
-  import LabelManager from '../features/labels/LabelManager.svelte';
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import {
     startFlashcardSession,
     type FlashcardSelection,
+    type FlashcardStore,
   } from '../features/flashcards/flashcardSession';
+  import BulkEntry from '../features/import/BulkEntry.svelte';
+  import LabelManager from '../features/labels/LabelManager.svelte';
+  import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
+  import { BackupService, type BackupFile } from '../services/backup/backupService';
+  import {
+    DirectoryBackup,
+    directoryPickerOf,
+    type AutoBackupStatus,
+    type DirectoryHandleLike,
+  } from '../services/backup/directoryBackup';
+  import { browserDownloadEnvironment, downloadFile } from '../services/backup/downloadFile';
   import { loadPinyinGenerator } from '../services/pinyinLoader';
   import { persistenceRequester } from '../services/storagePersistence';
   import { browserSpeechHost, createWebSpeechSpeaker, type Speaker } from '../services/tts/speaker';
+  import { BackupMetaStore } from '../storage/backupMetaStore';
+  import { BackupRepository } from '../storage/backupRepository';
   import { StudyRepository } from '../storage/studyRepository';
-  import { srs } from './srs';
-  import type { ReviewStateRecord } from '../domain/progressRecords';
-  import { studyDay } from '../domain/srs/studyDay';
-  import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
+  import { appVersion } from './appVersion';
+  import { srs } from './srs';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -31,6 +46,11 @@
     requestPersistence?: () => Promise<void>;
     /** Reads the words aloud; the browser's voices by default. */
     speaker?: Speaker;
+    /** Saves a backup file on this device; the browser's download by default. */
+    download?: (file: BackupFile) => void;
+    /** Picks the automatic backup folder; absent where the browser has no folder access. */
+    directoryPicker?: (() => Promise<DirectoryHandleLike>) | undefined;
+    now?: () => Date;
   }
 
   const {
@@ -39,14 +59,25 @@
       'storage' in navigator ? navigator.storage : undefined,
     ),
     speaker = createWebSpeechSpeaker(browserSpeechHost()),
+    download = (file: BackupFile) => {
+      downloadFile(file, browserDownloadEnvironment());
+    },
+    directoryPicker = directoryPickerOf(window as Parameters<typeof directoryPickerOf>[0]),
+    now = () => new Date(),
   }: Props = $props();
 
-  type Page = 'words' | 'flashcards';
-  const PAGES: readonly Page[] = ['words', 'flashcards'];
+  /** Profiles come later: the pseudonym written into the backup file names. */
+  const PROFILE_NAME = 'profil';
+
+  type Page = 'words' | 'flashcards' | 'backup';
+  const PAGES: readonly Page[] = ['words', 'flashcards', 'backup'];
   let page = $state<Page>('words');
 
   let repository: VocabularyRepository | undefined;
   let study: StudyRepository | undefined;
+  let meta: BackupMetaStore<DirectoryHandleLike> | undefined;
+  let backupService = $state.raw<BackupService>();
+  let directory = $state.raw<DirectoryBackup>();
   // Raw state: the data read from storage is replaced as a whole, never mutated, and must stay
   // plain objects, because IndexedDB cannot clone the proxies of deep reactive state.
   let cards = $state.raw<Card[]>([]);
@@ -54,17 +85,24 @@
   /** The word open in the edit form, if any. */
   let editing = $state.raw<Card>();
   let reviewStates = $state.raw<ReviewStateRecord[]>([]);
+  let lastBackupAt = $state<string>();
+  let remindBackup = $state(false);
+  let reminderHidden = $state(false);
+  let autoBackupStatus = $state<AutoBackupStatus>();
 
   const stateByCardId = $derived(new Map(reviewStates.map((state) => [state.cardId, state])));
   /** Taken again on each reload: a page left open overnight would show yesterday's thirst. */
   let moment = $state.raw(currentMoment());
 
   function currentMoment() {
-    const now = new Date();
-    return { now, today: studyDay(now, undefined, srs) };
+    const at = now();
+    return { now: at, today: studyDay(at, undefined, srs) };
   }
   const progressOf = (card: Card) => wordProgress(stateByCardId.get(card.id), moment, srs);
   const masteryOf = (label: Label) => labelMastery(label.id, cards, reviewStates, srs.config);
+
+  const newId = () => crypto.randomUUID();
+  const clock = () => now().toISOString();
 
   async function reload(from: VocabularyRepository) {
     [cards, labels, reviewStates] = await Promise.all([
@@ -78,40 +116,103 @@
   onMount(() => {
     repository = new VocabularyRepository(databaseName);
     study = new StudyRepository(databaseName);
+    meta = new BackupMetaStore<DirectoryHandleLike>(databaseName);
+    backupService = new BackupService({
+      repository: new BackupRepository(databaseName),
+      sha256: sha256With(crypto.subtle),
+      clock: now,
+      newId,
+      appVersion,
+      profileName: PROFILE_NAME,
+    });
+    directory = new DirectoryBackup({ store: meta, picker: directoryPicker, clock: now });
     void reload(repository);
+    void refreshBackupState();
   });
 
-  const newId = () => crypto.randomUUID();
+  function ready<T>(service: T | undefined): T {
+    if (service === undefined) {
+      throw new Error('Storage is not ready');
+    }
+    return service;
+  }
+
+  const storage = () => ready(repository);
+
+  async function refreshBackupState() {
+    const store = ready(meta);
+    lastBackupAt = await store.lastBackupAt();
+    remindBackup = shouldRemindBackup(lastBackupAt, await store.lastChangeAt(), now());
+  }
+
+  /** Anything worth backing up changed: the backup reminder depends on it. */
+  async function recordChange() {
+    await ready(meta).recordChange(clock());
+    await refreshBackupState();
+  }
+
+  /** Every answer is a change to back up. */
+  const flashcardStore: FlashcardStore = {
+    load: (since) => ready(study).load(since),
+    startSession: (session) => ready(study).startSession(session),
+    recordAnswer: async (answer) => {
+      await ready(study).recordAnswer(answer);
+      await recordChange();
+    },
+    endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
+  };
 
   function startSession(selection: FlashcardSelection) {
-    if (study === undefined) {
-      throw new Error('Storage is not ready');
-    }
-    return startFlashcardSession(selection, { store: study, srs, clock: () => new Date(), newId });
+    return startFlashcardSession(selection, { store: flashcardStore, srs, clock: now, newId });
   }
 
-  function sessionEnded() {
-    void reload(storage());
+  async function sessionEnded() {
+    await reload(storage());
+    await writeAutomaticBackup();
   }
-  const clock = () => new Date().toISOString();
 
-  function storage(): VocabularyRepository {
-    if (repository === undefined) {
-      throw new Error('Storage is not ready');
+  /** After each session, into the chosen folder, if any; never prompts. */
+  async function writeAutomaticBackup() {
+    if (!directory?.isSupported()) {
+      return;
     }
-    return repository;
+    try {
+      autoBackupStatus = await directory.writeBackup(await ready(backupService).createBackupFile());
+    } catch {
+      autoBackupStatus = 'failed';
+    }
+    await refreshBackupState();
+  }
+
+  /** Runs on a click only: the browser shows its permission request on a user gesture. */
+  async function reauthorizeFolder() {
+    if (directory !== undefined && (await directory.reauthorize())) {
+      await writeAutomaticBackup();
+    }
+  }
+
+  async function backedUp() {
+    await ready(meta).recordBackup(clock());
+    await refreshBackupState();
+  }
+
+  async function restored() {
+    await recordChange();
+    await reload(storage());
   }
 
   async function save({ newLabel, changes }: VocabularySave) {
     const store = storage();
     await store.saveImport(changes, newLabel);
     void requestPersistence();
+    await recordChange();
     await reload(store);
   }
 
   async function changeLabels(changes: LabelChanges) {
     const store = storage();
     await store.applyLabelChanges(changes);
+    await recordChange();
     await reload(store);
   }
 
@@ -125,6 +226,7 @@
     if (editing?.id === card.id) {
       editing = undefined;
     }
+    await recordChange();
     await reload(store);
   }
 </script>
@@ -132,6 +234,30 @@
 <main>
   <h1>{fr.app.title}</h1>
   <p>{fr.app.tagline}</p>
+
+  {#if remindBackup && !reminderHidden && page !== 'backup'}
+    <aside class="banner" aria-label={fr.backup.title}>
+      <p>{fr.backup.reminder}</p>
+      <button
+        type="button"
+        onclick={() => {
+          page = 'backup';
+        }}>{fr.backup.reminderAction}</button
+      >
+      <button
+        type="button"
+        onclick={() => {
+          reminderHidden = true;
+        }}>{fr.backup.reminderDismiss}</button
+      >
+    </aside>
+  {/if}
+  {#if autoBackupStatus === 'permissionNeeded' && page !== 'backup'}
+    <aside class="banner" aria-label={fr.backup.folderTitle}>
+      <p>{fr.backup.permissionNeeded}</p>
+      <button type="button" onclick={reauthorizeFolder}>{fr.backup.reauthorize}</button>
+    </aside>
+  {/if}
 
   <nav aria-label={fr.nav.label}>
     {#each PAGES as name (name)}
@@ -145,8 +271,25 @@
     {/each}
   </nav>
 
-  {#if page === 'flashcards'}
-    <Flashcards {cards} {labels} {startSession} {speaker} onSessionEnd={sessionEnded} />
+  {#if page === 'backup' && backupService !== undefined}
+    <BackupPanel
+      service={backupService}
+      {download}
+      {lastBackupAt}
+      onBackedUp={backedUp}
+      onRestored={restored}
+      folder={directory?.isSupported() === true ? directory : undefined}
+      {autoBackupStatus}
+      onReauthorized={writeAutomaticBackup}
+    />
+  {:else if page === 'flashcards'}
+    <Flashcards
+      {cards}
+      {labels}
+      {startSession}
+      {speaker}
+      onSessionEnd={() => void sessionEnded()}
+    />
   {:else}
     <WordForm
       idPrefix="word-entry"
@@ -192,6 +335,22 @@
 </main>
 
 <style>
+  .banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    border: 1px solid currentColor;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .banner p {
+    flex: 1 1 100%;
+    margin: 0;
+  }
+
   nav {
     display: flex;
     flex-wrap: wrap;
@@ -199,7 +358,8 @@
     margin-bottom: 1rem;
   }
 
-  nav button {
+  nav button,
+  .banner button {
     min-height: 44px;
   }
 
