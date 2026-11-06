@@ -6,6 +6,7 @@ import {
   type BackupDocument,
 } from './backupDocument';
 import { findInconsistencies } from './backupConsistency';
+import { BACKUP_MIGRATIONS, migrateBackup, type BackupMigrations } from './backupMigrations';
 import { BACKUP_LIMITS, backupDocumentSchema } from './backupSchema';
 import type { Sha256 } from './sha256';
 
@@ -20,8 +21,22 @@ type Outcome<T> = Result<T, BackupIssue>;
 
 const fileIssue = (code: string) => failure([{ path: '', code }]);
 
-/** Validates an untrusted backup file. Never throws. */
-export async function parseBackup(text: string, sha256: Sha256): Promise<Outcome<BackupDocument>> {
+export interface ParseOptions {
+  /** The schema version this app writes; tests may pretend to be a later app. */
+  currentVersion?: number;
+  migrations?: BackupMigrations;
+}
+
+/**
+ * Validates an untrusted backup file and upgrades it to the current layout. Never throws.
+ * Order: size and nesting, JSON, forbidden keys, envelope, version, fingerprint of the file as
+ * written, migrations, strict schema, cross-references.
+ */
+export async function parseBackup(
+  text: string,
+  sha256: Sha256,
+  { currentVersion = CURRENT_SCHEMA_VERSION, migrations = BACKUP_MIGRATIONS }: ParseOptions = {},
+): Promise<Outcome<BackupDocument>> {
   if (text.length > BACKUP_LIMITS.characters) {
     return fileIssue('fileTooLarge');
   }
@@ -43,14 +58,18 @@ export async function parseBackup(text: string, sha256: Sha256): Promise<Outcome
   }
   const { schemaVersion, document } = envelope.value;
   // A newer app may fingerprint differently: the version is checked first.
-  if (schemaVersion > CURRENT_SCHEMA_VERSION) {
+  if (schemaVersion > currentVersion) {
     return failure([{ path: 'schemaVersion', code: 'newerVersion', version: schemaVersion }]);
   }
   const { sha256: claimed, ...content } = document;
   if (claimed !== (await fingerprint(content, sha256))) {
     return failure([{ path: 'sha256', code: 'fingerprintMismatch' }]);
   }
-  const parsed = backupDocumentSchema.safeParse(document);
+  const migrated = migrateBackup(document, schemaVersion, currentVersion, migrations);
+  if (!migrated.ok) {
+    return migrated;
+  }
+  const parsed = backupDocumentSchema.safeParse(migrated.value);
   if (!parsed.success) {
     return failure(
       parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), code: issue.code })),
