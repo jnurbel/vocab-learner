@@ -123,4 +123,29 @@ describe('StudyRepository', () => {
 
     expect((await db.sessions.get('s1'))?.endedAt).toBe('2026-11-06T08:10:00.000Z');
   });
+
+  it('records a free practice answer in its session only: review state and progress unchanged', async () => {
+    await db.reviewStates.put(reviewState('a', 3));
+    await db.progress.put({ lastActiveDate: '2026-11-05' }, SINGLETON_KEY);
+    await repository.startSession({
+      ...session('p1', '2026-11-06T08:00:00.000Z'),
+      mode: 'practice',
+    });
+    const result = { cardId: 'a', outcome: 'correct' as const, at: '2026-11-06T08:01:00.000Z' };
+
+    await repository.recordPracticeAnswer({ sessionId: 'p1', result });
+
+    expect((await db.sessions.get('p1'))?.results).toEqual([result]);
+    expect(await db.reviewStates.get('a')).toEqual(reviewState('a', 3));
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({ lastActiveDate: '2026-11-05' });
+  });
+
+  it('refuses a free practice answer for an unknown session', async () => {
+    await expect(
+      repository.recordPracticeAnswer({
+        sessionId: 'missing',
+        result: { cardId: 'a', outcome: 'wrong' },
+      }),
+    ).rejects.toThrow('Unknown session: missing');
+  });
 });
