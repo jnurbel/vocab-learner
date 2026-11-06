@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './card';
-import { planWordEntry, type WordFields } from './wordEntry';
+import { editCard, planWordEntry, type WordFields } from './wordEntry';
 
 const now = '2026-11-06T09:00:00.000Z';
 const context = { id: 'new-id', now };
@@ -103,6 +103,89 @@ describe('planWordEntry', () => {
       expect.objectContaining({ language: 'en', example: 'The cat sleeps.' }),
     );
     expect(outcome.ok && outcome.value.card).not.toHaveProperty('pinyin');
+  });
+});
+
+describe('editCard', () => {
+  const cat = existingCard({
+    id: 'cat',
+    term: '猫',
+    pinyin: 'māo',
+    translation: 'chat',
+    example: '我有一只猫。',
+    labelIds: ['animals'],
+    source: 'csv',
+  });
+  const dog = existingCard({ id: 'dog', term: '狗', translation: 'chien' });
+
+  it('changes the term, pinyin, meaning, example and labels, keeping the identity of the word', () => {
+    const edited = editCard(
+      cat,
+      fields({
+        term: '小猫',
+        pinyin: 'xiao3 mao1',
+        translation: 'chaton',
+        example: '小猫很可爱。',
+        labelIds: ['lesson'],
+      }),
+      [cat, dog],
+      now,
+    );
+
+    expect(edited).toEqual({
+      ok: true,
+      value: {
+        ...cat,
+        term: '小猫',
+        pinyin: 'xiǎo māo',
+        translation: 'chaton',
+        example: '小猫很可爱。',
+        labelIds: ['lesson'],
+        updatedAt: now,
+      },
+    });
+  });
+
+  it('removes a cleared pinyin and a cleared example', () => {
+    const edited = editCard(cat, fields({ term: '猫', translation: 'chat' }), [cat], now);
+
+    expect(edited.ok && edited.value).not.toHaveProperty('pinyin');
+    expect(edited.ok && edited.value).not.toHaveProperty('example');
+  });
+
+  it('refuses a new term that is already another word', () => {
+    const edited = editCard(cat, fields({ term: '狗', translation: 'chat' }), [cat, dog], now);
+
+    expect(edited).toEqual({ ok: false, errors: [{ field: 'term', reason: 'duplicate' }] });
+  });
+
+  it('allows an English word to change only the case of its own term', () => {
+    const apple = existingCard({ id: 'apple', language: 'en', term: 'apple' });
+
+    const edited = editCard(apple, fields({ term: 'Apple', translation: 'pomme' }), [apple], now);
+
+    expect(edited.ok && edited.value.term).toBe('Apple');
+  });
+
+  it('follows the language of the new term and drops the pinyin of a word that became English', () => {
+    const edited = editCard(
+      cat,
+      fields({ term: 'cat', pinyin: 'māo', translation: 'chat' }),
+      [cat],
+      now,
+    );
+
+    expect(edited.ok && edited.value).toEqual(
+      expect.objectContaining({ language: 'en', term: 'cat' }),
+    );
+    expect(edited.ok && edited.value).not.toHaveProperty('pinyin');
+  });
+
+  it('reports invalid fields without changing the word', () => {
+    expect(editCard(cat, fields({ term: '猫' }), [cat], now)).toEqual({
+      ok: false,
+      errors: [{ field: 'translation', reason: 'required' }],
+    });
   });
 });
 

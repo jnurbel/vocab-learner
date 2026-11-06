@@ -2,7 +2,7 @@ import { detectLanguage } from './bulkEntryParser';
 import { createCard, type Card, type CardError, type CreationContext } from './card';
 import { addLabels, findCard, indexCardsByTerm, missingLabelIds } from './importPlan';
 import { numericToDiacritic } from './pinyin';
-import { success, type Result } from './result';
+import { failure, success, type Result } from './result';
 
 /** What the learner types in the one-word form, as raw text. */
 export interface WordFields {
@@ -19,14 +19,10 @@ export type WordEntryOutcome =
   | { kind: 'labelsAdded'; card: Card; addedLabelIds: string[] }
   | { kind: 'alreadyPresent'; card: Card };
 
-/** Validates the one-word form and decides what saving it does. */
-export function planWordEntry(
-  fields: WordFields,
-  existingCards: readonly Card[],
-  context: CreationContext,
-): Result<WordEntryOutcome, CardError> {
+/** Builds a valid card from the form; its language follows the term. */
+function cardFromFields(fields: WordFields, context: CreationContext): Result<Card, CardError> {
   const language = detectLanguage(fields.term);
-  const created = createCard(
+  return createCard(
     {
       language,
       term: fields.term,
@@ -39,6 +35,15 @@ export function planWordEntry(
     },
     context,
   );
+}
+
+/** Validates the one-word form and decides what saving it does. */
+export function planWordEntry(
+  fields: WordFields,
+  existingCards: readonly Card[],
+  context: CreationContext,
+): Result<WordEntryOutcome, CardError> {
+  const created = cardFromFields(fields, context);
   if (!created.ok) {
     return created;
   }
@@ -57,4 +62,24 @@ export function planWordEntry(
           addedLabelIds,
         },
   );
+}
+
+export type WordEditError = CardError | { field: 'term'; reason: 'duplicate' };
+
+/** Applies the edit form to a word; a new term must not be another existing word. */
+export function editCard(
+  card: Card,
+  fields: WordFields,
+  existingCards: readonly Card[],
+  now: string,
+): Result<Card, WordEditError> {
+  const edited = cardFromFields(fields, { id: card.id, now });
+  if (!edited.ok) {
+    return edited;
+  }
+  const others = indexCardsByTerm(existingCards.filter(({ id }) => id !== card.id));
+  if (findCard(others, edited.value.language, edited.value.term) !== undefined) {
+    return failure([{ field: 'term', reason: 'duplicate' }]);
+  }
+  return success({ ...edited.value, source: card.source, createdAt: card.createdAt });
 }
