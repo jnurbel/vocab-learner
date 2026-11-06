@@ -244,6 +244,12 @@ describe('WordForm, editing a word', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it('puts the keyboard focus on the term to edit', () => {
+    setup({ cards: [cat], card: cat });
+
+    expect(screen.getByLabelText(fr.wordForm.term)).toHaveFocus();
+  });
+
   it('closes without saving when cancelled', async () => {
     const { user, onSave, onClose } = setup({ cards: [cat], card: cat });
 

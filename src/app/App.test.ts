@@ -85,4 +85,31 @@ describe('App', () => {
     const list = await screen.findByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /书/ })).toHaveTextContent('shū');
   });
+
+  it('edits a word from the list and deletes another once confirmed', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-edit-delete' });
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('apple | pomme\npear | poire');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+
+    await user.click(within(list).getByRole('button', { name: 'Modifier apple' }));
+    const editor = screen.getByRole('form', { name: 'Modifier « apple »' });
+    await user.clear(within(editor).getByLabelText(fr.wordForm.translation));
+    await user.type(within(editor).getByLabelText(fr.wordForm.translation), 'une pomme');
+    await user.click(within(editor).getByRole('button', { name: fr.wordForm.saveChanges }));
+
+    expect(await within(list).findByRole('row', { name: /une pomme/ })).toBeVisible();
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('form', { name: 'Modifier « apple »' })).toBeNull();
+    });
+
+    await user.click(within(list).getByRole('button', { name: 'Supprimer pear' }));
+    await user.click(screen.getByRole('button', { name: fr.wordList.confirmDeleteButton }));
+
+    await vi.waitFor(() => {
+      expect(within(list).queryByRole('row', { name: /pear/ })).toBeNull();
+    });
+  });
 });

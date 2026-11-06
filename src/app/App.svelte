@@ -28,6 +28,8 @@
   let repository: VocabularyRepository | undefined;
   let cards = $state<Card[]>([]);
   let labels = $state<Label[]>([]);
+  /** The word open in the edit form, if any. */
+  let editing = $state<Card>();
 
   async function reload(from: VocabularyRepository) {
     [cards, labels] = await Promise.all([from.allCards(), from.allLabels()]);
@@ -41,13 +43,31 @@
   const newId = () => crypto.randomUUID();
   const clock = () => new Date().toISOString();
 
-  async function save({ newLabel, changes }: VocabularySave) {
+  function storage(): VocabularyRepository {
     if (repository === undefined) {
       throw new Error('Storage is not ready');
     }
-    await repository.saveImport(changes, newLabel);
+    return repository;
+  }
+
+  async function save({ newLabel, changes }: VocabularySave) {
+    const store = storage();
+    await store.saveImport(changes, newLabel);
     void requestPersistence();
-    await reload(repository);
+    await reload(store);
+  }
+
+  function startEditing(card: Card) {
+    editing = card;
+  }
+
+  async function deleteCard(card: Card) {
+    const store = storage();
+    await store.deleteCard(card.id);
+    if (editing?.id === card.id) {
+      editing = undefined;
+    }
+    await reload(store);
   }
 </script>
 
@@ -74,7 +94,25 @@
     onSave={save}
   />
 
-  <WordList {cards} {labels} />
+  {#if editing !== undefined}
+    {#key editing.id}
+      <WordForm
+        idPrefix="word-edit"
+        card={editing}
+        existingCards={cards}
+        existingLabels={labels}
+        loadPinyin={loadPinyinGenerator}
+        {newId}
+        {clock}
+        onSave={save}
+        onClose={() => {
+          editing = undefined;
+        }}
+      />
+    {/key}
+  {/if}
+
+  <WordList {cards} {labels} onEdit={startEditing} onDelete={deleteCard} />
 </main>
 
 <style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { detectLanguage } from '../../domain/bulkEntryParser';
   import type { Card } from '../../domain/card';
   import type { ImportChanges } from '../../domain/importPlan';
@@ -76,6 +77,13 @@
   const labelChoice = $derived(
     resolveLabelChoice(existingLabels, chosenLabelIds, labelName, { id: 'pending', now: '' }),
   );
+
+  onMount(() => {
+    // Opening a word for editing takes the keyboard user straight to it.
+    if (card !== undefined) {
+      termInput?.focus();
+    }
+  });
 
   $effect(() => {
     if (isChinese && typedPinyin === undefined) {
