@@ -42,7 +42,10 @@ async function installFakeSpeech(page: Page) {
       voice: unknown = null;
       onend: (() => void) | null = null;
       onerror: ((event: { error: string }) => void) | null = null;
-      constructor(readonly text: string) {}
+      readonly text: string;
+      constructor(text: string) {
+        this.text = text;
+      }
     }
     Object.defineProperty(window, 'speechSynthesis', { value: synthesis, configurable: true });
     Object.defineProperty(window, 'SpeechSynthesisUtterance', {

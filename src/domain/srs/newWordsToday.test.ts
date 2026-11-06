@@ -61,4 +61,13 @@ describe('countNewWordsIntroduced', () => {
 
     expect(countNewWordsIntroduced(sessions, today, srs)).toBe(0);
   });
+
+  it('ignores the free practice sessions, which never introduce a word', () => {
+    const practice = {
+      ...session('practice', [discovered('a', '2026-11-06T08:01:00.000Z')]),
+      mode: 'practice',
+    };
+
+    expect(countNewWordsIntroduced([practice], today, srs)).toBe(0);
+  });
 });

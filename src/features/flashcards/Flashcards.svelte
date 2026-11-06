@@ -3,27 +3,39 @@
   import type { Card, Language } from '../../domain/card';
   import type { Label } from '../../domain/label';
   import type { ReviewQueueItem } from '../../domain/srs/reviewQueue';
-  import { format } from '../../i18n/format';
+  import { format, formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import type { Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
+  import {
+    PracticeSession,
+    type PracticeItem,
+    type PracticeSummary,
+  } from '../practice/practiceSession';
   import type {
     FlashcardSelection,
     FlashcardSession,
     SelfEvaluation,
     SessionSummary,
+    StudyOutlookView,
   } from './flashcardSession';
+  import StudyOutlookPanel from './StudyOutlookPanel.svelte';
 
   interface Props {
     cards: readonly Card[];
     labels: readonly Label[];
     startSession: (selection: FlashcardSelection) => Promise<FlashcardSession>;
+    /** Free practice: every chosen word, without any effect on the planning. */
+    startPractice: (selection: FlashcardSelection) => PracticeSession;
+    /** Explains today's queue of the selection, and what comes next. */
+    loadOutlook: (selection: FlashcardSelection) => Promise<StudyOutlookView>;
     speaker: Speaker;
     /** Called once a session with at least one answer ends, finished or left. */
     onSessionEnd: () => void;
   }
 
-  const { cards, labels, startSession, speaker, onSessionEnd }: Props = $props();
+  const { cards, labels, startSession, startPractice, loadOutlook, speaker, onSessionEnd }: Props =
+    $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
   /** Keys 1, 2, 3 rate the card once turned over. */
@@ -45,13 +57,16 @@
     | { kind: 'setup' }
     | { kind: 'starting' }
     | { kind: 'studying' }
-    | { kind: 'summary'; summary: SessionSummary; left: boolean; answered: number };
+    | { kind: 'summary'; summary: SessionSummary; left: boolean; answered: number }
+    | { kind: 'practiceSummary'; summary: PracticeSummary; left: boolean; answered: number };
   let view = $state<Screen>({ kind: 'setup' });
   let error = $state<'startFailed' | 'saveFailed' | undefined>();
 
-  let session: FlashcardSession | undefined;
+  let session: FlashcardSession | PracticeSession | undefined;
+  /** 'practice': free practice, whose answers change no review. */
+  let mode = $state<'review' | 'practice'>('review');
   // Raw state: the queue items are replaced, never mutated.
-  let item = $state.raw<ReviewQueueItem>();
+  let item = $state.raw<ReviewQueueItem | PracticeItem>();
   let position = $state(0);
   let total = $state(0);
   let flipped = $state(false);
@@ -60,14 +75,58 @@
   let busy = $state(false);
   let cardElement = $state<HTMLElement>();
 
+  let outlook = $state.raw<StudyOutlookView>();
+  /** Only the latest request is shown, should an earlier one answer late. */
+  let outlookRequest = 0;
+  const outlookShown = $derived(
+    view.kind === 'setup' || (view.kind === 'summary' && view.answered === 0 && !view.left),
+  );
+
+  $effect(() => {
+    if (!outlookShown) {
+      return;
+    }
+    const request = (outlookRequest += 1);
+    loadOutlook({ cards, language, labelIds: [...labelIds] }).then(
+      (loaded) => {
+        if (request === outlookRequest) {
+          outlook = loaded;
+        }
+      },
+      () => {
+        // The outlook only explains: without it, the session still works.
+        outlook = undefined;
+      },
+    );
+  });
+
   const lang = (code: Language) => (code === 'zh' ? 'zh-CN' : 'en');
   const showWord = $derived(voice !== 'available' || flipped);
 
   async function start() {
+    await open('review', () => startSession({ cards, language, labelIds: [...labelIds] }));
+  }
+
+  async function practise(
+    selection: FlashcardSelection = { cards, language, labelIds: [...labelIds] },
+  ) {
+    await open('practice', () => Promise.resolve(startPractice(selection)));
+  }
+
+  /** Practises again on the given words only, whatever their labels. */
+  async function practiseAgain(words: readonly Card[]) {
+    await practise({ cards: words, language, labelIds: [] });
+  }
+
+  async function open(
+    opened: typeof mode,
+    begin: () => Promise<FlashcardSession | PracticeSession>,
+  ) {
     error = undefined;
+    mode = opened;
     view = { kind: 'starting' };
     try {
-      const started = await startSession({ cards, language, labelIds: [...labelIds] });
+      const started = await begin();
       voice = (await speaker.hasVoice(language)) ? 'available' : 'missing';
       session = started;
     } catch {
@@ -76,7 +135,7 @@
       return;
     }
     if (session.finished) {
-      view = { kind: 'summary', summary: session.summary(), left: false, answered: 0 };
+      view = summaryScreen(session, false);
       return;
     }
     view = { kind: 'studying' };
@@ -118,8 +177,16 @@
     }
     busy = true;
     error = undefined;
+    const options = { hintsUsed: pinyinShown ? 1 : 0 };
     try {
-      await session.answer(evaluation, { hintsUsed: pinyinShown ? 1 : 0 });
+      if (session instanceof PracticeSession) {
+        // "Je le connais déjà" is offered for a new word only, never in free practice.
+        if (evaluation !== 'known') {
+          await session.answer(evaluation, options);
+        }
+      } else {
+        await session.answer(evaluation, options);
+      }
     } catch {
       error = 'saveFailed';
       return;
@@ -138,12 +205,23 @@
       return;
     }
     speaker.cancel();
-    const summary = session.summary();
-    const answered = summary.reviewed + summary.introduced;
-    view = { kind: 'summary', summary, left, answered };
-    if (answered > 0) {
+    const ended = summaryScreen(session, left);
+    view = ended;
+    if (ended.answered > 0) {
       onSessionEnd();
     }
+  }
+
+  function summaryScreen(
+    ended: FlashcardSession | PracticeSession,
+    left: boolean,
+  ): Extract<Screen, { answered: number }> {
+    if (ended instanceof PracticeSession) {
+      const summary = ended.summary();
+      return { kind: 'practiceSummary', summary, left, answered: summary.seen };
+    }
+    const summary = ended.summary();
+    return { kind: 'summary', summary, left, answered: summary.reviewed + summary.introduced };
   }
 
   async function quit() {
@@ -209,6 +287,9 @@
         void start();
       }}
     >
+      {#if outlook !== undefined}
+        <StudyOutlookPanel {outlook} />
+      {/if}
       <fieldset>
         <legend>{fr.flashcards.languageLegend}</legend>
         {#each LANGUAGES as code (code)}
@@ -230,11 +311,17 @@
         </fieldset>
       {/if}
       <button type="submit" disabled={view.kind === 'starting'}>{fr.flashcards.start}</button>
+      <button type="button" disabled={view.kind === 'starting'} onclick={() => practise()}
+        >{fr.practice.start}</button
+      >
       {#if view.kind === 'starting'}
         <p>{fr.flashcards.starting}</p>
       {/if}
     </form>
   {:else if view.kind === 'studying' && item !== undefined}
+    {#if mode === 'practice'}
+      <p class="practice-banner">{fr.practice.banner}</p>
+    {/if}
     <div class="toolbar">
       <p class="progress" aria-hidden="true">
         {format(fr.flashcards.progress, { position: position + 1, total })}
@@ -323,6 +410,9 @@
   {:else if view.kind === 'summary'}
     {#if view.answered === 0 && !view.left}
       <p>{fr.flashcards.nothingDue}</p>
+      {#if outlook !== undefined}
+        <StudyOutlookPanel {outlook} />
+      {/if}
     {:else}
       <h3>{fr.flashcards.summaryTitle}</h3>
       {#if view.left}
@@ -345,6 +435,30 @@
             </li>
           {/each}
         </ul>
+      {/if}
+    {/if}
+    {@const nothingDue = view.answered === 0 && !view.left}
+    <div class="actions">
+      <button type="button" class={{ primary: nothingDue }} onclick={() => practise()}
+        >{fr.practice.start}</button
+      >
+      <button type="button" onclick={restart}>{fr.flashcards.restart}</button>
+    </div>
+  {:else if view.kind === 'practiceSummary'}
+    {#if view.answered === 0 && !view.left}
+      <p>{fr.practice.empty}</p>
+    {:else}
+      <h3>{fr.practice.summaryTitle}</h3>
+      <ul>
+        <li>{formatCount(fr.practice.seen, view.summary.seen)}</li>
+        <li>{format(fr.practice.known, { count: view.summary.known })}</li>
+        <li>{format(fr.practice.toReview, { count: view.summary.toReview.length })}</li>
+      </ul>
+      {#if view.summary.toReview.length > 0}
+        {@const toReview = view.summary.toReview}
+        <button type="button" class="primary" onclick={() => practiseAgain(toReview)}
+          >{fr.practice.retry}</button
+        >
       {/if}
     {/if}
     <button type="button" onclick={restart}>{fr.flashcards.restart}</button>
@@ -417,6 +531,17 @@
     border-radius: 0.25rem;
     padding: 0 0.25rem;
     font-size: 0.85em;
+  }
+
+  .primary {
+    font-weight: bold;
+    border: 2px solid currentColor;
+  }
+
+  .practice-banner {
+    border-left: 4px solid currentColor;
+    padding: 0.5rem 1rem;
+    font-weight: bold;
   }
 
   .notice,

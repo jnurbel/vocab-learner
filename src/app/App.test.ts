@@ -347,4 +347,29 @@ describe('App', () => {
     const list = screen.getByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
   });
+
+  it('changes the daily quota of new words from the settings, kept and recorded as a change', async () => {
+    const user = userEvent.setup();
+    const databaseName = 'app-test-settings';
+    const meta = new BackupMetaStore(databaseName);
+    const { unmount } = render(App, { databaseName });
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+
+    await user.click(within(menu).getByRole('button', { name: fr.nav.settings }));
+    const quota = await screen.findByRole('combobox', { name: fr.settings.newPerDay });
+    await vi.waitFor(() => {
+      expect(quota).toHaveValue('5');
+    });
+    await user.selectOptions(quota, '10');
+
+    expect(await screen.findByText(fr.settings.saved)).toBeVisible();
+    expect(await meta.lastChangeAt()).toBeDefined();
+    unmount();
+
+    render(App, { databaseName });
+    await user.click(screen.getByRole('button', { name: fr.nav.settings }));
+    await vi.waitFor(() => {
+      expect(screen.getByRole('combobox', { name: fr.settings.newPerDay })).toHaveValue('10');
+    });
+  });
 });

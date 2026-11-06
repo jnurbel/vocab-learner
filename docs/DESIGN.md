@@ -396,7 +396,7 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.1.0 | Squelette Vite/Svelte/TS, CI (lint, typecheck, Vitest, audit), déploiement Pages, CSP |
 | 0.2.0 | Mots et labels (plusieurs labels par mot), saisie manuelle et en lot, pinyin auto, dédoublonnage |
 | 0.3.0 | Flashcards + SRS (FSRS), dont flashcard audio, pinyin masqué par défaut ; **sauvegarde et restauration locales du vocabulaire et de la progression** (§9.1) |
-| 0.4.0 | Dictée vocale : réponse tapée en hanzi avec correction automatique, ou mode papier avec auto-correction |
+| 0.4.0 | Dictée vocale : réponse tapée en hanzi avec correction automatique, ou mode papier avec auto-correction ; **entraînement libre** (tous les mots, sans effet sur la planification FSRS) ; **explication de la file du jour** (mots à revoir demain, mots nouveaux en attente) ; **réglage du nombre de mots nouveaux par jour** (retour de test du 2026-11-06 : après une séance, plus aucun mot n'était proposé) |
 | 0.5.0 | **Labels à travailler + objectif contrôle + jauge de maîtrise**, jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
 | 0.6.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
 | 0.7.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité |
