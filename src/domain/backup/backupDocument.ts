@@ -60,3 +60,8 @@ export async function createBackup(
   } as const;
   return { ...content, sha256: await fingerprint(content, sha256) };
 }
+
+/** The text of the backup file: indented, so that a curious parent can read it. */
+export function serializeBackup(backup: BackupDocument): string {
+  return JSON.stringify(backup, null, 2);
+}
