@@ -157,4 +157,29 @@ describe('App', () => {
     const list = screen.getByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /apple/ })).toHaveTextContent('Fruits rouges');
   });
+
+  it('practises the entered words with flashcards from the menu, then back to the words', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-flashcards' });
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('猫 | māo | chat');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+    await screen.findByRole('status');
+
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
+    expect(within(menu).getByRole('button', { name: fr.nav.flashcards })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.queryByRole('region', { name: fr.bulkEntry.title })).toBeNull();
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+    await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
+    await user.click(screen.getByRole('button', { name: fr.flashcards.evaluations.good }));
+    expect(await screen.findByRole('heading', { name: fr.flashcards.summaryTitle })).toBeVisible();
+
+    await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /猫/ })).toBeVisible();
+  });
 });

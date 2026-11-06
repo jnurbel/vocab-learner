@@ -188,5 +188,11 @@
     "stageChangesTitle": "Mots qui ont changé de stade",
     "stageChange": "{from} → {to}",
     "restart": "Nouvelle session"
+  },
+  "nav": {
+    "label": "Menu",
+    "words": "Mes mots",
+    "flashcards": "Flashcards",
+    "backup": "Sauvegarde"
   }
 }

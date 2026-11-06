@@ -7,10 +7,18 @@
   import WordList from '../features/cards/WordList.svelte';
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import LabelManager from '../features/labels/LabelManager.svelte';
+  import Flashcards from '../features/flashcards/Flashcards.svelte';
+  import {
+    startFlashcardSession,
+    type FlashcardSelection,
+  } from '../features/flashcards/flashcardSession';
   import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
   import { loadPinyinGenerator } from '../services/pinyinLoader';
   import { persistenceRequester } from '../services/storagePersistence';
+  import { browserSpeechHost, createWebSpeechSpeaker, type Speaker } from '../services/tts/speaker';
+  import { StudyRepository } from '../storage/studyRepository';
+  import { srs } from './srs';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
 
   interface Props {
@@ -18,6 +26,8 @@
     databaseName?: string;
     /** Asks the browser to keep the data; called after every successful save. */
     requestPersistence?: () => Promise<void>;
+    /** Reads the words aloud; the browser's voices by default. */
+    speaker?: Speaker;
   }
 
   const {
@@ -25,9 +35,15 @@
     requestPersistence = persistenceRequester(
       'storage' in navigator ? navigator.storage : undefined,
     ),
+    speaker = createWebSpeechSpeaker(browserSpeechHost()),
   }: Props = $props();
 
+  type Page = 'words' | 'flashcards';
+  const PAGES: readonly Page[] = ['words', 'flashcards'];
+  let page = $state<Page>('words');
+
   let repository: VocabularyRepository | undefined;
+  let study: StudyRepository | undefined;
   // Raw state: the data read from storage is replaced as a whole, never mutated, and must stay
   // plain objects, because IndexedDB cannot clone the proxies of deep reactive state.
   let cards = $state.raw<Card[]>([]);
@@ -41,10 +57,22 @@
 
   onMount(() => {
     repository = new VocabularyRepository(databaseName);
+    study = new StudyRepository(databaseName);
     void reload(repository);
   });
 
   const newId = () => crypto.randomUUID();
+
+  function startSession(selection: FlashcardSelection) {
+    if (study === undefined) {
+      throw new Error('Storage is not ready');
+    }
+    return startFlashcardSession(selection, { store: study, srs, clock: () => new Date(), newId });
+  }
+
+  function sessionEnded() {
+    void reload(storage());
+  }
   const clock = () => new Date().toISOString();
 
   function storage(): VocabularyRepository {
@@ -85,49 +113,81 @@
   <h1>{fr.app.title}</h1>
   <p>{fr.app.tagline}</p>
 
-  <WordForm
-    idPrefix="word-entry"
-    existingCards={cards}
-    existingLabels={labels}
-    loadPinyin={loadPinyinGenerator}
-    {newId}
-    {clock}
-    onSave={save}
-  />
+  <nav aria-label={fr.nav.label}>
+    {#each PAGES as name (name)}
+      <button
+        type="button"
+        aria-current={page === name ? 'page' : undefined}
+        onclick={() => {
+          page = name;
+        }}>{fr.nav[name]}</button
+      >
+    {/each}
+  </nav>
 
-  <BulkEntry
-    existingCards={cards}
-    existingLabels={labels}
-    loadPinyin={loadPinyinGenerator}
-    {newId}
-    {clock}
-    onSave={save}
-  />
+  {#if page === 'flashcards'}
+    <Flashcards {cards} {labels} {startSession} {speaker} onSessionEnd={sessionEnded} />
+  {:else}
+    <WordForm
+      idPrefix="word-entry"
+      existingCards={cards}
+      existingLabels={labels}
+      loadPinyin={loadPinyinGenerator}
+      {newId}
+      {clock}
+      onSave={save}
+    />
 
-  {#if editing !== undefined}
-    {#key editing.id}
-      <WordForm
-        idPrefix="word-edit"
-        card={editing}
-        existingCards={cards}
-        existingLabels={labels}
-        loadPinyin={loadPinyinGenerator}
-        {newId}
-        {clock}
-        onSave={save}
-        onClose={() => {
-          editing = undefined;
-        }}
-      />
-    {/key}
+    <BulkEntry
+      existingCards={cards}
+      existingLabels={labels}
+      loadPinyin={loadPinyinGenerator}
+      {newId}
+      {clock}
+      onSave={save}
+    />
+
+    {#if editing !== undefined}
+      {#key editing.id}
+        <WordForm
+          idPrefix="word-edit"
+          card={editing}
+          existingCards={cards}
+          existingLabels={labels}
+          loadPinyin={loadPinyinGenerator}
+          {newId}
+          {clock}
+          onSave={save}
+          onClose={() => {
+            editing = undefined;
+          }}
+        />
+      {/key}
+    {/if}
+
+    <WordList {cards} {labels} onEdit={startEditing} onDelete={deleteCard} />
+
+    <LabelManager {labels} {cards} {clock} onChange={changeLabels} />
   {/if}
-
-  <WordList {cards} {labels} onEdit={startEditing} onDelete={deleteCard} />
-
-  <LabelManager {labels} {cards} {clock} onChange={changeLabels} />
 </main>
 
 <style>
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  nav button {
+    min-height: 44px;
+  }
+
+  nav button[aria-current='page'] {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+
   main {
     max-width: 40rem;
     margin: 0 auto;
