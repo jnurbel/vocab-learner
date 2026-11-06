@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { CARD_LIMITS, termKey } from './card';
 import { LABEL_NAME_MAX_LENGTH } from './label';
 import { failure, success, type Result } from './result';
+import { hexColor, identifier, safeText, singleLine } from './safeText';
 
 /** Bounds on an untrusted pack file, so that a hostile file cannot exhaust memory or storage. */
 export const PACK_LIMITS = {
@@ -11,35 +12,10 @@ export const PACK_LIMITS = {
   labelsPerCard: 50,
 } as const;
 
-/** Control characters and bidi overrides or isolates ("trojan source"). */
-const INVISIBLE_CONTROLS = /[\p{Cc}\p{Bidi_Control}]/u;
-/** Tolerated in multiline texts only. */
-const LINE_BREAKS = /[\t\n\r]/g;
-
-const safeText = (maxLength: number, { multiline }: { multiline: boolean }) =>
-  z
-    .string()
-    .trim()
-    .min(1)
-    .max(maxLength)
-    .refine(
-      (text) => !INVISIBLE_CONTROLS.test(multiline ? text.replace(LINE_BREAKS, '') : text),
-      'Control characters are not allowed',
-    );
-
-const singleLine = (maxLength: number) => safeText(maxLength, { multiline: false });
-
-/** Identifiers end up in IndexedDB keys and DOM attributes: short, plain tokens only. */
-const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
-
 const packLabelSchema = z.strictObject({
   id: identifier,
   name: singleLine(LABEL_NAME_MAX_LENGTH),
-  // Used in a style directive: a strict hex code leaves no room for CSS injection.
-  color: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/)
-    .optional(),
+  color: hexColor.optional(),
 });
 
 const packCardSchema = z.strictObject({

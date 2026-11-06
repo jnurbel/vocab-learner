@@ -35,11 +35,22 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,svelte}'],
-      exclude: ['src/**/*.test.ts', 'src/setupTests.ts', 'src/main.ts', 'src/**/*.d.ts'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.fixtures.ts',
+        'src/setupTests.ts',
+        'src/main.ts',
+        'src/**/*.d.ts',
+      ],
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       thresholds: {
         // The domain is written test-first: every line and branch must be covered.
         'src/domain/**': {
+          100: true,
+          perFile: true,
+        },
+        // Storage holds the user's only copy of their progress: fully covered as well.
+        'src/storage/**': {
           100: true,
           perFile: true,
         },
