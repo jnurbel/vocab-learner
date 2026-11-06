@@ -4,9 +4,17 @@ import type { Language } from '../../domain/card';
 export interface Speaker {
   /** Whether a voice exists for the language; the first call waits for the voice list. */
   hasVoice(language: Language): Promise<boolean>;
-  /** Resolves once the word was read; rejects when it cannot be read (no voice, error). */
-  speak(text: string, language: Language): Promise<void>;
+  /**
+   * Resolves once the word was read (at the end of the utterance, which is how iOS chains
+   * readings); rejects when it cannot be read (no voice, error).
+   */
+  speak(text: string, language: Language, options?: SpeakOptions): Promise<void>;
   cancel(): void;
+}
+
+export interface SpeakOptions {
+  /** Speech rate of this reading, e.g. 0.6 to read slowly; the speaker's own rate otherwise. */
+  rate?: number;
 }
 
 /** The parts of the Web Speech API used here. */
@@ -106,7 +114,7 @@ export function createWebSpeechSpeaker(
     async hasVoice(language) {
       return (await voiceFor(language)) !== undefined;
     },
-    async speak(text, language) {
+    async speak(text, language, options = {}) {
       const voice = await voiceFor(language);
       if (voice === undefined || synthesis === undefined || createUtterance === undefined) {
         throw new Error(`No voice for ${language}`);
@@ -115,7 +123,7 @@ export function createWebSpeechSpeaker(
       const utterance = createUtterance(text);
       utterance.voice = voice;
       utterance.lang = BCP47_OF[language];
-      utterance.rate = rate;
+      utterance.rate = options.rate ?? rate;
       await new Promise<void>((resolve, reject) => {
         utterance.onend = () => {
           resolve();
