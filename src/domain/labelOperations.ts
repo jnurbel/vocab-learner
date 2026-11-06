@@ -8,7 +8,7 @@ function labelNameKey(name: string): string {
   return name.trim().normalize('NFC').toLowerCase();
 }
 
-function findLabelByName(labels: readonly Label[], name: string): Label | undefined {
+export function findLabelByName(labels: readonly Label[], name: string): Label | undefined {
   const key = labelNameKey(name);
   return labels.find((candidate) => labelNameKey(candidate.name) === key);
 }
