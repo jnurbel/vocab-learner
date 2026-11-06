@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
+import { tick } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '../../domain/card';
 import type { Label } from '../../domain/label';
@@ -8,6 +9,7 @@ import fr from '../../i18n/fr.json';
 import type { StudyData } from '../../storage/studyRepository';
 import { card, FakeSpeaker, FakeStore, srs } from './dictation.fixtures';
 import Dictation from './Dictation.svelte';
+import type { PlayerTimers } from './dictationPlayer';
 import { startDictationSession, type DictationSelection } from './dictationSession';
 
 const morning = new Date('2026-11-06T08:00:00Z');
@@ -37,11 +39,13 @@ function setup({
   data = {},
   speaker = new FakeSpeaker(true, true),
   defaultMode,
+  timers,
 }: {
   cards?: Card[];
   data?: Partial<StudyData>;
   speaker?: FakeSpeaker;
   defaultMode?: 'keyboard' | 'paper';
+  timers?: PlayerTimers;
 } = {}) {
   const store = new FakeStore(data);
   const startSession = vi.fn((selection: DictationSelection) =>
@@ -57,8 +61,17 @@ function setup({
     onSessionEnd,
     newSeed: () => 'seed',
     ...(defaultMode === undefined ? {} : { defaultMode }),
+    ...(timers === undefined ? {} : { timers }),
   });
   return { store, startSession, speaker, onSessionEnd, user: userEvent.setup() };
+}
+
+function nth<T>(items: readonly T[], index: number): T {
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`No item at ${String(index)}`);
+  }
+  return item;
 }
 
 const region = () => screen.getByRole('region', { name: fr.dictation.title });
@@ -358,5 +371,133 @@ describe('Dictation, end', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(fr.dictation.saveFailed);
     expect(screen.queryByText(fr.dictation.correct)).toBeNull();
+  });
+});
+
+/** Timers that fire only when the test says so. */
+class ManualTimers implements PlayerTimers {
+  private readonly pending = new Map<number, () => void>();
+  private lastId = 0;
+
+  readonly setTimeout = (callback: () => void) => {
+    this.lastId += 1;
+    this.pending.set(this.lastId, callback);
+    return this.lastId;
+  };
+
+  readonly clearTimeout = (handle: unknown) => {
+    this.pending.delete(handle as number);
+  };
+
+  /** Fires the timers due, one second of countdown each. */
+  async elapse(seconds: number) {
+    for (let second = 0; second < seconds; second++) {
+      const [entry] = this.pending;
+      if (entry !== undefined) {
+        this.pending.delete(entry[0]);
+        entry[1]();
+      }
+      await tick();
+    }
+  }
+}
+
+describe('Dictation on paper', () => {
+  async function startOnPaper(
+    user: ReturnType<typeof userEvent.setup>,
+    { delay = '5' }: { delay?: string } = {},
+  ) {
+    await user.click(screen.getByRole('radio', { name: fr.dictation.modes.paper }));
+    await user.selectOptions(screen.getByRole('combobox', { name: fr.dictation.delay }), delay);
+    await user.click(screen.getByRole('button', { name: fr.dictation.start }));
+    await screen.findByRole('status');
+  }
+
+  it('reads the words one after the other with a countdown, then asks for a self-correction', async () => {
+    const timers = new ManualTimers();
+    const { user, speaker, store, onSessionEnd } = setup({ timers });
+    await startOnPaper(user);
+
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 1 sur 3');
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(await screen.findByText('Mot suivant dans 5 s')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: fr.dictation.countdownLabel })).toBeVisible();
+    await timers.elapse(1);
+    expect(screen.getByText('Mot suivant dans 4 s')).toBeVisible();
+    await timers.elapse(4);
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 2 sur 3');
+    await timers.elapse(10);
+
+    expect(
+      await screen.findByRole('heading', { name: fr.dictation.correctionTitle }),
+    ).toBeVisible();
+    expect(speaker.texts).toEqual(['再', '猫', '狗']);
+    expect(within(region()).getByText('再')).toHaveAttribute('lang', 'zh-CN');
+    expect(within(region()).getByText('zài')).toBeVisible();
+    expect(within(region()).getByText('encore')).toBeVisible();
+
+    const submit = screen.getByRole('button', { name: fr.dictation.submitCorrection });
+    expect(submit).toBeDisabled();
+    const marks = screen.getAllByRole('group', { name: /ton résultat/ });
+    expect(marks).toHaveLength(3);
+    await user.click(within(nth(marks, 0)).getByRole('radio', { name: 'Juste' }));
+    await user.click(within(nth(marks, 1)).getByRole('radio', { name: 'À moitié' }));
+    await user.click(within(nth(marks, 2)).getByRole('radio', { name: 'Faux' }));
+    await user.click(submit);
+
+    expect(await screen.findByText('Score : 1 / 3')).toBeVisible();
+    expect(
+      store.answers.map(({ result }) => [result.cardId, result.outcome, result.rating]),
+    ).toEqual([
+      ['zai', 'correct', 'good'],
+      ['cat', 'almost', 'hard'],
+      ['dog', 'wrong', 'again'],
+    ]);
+    expect(store.sessions[0]).toMatchObject({ mode: 'dictation' });
+    expect(onSessionEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('pauses with the space bar, moves with the arrows and replays with R', async () => {
+    const { user, speaker } = setup();
+    await startOnPaper(user, { delay: 'manual' });
+    expect(await screen.findByText(fr.dictation.writeNow)).toBeVisible();
+
+    await user.keyboard(' ');
+    expect(screen.getByText(fr.dictation.paused)).toBeVisible();
+    expect(screen.getByRole('button', { name: fr.dictation.resume })).toBeVisible();
+    await user.keyboard(' ');
+    expect(screen.getByRole('button', { name: fr.dictation.pause })).toBeVisible();
+
+    await user.keyboard('{ArrowRight}');
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 2 sur 3');
+    await user.keyboard('{ArrowLeft}');
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 1 sur 3');
+    await user.keyboard('r');
+    await user.keyboard('{ArrowDown}');
+    expect(speaker.last()).toMatchObject({ text: '再', rate: 0.6 });
+  });
+
+  it('has buttons for every reading control', async () => {
+    const { user } = setup();
+    await startOnPaper(user, { delay: 'manual' });
+
+    await user.click(screen.getByRole('button', { name: fr.dictation.next }));
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 2 sur 3');
+    await user.click(screen.getByRole('button', { name: fr.dictation.previous }));
+    expect(within(region()).getByRole('status')).toHaveTextContent('Mot 1 sur 3');
+    await user.click(screen.getByRole('button', { name: fr.dictation.pause }));
+    await user.click(screen.getByRole('button', { name: fr.dictation.resume }));
+    await user.click(screen.getByRole('button', { name: fr.dictation.finishPaper }));
+
+    expect(screen.getByRole('heading', { name: fr.dictation.correctionTitle })).toBeVisible();
+    expect(screen.getAllByRole('group', { name: /ton résultat/ })).toHaveLength(3);
+  });
+
+  it('writes the instruction for each word when there is no voice', async () => {
+    const { user } = setup({ speaker: new FakeSpeaker(false) });
+    await startOnPaper(user, { delay: 'manual' });
+
+    expect(screen.getByText(fr.dictation.writtenPrompt.zh)).toBeVisible();
+    expect(within(region()).getByText('zài')).toBeVisible();
   });
 });

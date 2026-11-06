@@ -59,6 +59,8 @@
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
   const SPEEDS = Object.keys(DICTATION_RATES) as DictationSpeed[];
   const MODES: readonly AnswerMode[] = ['keyboard', 'paper'];
+  const SELF_MARKS = ['correct', 'almost', 'wrong'] as const;
+  type SelfMark = (typeof SELF_MARKS)[number];
 
   // The start screen.
   let language = $state<Language>('zh');
@@ -97,11 +99,16 @@
   let hintShown = $state(false);
   let feedback = $state.raw<Feedback>();
   let busy = $state(false);
+
+  // The dictation on paper.
+  let delayMs = $state<number>();
+  let marks = $state<Record<string, SelfMark>>({});
   let field = $state<HTMLInputElement>();
   let continueButton = $state<HTMLButtonElement>();
 
   const lang = (code: Language) => (code === 'zh' ? 'zh-CN' : 'en');
   const current = $derived(snapshot === undefined ? undefined : words[snapshot.index]);
+  const allMarked = $derived(words.every((word) => marks[word.id] !== undefined));
   const written = $derived(voice === 'missing' || snapshot?.audioFailed === true);
   const isRight = (outcome: Outcome) => outcome === 'correct' || outcome === 'correctWithHint';
   const score = $derived(results.filter(({ outcome }) => isRight(outcome)).length);
@@ -139,6 +146,8 @@
     words = plan.words;
     runMode = mode;
     results = [];
+    marks = {};
+    delayMs = plan.delayMs;
     resetAnswer();
     const reader = new DictationPlayer(
       plan.words.map((word) => ({ text: word.term, language: word.language })),
@@ -256,6 +265,7 @@
     if (runMode === 'paper') {
       view = 'correction';
       release?.();
+      release = undefined;
     } else {
       await finish();
     }
@@ -269,6 +279,29 @@
     if (results.length > 0) {
       onSessionEnd();
     }
+  }
+
+  /** Each word gets the learner's own mark: right, half right or wrong. */
+  async function submitCorrection() {
+    if (session === undefined || busy || !allMarked) {
+      return;
+    }
+    busy = true;
+    error = undefined;
+    try {
+      // After a failed save, only the words not stored yet are sent again.
+      for (const word of words.slice(results.length)) {
+        const outcome = marks[word.id] ?? 'wrong';
+        await session.record(word, outcome);
+        results = [...results, { card: word, outcome }];
+      }
+    } catch {
+      error = 'saveFailed';
+      return;
+    } finally {
+      busy = false;
+    }
+    await finish();
   }
 
   function listen(card: Card) {
@@ -560,7 +593,98 @@
         <button type="button" onclick={finish}>{fr.dictation.quit}</button>
       </div>
       <p class="help">{fr.dictation.keyboardHelp.keyboard}</p>
+    {:else}
+      {#if snapshot.status === 'paused'}
+        <p class="state">{fr.dictation.paused}</p>
+      {:else if snapshot.status === 'speaking'}
+        <p class="state">{fr.dictation.listening}</p>
+      {:else if snapshot.remainingMs !== undefined && delayMs !== undefined}
+        <p class="state" aria-hidden="true">
+          {format(fr.dictation.countdown, { seconds: Math.ceil(snapshot.remainingMs / 1_000) })}
+        </p>
+        <progress
+          aria-label={fr.dictation.countdownLabel}
+          max={delayMs}
+          value={delayMs - snapshot.remainingMs}
+        ></progress>
+      {:else}
+        <p class="state">{fr.dictation.writeNow}</p>
+      {/if}
+
+      <div class="actions">
+        {#if snapshot.status === 'paused'}
+          <button type="button" aria-keyshortcuts="Space" onclick={() => player?.resume()}
+            >{fr.dictation.resume}</button
+          >
+        {:else}
+          <button type="button" aria-keyshortcuts="Space" onclick={() => player?.pause()}
+            >{fr.dictation.pause}</button
+          >
+        {/if}
+        {#if !written}
+          <button
+            type="button"
+            aria-keyshortcuts="R ArrowUp"
+            onclick={() => {
+              replay();
+            }}>{fr.dictation.replay}</button
+          >
+          <button
+            type="button"
+            aria-keyshortcuts="ArrowDown"
+            onclick={() => {
+              replay(true);
+            }}>{fr.dictation.slow}</button
+          >
+        {/if}
+        <button type="button" aria-keyshortcuts="ArrowLeft" onclick={() => player?.previous()}
+          >{fr.dictation.previous}</button
+        >
+        <button type="button" aria-keyshortcuts="ArrowRight" onclick={() => player?.next()}
+          >{fr.dictation.next}</button
+        >
+        <button type="button" onclick={() => player?.stop()}>{fr.dictation.finishPaper}</button>
+      </div>
+      <p class="help">{fr.dictation.keyboardHelp.paper}</p>
     {/if}
+  {:else if view === 'correction'}
+    <h3>{fr.dictation.correctionTitle}</h3>
+    <p>{fr.dictation.correctionHelp}</p>
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        void submitCorrection();
+      }}
+    >
+      <ol class="correction">
+        {#each words as word, index (word.id)}
+          <li>
+            <fieldset>
+              <legend
+                >{format(fr.dictation.markLegend, { position: index + 1 })}
+                <span class="term-small" lang={lang(word.language)}>{word.term}</span></legend
+              >
+              {#if word.pinyin !== undefined}
+                <p lang="zh-CN"><Pinyin pinyin={word.pinyin} /></p>
+              {/if}
+              <p>{word.translation}</p>
+              {#each SELF_MARKS as mark (mark)}
+                <label class="choice">
+                  <input
+                    type="radio"
+                    name="dictation-mark-{word.id}"
+                    value={mark}
+                    bind:group={marks[word.id]}
+                  />
+                  {fr.dictation.selfMarks[mark]}
+                </label>
+              {/each}
+            </fieldset>
+          </li>
+        {/each}
+      </ol>
+      <button type="submit" disabled={busy || !allMarked}>{fr.dictation.submitCorrection}</button>
+    </form>
   {:else if view === 'summary'}
     <h3>{fr.dictation.summaryTitle}</h3>
     <p class="score">{format(fr.dictation.score, { score, total: results.length })}</p>
@@ -689,6 +813,19 @@
     gap: 0.5rem;
     align-items: center;
     margin-bottom: 0.5rem;
+  }
+
+  .state {
+    font-size: 1.25rem;
+  }
+
+  progress {
+    width: 100%;
+    height: 1rem;
+  }
+
+  .correction {
+    padding-left: 1rem;
   }
 
   .term-small {

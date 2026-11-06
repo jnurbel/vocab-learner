@@ -358,6 +358,7 @@
     "keyboardHelp": {
       "keyboard": "Clavier : Entrée valide, flèche haut pour réécouter, flèche bas pour réécouter lentement.",
       "paper": "Clavier : Espace pour pause ou reprise, R ou flèche haut pour réécouter, flèche bas pour lent, flèches gauche et droite pour précédent et suivant."
-    }
+    },
+    "markLegend": "Mot {position}, ton résultat :"
   }
 }
