@@ -64,7 +64,10 @@ export function buildReviewQueue(
 }
 
 /** Today's quota of new words still available; a malformed quota allows none. */
-function newWordsLeft({ newPerDay, newIntroducedToday }: ReviewQueueInput): number {
+export function newWordsLeft({
+  newPerDay,
+  newIntroducedToday,
+}: Pick<ReviewQueueInput, 'newPerDay' | 'newIntroducedToday'>): number {
   const left = Math.floor(newPerDay - newIntroducedToday);
   return Number.isFinite(left) ? Math.max(0, left) : 0;
 }
