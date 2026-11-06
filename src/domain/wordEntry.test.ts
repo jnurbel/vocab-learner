@@ -35,4 +35,52 @@ describe('planWordEntry', () => {
       },
     });
   });
+
+  it('does not duplicate an existing word: it only receives the labels it lacks', () => {
+    const cat = existingCard({ id: 'cat', term: '猫', labelIds: ['lesson'] });
+
+    const outcome = planWordEntry(
+      fields({ term: ' 猫 ', translation: 'autre sens', labelIds: ['lesson', 'animals'] }),
+      [cat],
+      context,
+    );
+
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        kind: 'labelsAdded',
+        card: { ...cat, labelIds: ['lesson', 'animals'], updatedAt: now },
+        addedLabelIds: ['animals'],
+      },
+    });
+  });
+
+  it('recognises an existing English word whatever its case', () => {
+    const apple = existingCard({ id: 'apple', language: 'en', term: 'apple', labelIds: [] });
+
+    const outcome = planWordEntry(
+      fields({ term: 'Apple', translation: 'pomme', labelIds: [] }),
+      [apple],
+      context,
+    );
+
+    expect(outcome).toEqual({
+      ok: true,
+      value: { kind: 'alreadyPresent', card: apple },
+    });
+  });
 });
+
+function existingCard(overrides: Partial<Card>): Card {
+  return {
+    id: 'existing',
+    language: 'zh',
+    term: '猫',
+    translation: 'chat',
+    labelIds: [],
+    source: 'manual',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
