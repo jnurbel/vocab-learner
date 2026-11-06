@@ -5,6 +5,7 @@
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import ConfirmAction from '../../ui/ConfirmAction.svelte';
+  import Pinyin from '../../ui/Pinyin.svelte';
 
   interface Props {
     cards: readonly Card[];
@@ -97,7 +98,7 @@
         {#each shown as card (card.id)}
           <tr>
             <td lang={card.language === 'zh' ? 'zh-CN' : 'en'}>{card.term}</td>
-            <td>{card.pinyin ?? ''}</td>
+            <td><Pinyin pinyin={card.pinyin ?? ''} /></td>
             <td>{card.translation}</td>
             <td>{labelsOf(card)}</td>
             <td>

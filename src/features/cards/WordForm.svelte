@@ -5,6 +5,7 @@
   import type { ImportChanges } from '../../domain/importPlan';
   import type { Label } from '../../domain/label';
   import { resolveLabelChoice } from '../../domain/labelOperations';
+  import { numericToDiacritic } from '../../domain/pinyin';
   import type { PinyinGenerator } from '../../domain/pinyinGeneration';
   import { failure, success, type Result } from '../../domain/result';
   import {
@@ -15,6 +16,7 @@
   } from '../../domain/wordEntry';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
+  import Pinyin from '../../ui/Pinyin.svelte';
   import LabelPicker from '../labels/LabelPicker.svelte';
   import { PinyinSource } from '../pinyinSource.svelte';
   import type { VocabularySave } from '../vocabularySave';
@@ -221,6 +223,12 @@
     <p id={id('pinyin-help')} class={errorOf('pinyin') === undefined ? 'help' : 'error'}>
       {errorOf('pinyin') ?? fr.wordForm.pinyinHelp}
     </p>
+    {#if pinyin.trim() !== ''}
+      <p class="help" aria-hidden="true">
+        <span>{fr.wordForm.pinyinPreview}</span>
+        <Pinyin pinyin={numericToDiacritic(pinyin)} />
+      </p>
+    {/if}
   {/if}
 
   <label for={id('translation')}>{fr.wordForm.translation}</label>

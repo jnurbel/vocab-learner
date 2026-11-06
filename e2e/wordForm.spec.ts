@@ -34,6 +34,10 @@ test('a learner enters one word with the keyboard, then enters it again to add a
   await expect(term).toBeFocused();
   const list = page.getByRole('table', { name: 'Liste des mots' });
   await expect(list.getByRole('row', { name: /长城/ })).toContainText('Cháng');
+  // Second tone in green under the strict CSP, the tone mark still in the text.
+  const secondTone = list.getByRole('row', { name: /长城/ }).getByText('Cháng', { exact: true });
+  await expect(secondTone).toHaveClass('tone-2');
+  await expect(secondTone).toHaveCSS('color', 'rgb(46, 125, 50)');
 
   await term.fill('长城');
   await form.getByLabel('Sens').fill('la Grande Muraille');

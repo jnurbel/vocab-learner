@@ -9,6 +9,7 @@
     "term": "Mot (hanzi ou anglais)",
     "pinyin": "Pinyin",
     "pinyinHelp": "Proposé automatiquement et modifiable. Tu peux aussi taper les tons en chiffres : ni3 hao3.",
+    "pinyinPreview": "Aperçu des tons :",
     "translation": "Sens",
     "example": "Exemple (facultatif)",
     "labelsLegend": "Labels de ce mot",

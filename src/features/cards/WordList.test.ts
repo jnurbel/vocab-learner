@@ -128,4 +128,14 @@ describe('WordList', () => {
     ).toHaveFocus();
     expect(onDelete).not.toHaveBeenCalled();
   });
+
+  it('shows the pinyin with one colour per tone, the tone marks kept', () => {
+    const tea = { ...card('c5', '茶叶', 'zh', []), pinyin: 'cháyè' };
+    render(WordList, { cards: [tea], labels });
+
+    const row = screen.getByRole('row', { name: /茶叶/ });
+    expect(row).toHaveTextContent('cháyè');
+    expect(within(row).getByText('chá')).toHaveClass('tone-2');
+    expect(within(row).getByText('yè')).toHaveClass('tone-4');
+  });
 });

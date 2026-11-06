@@ -78,6 +78,19 @@ describe('WordForm, entering one word', () => {
     });
   });
 
+  it('previews the typed pinyin converted to tone marks, coloured by tone', async () => {
+    const { user } = setup();
+
+    await user.type(screen.getByLabelText(fr.wordForm.term), '你好');
+    const pinyin = screen.getByLabelText(fr.wordForm.pinyin);
+    await user.clear(pinyin);
+    await user.type(pinyin, 'ni3hao3');
+
+    const preview = screen.getByText(fr.wordForm.pinyinPreview).parentElement;
+    expect(preview).toHaveTextContent('nǐhǎo');
+    expect(screen.getByText('nǐ')).toHaveClass('tone-3');
+  });
+
   it('asks no pinyin for an English word', async () => {
     const { user } = setup();
 
