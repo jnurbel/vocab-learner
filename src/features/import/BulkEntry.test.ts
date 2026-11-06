@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/svelte';
+import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '../../domain/card';
@@ -10,11 +10,12 @@ const now = '2026-11-05T12:00:00.000Z';
 
 function setup(options: { cards?: Card[]; labels?: Label[] } = {}) {
   const onSave = vi.fn(() => Promise.resolve());
+  const loadPinyin = vi.fn(() => Promise.resolve((hanzi: string) => `auto(${hanzi})`));
   let sequence = 0;
   render(BulkEntry, {
     existingCards: options.cards ?? [],
     existingLabels: options.labels ?? [],
-    generatePinyin: (hanzi: string) => `auto(${hanzi})`,
+    loadPinyin,
     newId: () => {
       sequence += 1;
       return `id-${String(sequence)}`;
@@ -22,7 +23,7 @@ function setup(options: { cards?: Card[]; labels?: Label[] } = {}) {
     clock: () => now,
     onSave,
   });
-  return { onSave, user: userEvent.setup() };
+  return { onSave, loadPinyin, user: userEvent.setup() };
 }
 
 async function typeLines(user: ReturnType<typeof userEvent.setup>, text: string) {
@@ -32,13 +33,22 @@ async function typeLines(user: ReturnType<typeof userEvent.setup>, text: string)
 }
 
 describe('BulkEntry', () => {
+  it('does not load the pinyin generator while no Chinese word lacks a pinyin', async () => {
+    const { user, loadPinyin } = setup();
+
+    await typeLines(user, '你好 | nǐ hǎo | bonjour\napple | pomme');
+
+    expect(screen.getByRole('button', { name: 'Ajouter 2 mots' })).toBeEnabled();
+    expect(loadPinyin).not.toHaveBeenCalled();
+  });
+
   it('previews the new words with their generated or converted pinyin', async () => {
     const { user } = setup();
 
     await typeLines(user, '你好 || bonjour\n谢谢 | xie4xie | merci\napple | pomme');
 
     const preview = screen.getByRole('table', { name: fr.bulkEntry.newWordsCaption });
-    expect(preview).toHaveTextContent('auto(你好)');
+    expect(await within(preview).findByText('auto(你好)')).toBeVisible();
     expect(preview).toHaveTextContent('xièxie');
     expect(preview).toHaveTextContent('apple');
     expect(screen.getByRole('button', { name: 'Ajouter 3 mots' })).toBeEnabled();

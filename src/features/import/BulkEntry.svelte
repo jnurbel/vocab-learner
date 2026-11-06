@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { parseBulkEntry, type BulkLineError } from '../../domain/bulkEntryParser';
+  import {
+    parseBulkEntry,
+    type BulkEntries,
+    type BulkLineError,
+  } from '../../domain/bulkEntryParser';
   import type { Card } from '../../domain/card';
   import { applyImportPlan, planImport } from '../../domain/importPlan';
   import type { Label } from '../../domain/label';
   import { resolveLabelChoice } from '../../domain/labelOperations';
   import { completeMissingPinyin, type PinyinGenerator } from '../../domain/pinyinGeneration';
+  import { PinyinSource } from '../pinyinSource.svelte';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import type { BulkEntrySave } from './bulkEntrySave';
@@ -12,13 +17,14 @@
   interface Props {
     existingCards: readonly Card[];
     existingLabels: readonly Label[];
-    generatePinyin: PinyinGenerator;
+    loadPinyin: () => Promise<PinyinGenerator>;
     newId: () => string;
     clock: () => string;
     onSave: (save: BulkEntrySave) => Promise<void>;
   }
 
-  const { existingCards, existingLabels, generatePinyin, newId, clock, onSave }: Props = $props();
+  const { existingCards, existingLabels, loadPinyin, newId, clock, onSave }: Props = $props();
+  const pinyinSource = new PinyinSource(() => loadPinyin());
 
   /** Stands for the label being typed until it receives a real id on save. */
   const PENDING_LABEL_ID = 'pending-new-label';
@@ -31,14 +37,22 @@
   >();
 
   const parsed = $derived(parseBulkEntry(text));
-  const batch = $derived(
-    parsed.ok
-      ? {
-          entries: completeMissingPinyin(parsed.value.entries, generatePinyin),
-          errors: parsed.value.errors,
-        }
-      : undefined,
+  const needsPinyin = $derived(
+    parsed.ok && parsed.value.entries.some(({ language, pinyin }) => language === 'zh' && !pinyin),
   );
+  const batch = $derived(parsed.ok ? withPinyin(parsed.value, pinyinSource.generator) : undefined);
+
+  $effect(() => {
+    if (needsPinyin) {
+      pinyinSource.request();
+    }
+  });
+
+  function withPinyin(entries: BulkEntries, generate: PinyinGenerator | undefined): BulkEntries {
+    return generate === undefined
+      ? entries
+      : { entries: completeMissingPinyin(entries.entries, generate), errors: entries.errors };
+  }
   const labelChoice = $derived(
     resolveLabelChoice(existingLabels, chosenLabelIds, labelName, {
       id: PENDING_LABEL_ID,
@@ -76,9 +90,10 @@
   }
 
   async function save() {
-    if (batch === undefined) {
+    if (!parsed.ok) {
       return;
     }
+    const batch = withPinyin(parsed.value, needsPinyin ? await pinyinSource.ready() : undefined);
     const now = clock();
     const choice = resolveLabelChoice(existingLabels, chosenLabelIds, labelName, {
       id: newId(),

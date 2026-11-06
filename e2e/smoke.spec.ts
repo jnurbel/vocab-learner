@@ -17,3 +17,23 @@ test('the home page loads without errors or CSP violations', async ({ page }) =>
   await expect(page.getByRole('heading', { level: 1, name: 'vocab-learner' })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('the first load does not download the pinyin library, fetched only when a pinyin is needed', async ({
+  page,
+}) => {
+  const scripts: string[] = [];
+  page.on('request', (request) => {
+    if (request.resourceType() === 'script') {
+      scripts.push(request.url());
+    }
+  });
+
+  await page.goto('./');
+  await expect(page.getByRole('heading', { level: 1, name: 'vocab-learner' })).toBeVisible();
+  expect(scripts.some((url) => url.includes('pinyinProGenerator'))).toBe(false);
+
+  await page.getByLabel('Un mot par ligne').fill('你好 || bonjour');
+
+  await expect(page.getByRole('table', { name: 'Mots nouveaux' })).toContainText('nǐ hǎo');
+  expect(scripts.some((url) => url.includes('pinyinProGenerator'))).toBe(true);
+});

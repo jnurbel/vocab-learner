@@ -2,11 +2,11 @@
   import { onMount } from 'svelte';
   import type { Card } from '../domain/card';
   import type { Label } from '../domain/label';
-  import { pinyinProGenerator } from '../domain/pinyinProGenerator';
   import WordList from '../features/cards/WordList.svelte';
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import type { BulkEntrySave } from '../features/import/bulkEntrySave';
   import fr from '../i18n/fr.json';
+  import { loadPinyinGenerator } from '../services/pinyinLoader';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
 
   interface Props {
@@ -45,7 +45,7 @@
   <BulkEntry
     existingCards={cards}
     existingLabels={labels}
-    generatePinyin={pinyinProGenerator}
+    loadPinyin={loadPinyinGenerator}
     newId={() => crypto.randomUUID()}
     clock={() => new Date().toISOString()}
     onSave={save}
