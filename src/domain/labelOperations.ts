@@ -144,3 +144,21 @@ export function deleteLabel(
     cardsToUpdate: relabelCards(cards, labelId, [], now),
   });
 }
+
+export interface LabelUsage {
+  label: Label;
+  wordCount: number;
+}
+
+/** Labels in French alphabetical order (accents and case ignored), with the number of words. */
+export function countWordsByLabel(labels: readonly Label[], cards: readonly Card[]): LabelUsage[] {
+  const counts = new Map<string, number>();
+  for (const labelId of cards.flatMap((card) => card.labelIds)) {
+    counts.set(labelId, (counts.get(labelId) ?? 0) + 1);
+  }
+  return labels
+    .map((label) => ({ label, wordCount: counts.get(label.id) ?? 0 }))
+    .sort((first, second) =>
+      first.label.name.localeCompare(second.label.name, 'fr', { sensitivity: 'base' }),
+    );
+}

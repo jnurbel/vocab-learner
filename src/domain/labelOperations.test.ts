@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Card, Language } from './card';
 import type { Label } from './label';
 import {
+  countWordsByLabel,
   deleteLabel,
   findOrCreateLabel,
   mergeLabels,
@@ -200,5 +201,20 @@ describe('deleteLabel', () => {
       ok: false,
       errors: ['labelNotFound'],
     });
+  });
+});
+
+describe('countWordsByLabel', () => {
+  it('lists every label in alphabetical order with the number of its words', () => {
+    const lesson = label('lesson', 'Leçon 3');
+    const animals = label('animals', 'Animaux');
+    const empty = label('empty', 'écriture');
+    const cards = [card('cat', ['lesson', 'animals']), card('dog', ['animals'])];
+
+    expect(countWordsByLabel([lesson, empty, animals], cards)).toEqual([
+      { label: animals, wordCount: 2 },
+      { label: empty, wordCount: 0 },
+      { label: lesson, wordCount: 1 },
+    ]);
   });
 });
