@@ -59,6 +59,11 @@ export default defineConfig({
           100: true,
           perFile: true,
         },
+        // Backups are the way back after a lost database: fully covered too.
+        'src/services/backup/**': {
+          100: true,
+          perFile: true,
+        },
       },
     },
   },
