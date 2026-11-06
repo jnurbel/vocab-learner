@@ -49,6 +49,11 @@ export class VocabularyRepository {
     return stored.map(toCard);
   }
 
+  /** Deletes a word; its labels stay, even when no other word carries them. */
+  async deleteCard(cardId: string): Promise<void> {
+    await this.db.cards.delete(cardId);
+  }
+
   async saveLabel(label: Label): Promise<void> {
     await this.db.labels.put(label);
   }

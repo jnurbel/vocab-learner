@@ -31,6 +31,33 @@ export function findOrCreateLabel(
   );
 }
 
+export interface LabelChoice {
+  labelIds: string[];
+  /** Set when the typed name was new: the label must be stored with the words. */
+  newLabel: Label | undefined;
+}
+
+/** Labels chosen in an entry form: the ticked ones plus the typed name, if any. */
+export function resolveLabelChoice(
+  labels: readonly Label[],
+  tickedLabelIds: readonly string[],
+  typedName: string,
+  context: CreationContext,
+): Result<LabelChoice, LabelError> {
+  if (typedName.trim() === '') {
+    return success({ labelIds: uniqueValues(tickedLabelIds), newLabel: undefined });
+  }
+  const typed = findOrCreateLabel(labels, typedName, context);
+  if (!typed.ok) {
+    return typed;
+  }
+  const { label, created } = typed.value;
+  return success({
+    labelIds: uniqueValues([...tickedLabelIds, label.id]),
+    newLabel: created ? label : undefined,
+  });
+}
+
 export type LabelOperationError = LabelError | 'nameTaken' | 'labelNotFound';
 
 export function renameLabel(
@@ -116,4 +143,22 @@ export function deleteLabel(
     labels: labels.filter((candidate) => candidate.id !== labelId),
     cardsToUpdate: relabelCards(cards, labelId, [], now),
   });
+}
+
+export interface LabelUsage {
+  label: Label;
+  wordCount: number;
+}
+
+/** Labels in French alphabetical order (accents and case ignored), with the number of words. */
+export function countWordsByLabel(labels: readonly Label[], cards: readonly Card[]): LabelUsage[] {
+  const counts = new Map<string, number>();
+  for (const labelId of cards.flatMap((card) => card.labelIds)) {
+    counts.set(labelId, (counts.get(labelId) ?? 0) + 1);
+  }
+  return labels
+    .map((label) => ({ label, wordCount: counts.get(label.id) ?? 0 }))
+    .sort((first, second) =>
+      first.label.name.localeCompare(second.label.name, 'fr', { sensitivity: 'base' }),
+    );
 }

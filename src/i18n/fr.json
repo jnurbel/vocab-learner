@@ -3,17 +3,51 @@
     "title": "vocab-learner",
     "tagline": "Maîtrise le vocabulaire de ta leçon, en chinois et en anglais."
   },
+  "wordForm": {
+    "title": "Ajouter un mot",
+    "editTitle": "Modifier « {term} »",
+    "term": "Mot (hanzi ou anglais)",
+    "pinyin": "Pinyin",
+    "pinyinHelp": "Proposé automatiquement et modifiable. Tu peux aussi taper les tons en chiffres : ni3 hao3.",
+    "pinyinPreview": "Aperçu des tons :",
+    "translation": "Sens",
+    "example": "Exemple (facultatif)",
+    "labelsLegend": "Labels de ce mot",
+    "add": "Ajouter le mot",
+    "saveChanges": "Enregistrer les modifications",
+    "cancel": "Annuler",
+    "created": "« {term} » ajouté.",
+    "labelsAdded": "« {term} » existait déjà : labels ajoutés.",
+    "alreadyPresent": "« {term} » existe déjà avec ces labels : rien à ajouter.",
+    "updated": "« {term} » modifié.",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été modifié. Réessaie.",
+    "errors": {
+      "required": "Champ obligatoire.",
+      "tooLong": "Texte trop long.",
+      "duplicate": "Ce mot existe déjà dans ta liste."
+    }
+  },
   "bulkEntry": {
     "title": "Saisie en lot",
     "inputLabel": "Un mot par ligne",
     "inputHelp": "Formats : 你好 | nǐ hǎo | bonjour, 你好 || bonjour (pinyin automatique), apple | pomme. Séparateurs : |, tabulation ou ;.",
     "labelsLegend": "Labels à poser sur ces mots",
-    "noLabels": "Aucun label pour l'instant.",
-    "labelInput": "Nouveau label ou label existant (facultatif)",
-    "newWordsCaption": "Mots nouveaux",
-    "columnTerm": "Mot",
-    "columnPinyin": "Pinyin",
-    "columnTranslation": "Sens",
+    "previewCaption": "Aperçu, modifiable avant l’ajout",
+    "columnLine": "Ligne",
+    "columns": {
+      "term": "Mot",
+      "pinyin": "Pinyin",
+      "translation": "Sens"
+    },
+    "columnStatus": "État",
+    "columnExclude": "Exclure",
+    "cellLabel": "{column}, ligne {line}",
+    "excludeLine": "Exclure la ligne {line}",
+    "status": {
+      "new": "Nouveau",
+      "existing": "Existe déjà",
+      "excluded": "Exclu"
+    },
     "existingWords": "{count} mot(s) existent déjà : ils ne seront pas dupliqués, ils recevront seulement le label.",
     "errorsTitle": "Lignes à corriger",
     "errorLine": "Ligne {line} : {reason}",
@@ -31,16 +65,20 @@
       "inputTooLong": "Le texte est trop long : 20 000 caractères au maximum.",
       "tooManyLines": "Trop de lignes : 500 mots au maximum par saisie."
     },
-    "labelErrors": {
-      "required": "Le nom du label est vide.",
-      "tooLong": "Le nom du label est trop long."
-    },
     "saved": "{count} mot(s) ajouté(s).",
     "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie.",
     "labelsAdded": "Labels ajoutés à {count} mot(s) existant(s).",
     "addLabelsOnly": "Ajouter les labels aux mots existants",
     "addWordsOne": "Ajouter 1 mot",
     "addWordsMany": "Ajouter {count} mots"
+  },
+  "labelPicker": {
+    "noLabels": "Aucun label pour l'instant.",
+    "nameInput": "Nouveau label ou label existant (facultatif)",
+    "errors": {
+      "required": "Le nom du label est vide.",
+      "tooLong": "Le nom du label est trop long."
+    }
   },
   "languages": {
     "zh": "Chinois",
@@ -58,6 +96,49 @@
     "columnTranslation": "Sens",
     "columnLabels": "Labels",
     "count": "{count} mot(s)",
-    "empty": "Aucun mot pour ce filtre."
+    "empty": "Aucun mot pour ce filtre.",
+    "columnActions": "Actions",
+    "edit": "Modifier",
+    "editWord": "Modifier {term}",
+    "delete": "Supprimer",
+    "deleteWord": "Supprimer {term}",
+    "confirmDelete": "Supprimer « {term} » ? Le mot sera effacé définitivement ; ses labels restent.",
+    "confirmDeleteButton": "Confirmer la suppression",
+    "deleted": "« {term} » supprimé.",
+    "deleteFailed": "La suppression a échoué. Réessaie."
+  },
+  "confirm": {
+    "cancel": "Annuler"
+  },
+  "labelManager": {
+    "title": "Mes labels",
+    "caption": "Labels et nombre de mots",
+    "columnName": "Label",
+    "columnCount": "Mots",
+    "columnActions": "Actions",
+    "count": "{count} mot(s)",
+    "empty": "Aucun label pour l'instant.",
+    "renameInput": "Nouveau nom pour {name}",
+    "rename": "Renommer",
+    "renameLabel": "Renommer {name}",
+    "mergeSelect": "Fusionner {name} dans",
+    "mergeNone": "Choisir un label",
+    "merge": "Fusionner",
+    "mergeLabel": "Fusionner {name}",
+    "confirmMerge": "Fusionner « {source} » dans « {target} » ? Ses mots recevront « {target} » et « {source} » disparaîtra.",
+    "confirmMergeButton": "Confirmer la fusion",
+    "delete": "Supprimer",
+    "deleteLabel": "Supprimer le label {name}",
+    "confirmDelete": "Supprimer le label « {name} » ? Ses {count} mot(s) restent dans « Tous les mots ».",
+    "confirmDeleteButton": "Confirmer la suppression du label",
+    "saved": "Labels mis à jour.",
+    "saveFailed": "La modification a échoué : rien n’a changé. Réessaie.",
+    "errors": {
+      "required": "Le nouveau nom est vide.",
+      "tooLong": "Le nouveau nom est trop long.",
+      "nameTaken": "Un autre label porte déjà ce nom.",
+      "labelNotFound": "Ce label n'existe plus.",
+      "sameLabel": "Choisis un autre label."
+    }
   }
 }

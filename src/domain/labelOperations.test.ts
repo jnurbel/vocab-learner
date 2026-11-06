@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Card, Language } from './card';
 import type { Label } from './label';
-import { deleteLabel, findOrCreateLabel, mergeLabels, renameLabel } from './labelOperations';
+import {
+  countWordsByLabel,
+  deleteLabel,
+  findOrCreateLabel,
+  mergeLabels,
+  renameLabel,
+  resolveLabelChoice,
+} from './labelOperations';
 
 const now = '2026-11-05T12:00:00.000Z';
 
@@ -41,6 +48,41 @@ describe('findOrCreateLabel', () => {
     expect(findOrCreateLabel([], '   ', { id: 'l1', now })).toEqual({
       ok: false,
       errors: ['required'],
+    });
+  });
+});
+
+describe('resolveLabelChoice', () => {
+  const animals = label('l1', 'Animaux');
+  const lesson = label('l2', 'Leçon 3');
+
+  it('keeps the ticked labels, once each, when no name is typed', () => {
+    expect(
+      resolveLabelChoice([animals, lesson], ['l2', 'l1', 'l2'], '  ', { id: 'l3', now }),
+    ).toEqual({ ok: true, value: { labelIds: ['l2', 'l1'], newLabel: undefined } });
+  });
+
+  it('adds the typed label, created when its name is new', () => {
+    expect(resolveLabelChoice([animals], ['l1'], 'Verbes', { id: 'l3', now })).toEqual({
+      ok: true,
+      value: {
+        labelIds: ['l1', 'l3'],
+        newLabel: { ...label('l3', 'Verbes'), createdAt: now, updatedAt: now },
+      },
+    });
+  });
+
+  it('reuses the existing label of the typed name without creating it again', () => {
+    expect(resolveLabelChoice([animals], ['l1'], 'ANIMAUX', { id: 'l3', now })).toEqual({
+      ok: true,
+      value: { labelIds: ['l1'], newLabel: undefined },
+    });
+  });
+
+  it('rejects an over-long typed name', () => {
+    expect(resolveLabelChoice([], [], 'L'.repeat(61), { id: 'l3', now })).toEqual({
+      ok: false,
+      errors: ['tooLong'],
     });
   });
 });
@@ -159,5 +201,20 @@ describe('deleteLabel', () => {
       ok: false,
       errors: ['labelNotFound'],
     });
+  });
+});
+
+describe('countWordsByLabel', () => {
+  it('lists every label in alphabetical order with the number of its words', () => {
+    const lesson = label('lesson', 'Leçon 3');
+    const animals = label('animals', 'Animaux');
+    const empty = label('empty', 'écriture');
+    const cards = [card('cat', ['lesson', 'animals']), card('dog', ['animals'])];
+
+    expect(countWordsByLabel([lesson, empty, animals], cards)).toEqual([
+      { label: animals, wordCount: 2 },
+      { label: empty, wordCount: 0 },
+      { label: lesson, wordCount: 1 },
+    ]);
   });
 });

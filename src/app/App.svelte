@@ -2,23 +2,38 @@
   import { onMount } from 'svelte';
   import type { Card } from '../domain/card';
   import type { Label } from '../domain/label';
-  import { pinyinProGenerator } from '../domain/pinyinProGenerator';
+  import type { LabelChanges } from '../domain/labelOperations';
+  import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
   import BulkEntry from '../features/import/BulkEntry.svelte';
-  import type { BulkEntrySave } from '../features/import/bulkEntrySave';
+  import LabelManager from '../features/labels/LabelManager.svelte';
+  import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
+  import { loadPinyinGenerator } from '../services/pinyinLoader';
+  import { persistenceRequester } from '../services/storagePersistence';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
     databaseName?: string;
+    /** Asks the browser to keep the data; called after every successful save. */
+    requestPersistence?: () => Promise<void>;
   }
 
-  const { databaseName = 'vocab-learner-default' }: Props = $props();
+  const {
+    databaseName = 'vocab-learner-default',
+    requestPersistence = persistenceRequester(
+      'storage' in navigator ? navigator.storage : undefined,
+    ),
+  }: Props = $props();
 
   let repository: VocabularyRepository | undefined;
-  let cards = $state<Card[]>([]);
-  let labels = $state<Label[]>([]);
+  // Raw state: the data read from storage is replaced as a whole, never mutated, and must stay
+  // plain objects, because IndexedDB cannot clone the proxies of deep reactive state.
+  let cards = $state.raw<Card[]>([]);
+  let labels = $state.raw<Label[]>([]);
+  /** The word open in the edit form, if any. */
+  let editing = $state.raw<Card>();
 
   async function reload(from: VocabularyRepository) {
     [cards, labels] = await Promise.all([from.allCards(), from.allLabels()]);
@@ -29,12 +44,40 @@
     void reload(repository);
   });
 
-  async function save({ newLabel, changes }: BulkEntrySave) {
+  const newId = () => crypto.randomUUID();
+  const clock = () => new Date().toISOString();
+
+  function storage(): VocabularyRepository {
     if (repository === undefined) {
       throw new Error('Storage is not ready');
     }
-    await repository.saveImport(changes, newLabel);
-    await reload(repository);
+    return repository;
+  }
+
+  async function save({ newLabel, changes }: VocabularySave) {
+    const store = storage();
+    await store.saveImport(changes, newLabel);
+    void requestPersistence();
+    await reload(store);
+  }
+
+  async function changeLabels(changes: LabelChanges) {
+    const store = storage();
+    await store.applyLabelChanges(changes);
+    await reload(store);
+  }
+
+  function startEditing(card: Card) {
+    editing = card;
+  }
+
+  async function deleteCard(card: Card) {
+    const store = storage();
+    await store.deleteCard(card.id);
+    if (editing?.id === card.id) {
+      editing = undefined;
+    }
+    await reload(store);
   }
 </script>
 
@@ -42,16 +85,46 @@
   <h1>{fr.app.title}</h1>
   <p>{fr.app.tagline}</p>
 
-  <BulkEntry
+  <WordForm
+    idPrefix="word-entry"
     existingCards={cards}
     existingLabels={labels}
-    generatePinyin={pinyinProGenerator}
-    newId={() => crypto.randomUUID()}
-    clock={() => new Date().toISOString()}
+    loadPinyin={loadPinyinGenerator}
+    {newId}
+    {clock}
     onSave={save}
   />
 
-  <WordList {cards} {labels} />
+  <BulkEntry
+    existingCards={cards}
+    existingLabels={labels}
+    loadPinyin={loadPinyinGenerator}
+    {newId}
+    {clock}
+    onSave={save}
+  />
+
+  {#if editing !== undefined}
+    {#key editing.id}
+      <WordForm
+        idPrefix="word-edit"
+        card={editing}
+        existingCards={cards}
+        existingLabels={labels}
+        loadPinyin={loadPinyinGenerator}
+        {newId}
+        {clock}
+        onSave={save}
+        onClose={() => {
+          editing = undefined;
+        }}
+      />
+    {/key}
+  {/if}
+
+  <WordList {cards} {labels} onEdit={startEditing} onDelete={deleteCard} />
+
+  <LabelManager {labels} {cards} {clock} onChange={changeLabels} />
 </main>
 
 <style>

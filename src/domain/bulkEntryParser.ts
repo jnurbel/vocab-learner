@@ -25,6 +25,12 @@ export type BulkLineError =
   | { lineNumber: number; reason: BulkLineReason }
   | { lineNumber: number; reason: 'duplicateInBatch'; firstLineNumber: number };
 
+/** A problem of one line, located by its line number. */
+export interface LineProblem {
+  lineNumber: number;
+  reason: BulkLineReason;
+}
+
 export interface BulkEntries {
   entries: BulkEntry[];
   errors: BulkLineError[];
@@ -58,26 +64,42 @@ export function parseBulkEntry(text: string): Result<BulkEntries, BulkInputError
     return failure(['tooManyLines']);
   }
 
+  return success(
+    collectEntries(
+      lines.map(({ line, lineNumber }) => parseLine(line, lineNumber)),
+      [],
+    ),
+  );
+}
+
+/**
+ * Gathers checked lines into a batch: invalid lines and repeated words (after their first line)
+ * are reported, together with `previousErrors`, in line order.
+ */
+export function collectEntries(
+  checkedLines: readonly Result<BulkEntry, LineProblem>[],
+  previousErrors: readonly BulkLineError[],
+): BulkEntries {
   const entries: BulkEntry[] = [];
-  const errors: BulkLineError[] = [];
+  const errors: BulkLineError[] = [...previousErrors];
   const firstLineByKey = new Map<string, number>();
-  for (const { line, lineNumber } of lines) {
-    const parsedLine = parseLine(line, lineNumber);
-    if (!parsedLine.ok) {
-      errors.push(...parsedLine.errors.map((reason) => ({ lineNumber, reason })));
+  for (const checked of checkedLines) {
+    if (!checked.ok) {
+      errors.push(...checked.errors);
       continue;
     }
-    const entry = parsedLine.value;
+    const entry = checked.value;
     const key = termKey(entry.language, entry.term);
     const firstLineNumber = firstLineByKey.get(key);
-    if (firstLineNumber !== undefined) {
-      errors.push({ lineNumber, reason: 'duplicateInBatch', firstLineNumber });
-      continue;
+    if (firstLineNumber === undefined) {
+      firstLineByKey.set(key, entry.lineNumber);
+      entries.push(entry);
+    } else {
+      errors.push({ lineNumber: entry.lineNumber, reason: 'duplicateInBatch', firstLineNumber });
     }
-    firstLineByKey.set(key, lineNumber);
-    entries.push(entry);
   }
-  return success({ entries, errors });
+  errors.sort((first, second) => first.lineNumber - second.lineNumber);
+  return { entries, errors };
 }
 
 /** In order of priority, so that a meaning may contain the weaker separators. */
@@ -89,17 +111,34 @@ function splitFields(line: string): string[] {
 }
 
 /** Returns the first problem of the line, so that the user fixes one thing at a time. */
-function parseLine(line: string, lineNumber: number): Result<BulkEntry, BulkLineReason> {
+function parseLine(line: string, lineNumber: number): Result<BulkEntry, LineProblem> {
   const fields = splitFields(line);
   if (fields.length > 3) {
-    return failure(['tooManyColumns']);
+    return failure([{ lineNumber, reason: 'tooManyColumns' }]);
   }
   const [term = '', pinyin = '', translation = ''] =
     fields.length === 2 ? [fields[0], '', fields[1]] : fields;
+  return checkEntry(lineNumber, { term, pinyin, translation });
+}
+
+export interface EntryFields {
+  term: string;
+  pinyin: string;
+  translation: string;
+}
+
+/** Checks the fields of one line, typed or corrected in the preview; blank pinyin is absent. */
+export function checkEntry(
+  lineNumber: number,
+  fields: EntryFields,
+): Result<BulkEntry, LineProblem> {
+  const term = fields.term.trim();
+  const pinyin = fields.pinyin.trim();
+  const translation = fields.translation.trim();
   const language = detectLanguage(term);
   const problem = findProblem(language, term, pinyin, translation);
   if (problem !== undefined) {
-    return failure([problem]);
+    return failure([{ lineNumber, reason: problem }]);
   }
   return success({
     lineNumber,
