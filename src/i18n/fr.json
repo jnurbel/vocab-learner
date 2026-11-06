@@ -197,7 +197,8 @@
     "label": "Menu",
     "words": "Mes mots",
     "flashcards": "Flashcards",
-    "backup": "Sauvegarde"
+    "backup": "Sauvegarde",
+    "dictation": "Dictée"
   },
   "thirst": {
     "1": "a soif",
@@ -265,5 +266,98 @@
     "reminder": "Ta dernière sauvegarde date de plus de 7 jours (ou n’existe pas) et tu as progressé depuis.",
     "reminderAction": "Sauvegarder maintenant",
     "reminderDismiss": "Masquer ce rappel"
+  },
+  "dictation": {
+    "title": "Dictée",
+    "languageLegend": "Langue",
+    "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
+    "wordCount": "Nombre de mots (5 à 20)",
+    "optionsLegend": "Lecture",
+    "shuffle": "Ordre aléatoire",
+    "readTwice": "Lire chaque mot deux fois",
+    "delay": "Pause entre les mots (sur papier)",
+    "delays": {
+      "3": "3 s",
+      "5": "5 s",
+      "8": "8 s",
+      "12": "12 s",
+      "manual": "Manuelle : je passe au mot suivant"
+    },
+    "speedLegend": "Vitesse de la voix",
+    "speeds": {
+      "slow": "Lente",
+      "normal": "Normale",
+      "fast": "Rapide"
+    },
+    "modeLegend": "Je réponds",
+    "modes": {
+      "keyboard": "Au clavier",
+      "paper": "Sur papier"
+    },
+    "start": "Commencer la dictée",
+    "starting": "Préparation de la dictée…",
+    "startFailed": "La dictée n'a pas pu démarrer. Réessaie.",
+    "noWords": "Aucun mot ne correspond à ce choix.",
+    "wordNumber": "Mot {position} sur {total}",
+    "countdown": "Mot suivant dans {seconds} s",
+    "countdownLabel": "Temps avant le mot suivant",
+    "listening": "Écoute…",
+    "paused": "En pause",
+    "writeNow": "Écris le mot sur ta feuille.",
+    "answerLabel": "Ta réponse",
+    "answerHelp": "Entrée pour valider.",
+    "replay": "Réécouter",
+    "slow": "Lent",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "finishPaper": "Corriger",
+    "quit": "Arrêter",
+    "hint": "Indice",
+    "hintUsed": "Avec indice.",
+    "hintLetters": "Commence par « {letter} », {count} lettres.",
+    "dontKnow": "Je ne sais pas",
+    "continue": "Continuer",
+    "correct": "Juste.",
+    "almost": "Presque : {term}.",
+    "wrong": "Faux. La réponse était {term}.",
+    "sameSound": "Bon son, mauvais caractère : {given} au lieu de {expected}.",
+    "yourAnswer": "Ta réponse : {answer}",
+    "diffLabel": {
+      "zh": "Comparaison caractère par caractère",
+      "en": "Comparaison lettre par lettre"
+    },
+    "diffKinds": {
+      "correct": "{char}, juste",
+      "wrong": "{char}, faux, attendu {expected}",
+      "missing": "{char}, manquant",
+      "extra": "{char}, en trop"
+    },
+    "writtenPrompt": {
+      "zh": "Pas de voix chinoise : écris en hanzi le mot qui se lit ainsi.",
+      "en": "Pas de voix anglaise : écris en anglais le mot qui a ce sens."
+    },
+    "audioError": "Le son n'a pas pu être lu : la consigne est écrite à la place.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie.",
+    "correctionTitle": "Correction",
+    "correctionHelp": "Compare avec ta feuille, puis coche ton résultat pour chaque mot.",
+    "selfMarks": {
+      "correct": "Juste",
+      "almost": "À moitié",
+      "wrong": "Faux"
+    },
+    "submitCorrection": "Valider la correction",
+    "summaryTitle": "Dictée terminée",
+    "score": "Score : {score} / {total}",
+    "mistakesTitle": "Mots à revoir",
+    "noMistakes": "Aucune erreur.",
+    "listen": "Écouter",
+    "retryMissed": "Refaire les mots ratés",
+    "restart": "Nouvelle dictée",
+    "keyboardHelp": {
+      "keyboard": "Clavier : Entrée valide, flèche haut pour réécouter, flèche bas pour réécouter lentement.",
+      "paper": "Clavier : Espace pour pause ou reprise, R ou flèche haut pour réécouter, flèche bas pour lent, flèches gauche et droite pour précédent et suivant."
+    }
   }
 }
