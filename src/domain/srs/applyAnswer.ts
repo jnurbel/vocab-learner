@@ -1,12 +1,20 @@
+import type { SrsConfig } from './config';
 import type { LocalDay } from './localDay';
 import type { MemoryModel } from './memoryModel';
 import type { Rating, ReviewState } from './reviewState';
+import { higherStage, stageOf } from './stage';
 
 /** When an answer is given: the instant, and the learner's day it belongs to. */
 export interface AnswerMoment {
   now: Date;
   /** Usually localDay(now), never earlier than the last active day (GAME_DESIGN.md 0.3). */
   today: LocalDay;
+}
+
+/** What the spaced repetition functions need: the memory model and the game constants. */
+export interface SrsDependencies {
+  model: MemoryModel;
+  config: SrsConfig;
 }
 
 export interface AnswerApplied {
@@ -23,14 +31,16 @@ export function applyAnswer(
   state: ReviewState,
   rating: Rating,
   moment: AnswerMoment,
-  model: MemoryModel,
+  { model, config }: SrsDependencies,
 ): AnswerApplied {
   // Day strings compare in calendar order; `>=` also guards against a clock moved back.
   const rated = !isOnOrAfter(state.lastRatedDay, moment.today);
   const remembered = rated
     ? { ...state, ...model.review(state, rating, moment.now), lastRatedDay: moment.today }
     : state;
-  return { state: recordSuccessDay(remembered, rating, moment.today), rated };
+  const answered = recordSuccessDay(remembered, rating, moment.today);
+  const peakStage = higherStage(answered.peakStage, stageOf(answered, config));
+  return { state: { ...answered, peakStage }, rated };
 }
 
 function recordSuccessDay(state: ReviewState, rating: Rating, today: LocalDay): ReviewState {
