@@ -25,11 +25,13 @@ export function planWordEntry(
   existingCards: readonly Card[],
   context: CreationContext,
 ): Result<WordEntryOutcome, CardError> {
+  const language = detectLanguage(fields.term);
   const created = createCard(
     {
-      language: detectLanguage(fields.term),
+      language,
       term: fields.term,
-      pinyin: numericToDiacritic(fields.pinyin),
+      // Pinyin only makes sense for Chinese; it is dropped for an English word.
+      pinyin: language === 'zh' ? numericToDiacritic(fields.pinyin) : undefined,
       translation: fields.translation,
       example: fields.example,
       labelIds: fields.labelIds,

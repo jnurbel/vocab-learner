@@ -69,6 +69,41 @@ describe('planWordEntry', () => {
       value: { kind: 'alreadyPresent', card: apple },
     });
   });
+
+  it('reports a missing term and a missing meaning', () => {
+    const outcome = planWordEntry(fields({ term: '  ', translation: '' }), [], context);
+
+    expect(outcome).toEqual({
+      ok: false,
+      errors: [
+        { field: 'term', reason: 'required' },
+        { field: 'translation', reason: 'required' },
+      ],
+    });
+  });
+
+  it('rejects an over-long example instead of storing it', () => {
+    const outcome = planWordEntry(
+      fields({ term: 'cat', translation: 'chat', example: 'x'.repeat(1001) }),
+      [],
+      context,
+    );
+
+    expect(outcome).toEqual({ ok: false, errors: [{ field: 'example', reason: 'tooLong' }] });
+  });
+
+  it('keeps the example and ignores any pinyin typed for an English word', () => {
+    const outcome = planWordEntry(
+      fields({ term: 'cat', pinyin: 'mao1', translation: 'chat', example: 'The cat sleeps.' }),
+      [],
+      context,
+    );
+
+    expect(outcome.ok && outcome.value.card).toEqual(
+      expect.objectContaining({ language: 'en', example: 'The cat sleeps.' }),
+    );
+    expect(outcome.ok && outcome.value.card).not.toHaveProperty('pinyin');
+  });
 });
 
 function existingCard(overrides: Partial<Card>): Card {
