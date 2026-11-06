@@ -191,3 +191,66 @@ describe('WordForm, entering one word', () => {
     expect(screen.getByLabelText(fr.wordForm.term)).toHaveValue('dog');
   });
 });
+
+describe('WordForm, editing a word', () => {
+  const cat = makeCard({ example: '我有一只猫。', labelIds: ['animals'] });
+  const dog = makeCard({ id: 'dog', term: '狗', pinyin: 'gǒu', translation: 'chien' });
+
+  it('starts from the word and saves the changed fields and labels, then closes', async () => {
+    const { user, onSave, onClose } = setup({ cards: [cat, dog], labels: [animals], card: cat });
+
+    expect(screen.getByLabelText(fr.wordForm.term)).toHaveValue('猫');
+    expect(screen.getByLabelText(fr.wordForm.pinyin)).toHaveValue('māo');
+    expect(screen.getByRole('checkbox', { name: 'Animaux' })).toBeChecked();
+    await user.clear(screen.getByLabelText(fr.wordForm.translation));
+    await user.type(screen.getByLabelText(fr.wordForm.translation), 'chat, matou');
+    await user.clear(screen.getByLabelText(fr.wordForm.example));
+    await user.click(screen.getByRole('checkbox', { name: 'Animaux' }));
+    await user.click(screen.getByRole('button', { name: fr.wordForm.saveChanges }));
+
+    expect(onSave).toHaveBeenCalledWith({
+      newLabel: undefined,
+      changes: {
+        cardsToCreate: [],
+        cardsToUpdate: [
+          {
+            id: 'cat',
+            language: 'zh',
+            term: '猫',
+            pinyin: 'māo',
+            translation: 'chat, matou',
+            labelIds: [],
+            source: 'manual',
+            createdAt: cat.createdAt,
+            updatedAt: now,
+          },
+        ],
+      },
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('refuses a new term that is already another word, and saves nothing', async () => {
+    const { user, onSave, onClose } = setup({ cards: [cat, dog], card: cat });
+
+    await user.clear(screen.getByLabelText(fr.wordForm.term));
+    await user.type(screen.getByLabelText(fr.wordForm.term), '狗');
+    await user.click(screen.getByRole('button', { name: fr.wordForm.saveChanges }));
+
+    expect(screen.getByLabelText(fr.wordForm.term)).toHaveAccessibleDescription(
+      fr.wordForm.errors.duplicate,
+    );
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('closes without saving when cancelled', async () => {
+    const { user, onSave, onClose } = setup({ cards: [cat], card: cat });
+
+    await user.type(screen.getByLabelText(fr.wordForm.term), '咪');
+    await user.click(screen.getByRole('button', { name: fr.wordForm.cancel }));
+
+    expect(onClose).toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+});
