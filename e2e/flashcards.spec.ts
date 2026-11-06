@@ -51,9 +51,13 @@ test('a learner reviews new words with flashcards, and a word is rated only once
   const flashcards = page.getByRole('region', { name: 'Flashcards' });
   await expect(flashcards.getByText('1 / 2')).toBeVisible();
 
+  // Both words were imported together, so their order is drawn from the session seed:
+  // find out which one comes first instead of assuming it.
   // First card with the keyboard: Space turns it over, 3 means "Je savais".
   await page.keyboard.press('Space');
-  await expect(flashcards.getByText('chat')).toBeVisible();
+  const meaning = flashcards.getByText(/^(chat|chien)$/);
+  await expect(meaning).toBeVisible();
+  const known = (await meaning.textContent()) === 'chat' ? '猫' : '狗';
   await page.keyboard.press('3');
   await expect(flashcards.getByText('2 / 2')).toBeVisible();
   await expect(flashcards.getByRole('status')).toHaveText('Carte 2 sur 2');
@@ -66,7 +70,7 @@ test('a learner reviews new words with flashcards, and a word is rated only once
   await expect(flashcards.getByText('2 mot(s) nouveau(x)')).toBeVisible();
   await expect(
     flashcards.getByRole('list', { name: 'Mots qui ont changé de stade' }),
-  ).toContainText('猫 : Graine → Pousse');
+  ).toContainText(`${known} : Graine → Pousse`);
 
   // The same day, nothing is left: no word is rated twice.
   await flashcards.getByRole('button', { name: 'Nouvelle session' }).click();
@@ -80,6 +84,6 @@ test('a learner reviews new words with flashcards, and a word is rated only once
 
   await page.reload();
   const list = page.getByRole('table', { name: 'Liste des mots' });
-  await expect(list.getByRole('row', { name: /猫/ })).toContainText('Pousse');
+  await expect(list.getByRole('row', { name: new RegExp(known) })).toContainText('Pousse');
   expect(errors).toEqual([]);
 });
