@@ -36,4 +36,39 @@ describe('applyEntryEdits', () => {
     ]);
     expect(edited.errors).toEqual(batch.errors);
   });
+
+  it('leaves out an excluded line, which is then neither added nor reported', () => {
+    const edited = applyEntryEdits(batch, edits({ 2: { term: 'apple', excluded: true } }));
+
+    expect(edited.entries.map(({ lineNumber }) => lineNumber)).toEqual([1, 4]);
+    expect(edited.errors).toEqual(batch.errors);
+  });
+
+  it('reports a corrected line that became invalid, in line order with the other errors', () => {
+    const edited = applyEntryEdits(batch, edits({ 4: { translation: ' ' }, 2: { term: '' } }));
+
+    expect(edited.entries.map(({ lineNumber }) => lineNumber)).toEqual([1]);
+    expect(edited.errors).toEqual([
+      { lineNumber: 2, reason: 'missingTerm' },
+      { lineNumber: 3, reason: 'missingTranslation' },
+      { lineNumber: 4, reason: 'missingTranslation' },
+    ]);
+  });
+
+  it('reports a correction that repeats a word of an earlier line', () => {
+    const edited = applyEntryEdits(batch, edits({ 4: { term: '你好' } }));
+
+    expect(edited.entries.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
+    expect(edited.errors).toContainEqual({
+      lineNumber: 4,
+      reason: 'duplicateInBatch',
+      firstLineNumber: 1,
+    });
+  });
+
+  it('drops a cleared pinyin so that it can be generated again', () => {
+    const edited = applyEntryEdits(batch, edits({ 1: { pinyin: '  ' } }));
+
+    expect(edited.entries[0]).not.toHaveProperty('pinyin');
+  });
 });
