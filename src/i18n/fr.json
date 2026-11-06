@@ -140,5 +140,53 @@
       "labelNotFound": "Ce label n'existe plus.",
       "sameLabel": "Choisis un autre label."
     }
+  },
+  "stages": {
+    "seed": "Graine",
+    "sprout": "Pousse",
+    "stem": "Tige",
+    "bud": "Bouton",
+    "flower": "Fleur",
+    "lantern": "Lanterne"
+  },
+  "flashcards": {
+    "title": "Flashcards",
+    "languageLegend": "Langue",
+    "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
+    "start": "Commencer",
+    "starting": "Préparation des cartes…",
+    "startFailed": "La session n'a pas pu démarrer. Réessaie.",
+    "progress": "{position} / {total}",
+    "progressLabel": "Carte {position} sur {total}",
+    "quit": "Quitter",
+    "listenPrompt": "Écoute le mot, puis retourne la carte.",
+    "readPrompt": "Lis le mot, puis retourne la carte.",
+    "replay": "Réécouter",
+    "showPinyin": "Voir le pinyin",
+    "hintUsed": "Pinyin affiché : compte comme un indice.",
+    "flip": "Retourner",
+    "example": "Exemple :",
+    "evaluationLegend": "Tu le savais ?",
+    "evaluations": {
+      "again": "À revoir",
+      "hard": "Difficile",
+      "good": "Je savais",
+      "known": "Je le connais déjà"
+    },
+    "keyboardHelp": "Clavier : Espace pour retourner, 1, 2 ou 3 pour noter, R pour réécouter.",
+    "noVoice": {
+      "zh": "Pas de voix chinoise sur cet appareil : le mot est écrit à la place.",
+      "en": "Pas de voix anglaise sur cet appareil : le mot est écrit à la place."
+    },
+    "audioError": "Le son n'a pas pu être lu : le mot est écrit à la place.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie.",
+    "summaryTitle": "Session terminée",
+    "quitSummary": "Tes {count} réponse(s) sont enregistrées.",
+    "reviewed": "{count} mot(s) revu(s)",
+    "introduced": "{count} mot(s) nouveau(x)",
+    "nothingDue": "Rien n'a soif aujourd'hui.",
+    "stageChangesTitle": "Mots qui ont changé de stade",
+    "stageChange": "{from} → {to}",
+    "restart": "Nouvelle session"
   }
 }
