@@ -20,6 +20,8 @@
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
+  import SettingsPanel from '../features/settings/SettingsPanel.svelte';
+  import { newPerDayOf } from '../domain/studySettings';
   import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
@@ -71,8 +73,8 @@
   /** Profiles come later: the pseudonym written into the backup file names. */
   const PROFILE_NAME = 'profil';
 
-  type Page = 'words' | 'flashcards' | 'backup';
-  const PAGES: readonly Page[] = ['words', 'flashcards', 'backup'];
+  type Page = 'words' | 'flashcards' | 'backup' | 'settings';
+  const PAGES: readonly Page[] = ['words', 'flashcards', 'backup', 'settings'];
   let page = $state<Page>('words');
 
   let repository: VocabularyRepository | undefined;
@@ -184,6 +186,26 @@
 
   function startPractice(selection: FlashcardSelection) {
     return startPracticeSession(selection, { store: practiceStore, clock: now, newId });
+  }
+
+  /** The daily quota of new words, read when the settings open. */
+  let newPerDay = $state<number>();
+
+  $effect(() => {
+    if (page === 'settings') {
+      void loadNewPerDay();
+    }
+  });
+
+  async function loadNewPerDay() {
+    newPerDay = newPerDayOf((await ready(study).load(clock())).settings);
+  }
+
+  /** Applies from the next session on; a setting is worth backing up too. */
+  async function changeNewPerDay(chosen: number) {
+    await ready(study).saveNewPerDay(chosen);
+    newPerDay = chosen;
+    await recordChange();
   }
 
   async function sessionEnded() {
@@ -302,6 +324,10 @@
       {autoBackupStatus}
       onReauthorized={writeAutomaticBackup}
     />
+  {:else if page === 'settings'}
+    {#if newPerDay !== undefined}
+      <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
+    {/if}
   {:else if page === 'flashcards'}
     <Flashcards
       {cards}

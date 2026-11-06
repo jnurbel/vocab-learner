@@ -185,6 +185,13 @@
     },
     "tomorrow": "demain"
   },
+  "settings": {
+    "title": "Réglages",
+    "newPerDay": "Mots nouveaux par jour",
+    "newPerDayHelp": "Avant un contrôle, augmente ce nombre. Plus de mots nouveaux = séances plus longues les jours suivants.",
+    "saved": "Réglage enregistré : il s'applique à la prochaine séance.",
+    "saveFailed": "Le réglage n'a pas pu être enregistré. Réessaie."
+  },
   "flashcards": {
     "title": "Flashcards",
     "languageLegend": "Langue",
@@ -229,7 +236,8 @@
     "label": "Menu",
     "words": "Mes mots",
     "flashcards": "Flashcards",
-    "backup": "Sauvegarde"
+    "backup": "Sauvegarde",
+    "settings": "Réglages"
   },
   "thirst": {
     "1": "a soif",
