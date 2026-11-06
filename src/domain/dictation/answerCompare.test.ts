@@ -131,6 +131,49 @@ describe('compareAnswer in English', () => {
     expect((await en('to', '')).outcome).toBe('wrong');
   });
 
+  it.each([
+    ['colour', 'color'],
+    ['favourite', 'favorite'],
+    ['neighbours', 'neighbors'],
+    ['realise', 'realize'],
+    ['organisation', 'organization'],
+    ['apologising', 'apologizing'],
+    ['analyse', 'analyze'],
+    ['paralysed', 'paralyzed'],
+    ['centre', 'center'],
+    ['theatres', 'theaters'],
+    ['travelled', 'traveled'],
+    ['cancelling', 'canceling'],
+    ['grey', 'gray'],
+    ['jewellery', 'jewelry'],
+    ['programme', 'program'],
+    ['to practise', 'practice'],
+    ['the colour of the centre', 'the color of the center'],
+  ])('accepts the British and the American spelling: %s or %s', async (british, american) => {
+    expect((await en(british, american)).outcome).toBe('correct');
+    expect((await en(american, british)).outcome).toBe('correct');
+  });
+
+  it.each([
+    ['four', 'for'],
+    ['hour', 'hor'],
+    ['wise', 'wize'],
+    ['advise', 'advize'],
+    ['genre', 'gener'],
+    ['acre', 'acer'],
+    ['called', 'caled'],
+    ['propelled', 'propeled'],
+    ['detour', 'detor'],
+  ])('does not take a misspelling for a spelling variant: %s is not %s', async (word, typo) => {
+    expect((await en(word, typo)).outcome).not.toBe('correct');
+  });
+
+  it('shows an accepted spelling as right, letter by letter', async () => {
+    expect((await en('colour', 'color')).diff).toEqual(
+      Array.from('color', (char) => ({ kind: 'correct', given: char, expected: char })),
+    );
+  });
+
   it('marks a different word as wrong, with the diff of the letters', async () => {
     const result = await en('cat', 'cut');
 
