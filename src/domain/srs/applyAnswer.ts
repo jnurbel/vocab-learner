@@ -1,5 +1,5 @@
 import type { Moment, SrsDependencies } from './dependencies';
-import type { LocalDay } from './localDay';
+import { isOnOrAfter, type LocalDay } from './localDay';
 import type { Rating, ReviewState } from './reviewState';
 import { higherStage, stageOf } from './stage';
 
@@ -19,7 +19,6 @@ export function applyAnswer(
   moment: Moment,
   { model, config }: SrsDependencies,
 ): AnswerApplied {
-  // Day strings compare in calendar order; `>=` also guards against a clock moved back.
   const rated = !isOnOrAfter(state.lastRatedDay, moment.today);
   const remembered = rated
     ? { ...state, ...model.review(state, rating, moment.now), lastRatedDay: moment.today }
@@ -34,8 +33,4 @@ function recordSuccessDay(state: ReviewState, rating: Rating, today: LocalDay): 
     return state;
   }
   return { ...state, successDays: state.successDays + 1, lastSuccessDay: today };
-}
-
-function isOnOrAfter(day: LocalDay | undefined, today: LocalDay): boolean {
-  return day !== undefined && day >= today;
 }

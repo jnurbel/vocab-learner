@@ -39,3 +39,11 @@ function wallClockParts(date: Date, timeZone: string | undefined): WallClock {
   const read = (type: Intl.DateTimeFormatPartTypes) => Number(parts.get(type));
   return { year: read('year'), month: read('month'), day: read('day'), hour: read('hour') };
 }
+
+/**
+ * True when `day` is `today` or a later day: 'YYYY-MM-DD' strings sort in calendar order.
+ * A later day means the clock went back; treat it as already done rather than doing it twice.
+ */
+export function isOnOrAfter(day: LocalDay | undefined, today: LocalDay): boolean {
+  return day !== undefined && day >= today;
+}
