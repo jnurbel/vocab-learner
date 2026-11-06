@@ -6,6 +6,7 @@ import type {
   SessionResultRecord,
   SettingsRecord,
 } from '../domain/progressRecords';
+import { isValidNewPerDay } from '../domain/studySettings';
 import { SINGLETON_KEY, VocabularyDatabase } from './database';
 
 /** What a study session starts from. */
@@ -81,6 +82,18 @@ export class StudyRepository {
   /** Free practice never touches the review states nor the progress (DESIGN.md, 0.4.0). */
   async recordPracticeAnswer({ sessionId, result }: PracticeAnswerRecord): Promise<void> {
     await this.db.transaction('rw', this.db.sessions, () => this.appendResult(sessionId, result));
+  }
+
+  /** The daily quota of new words, from the next session on; the other settings are kept. */
+  async saveNewPerDay(newPerDay: number): Promise<void> {
+    if (!isValidNewPerDay(newPerDay)) {
+      throw new RangeError(`Invalid daily quota of new words: ${String(newPerDay)}`);
+    }
+    const { settings } = this.db;
+    await this.db.transaction('rw', settings, async () => {
+      const current = await settings.get(SINGLETON_KEY);
+      await settings.put({ ...current, newPerDay }, SINGLETON_KEY);
+    });
   }
 
   async endSession(sessionId: string, endedAt: string): Promise<void> {

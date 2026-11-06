@@ -148,4 +148,25 @@ describe('StudyRepository', () => {
       }),
     ).rejects.toThrow('Unknown session: missing');
   });
+
+  it('saves the daily quota of new words and keeps the other settings', async () => {
+    await db.settings.put({ ttsRate: 0.85, newPerDay: 5 }, SINGLETON_KEY);
+
+    await repository.saveNewPerDay(10);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({ ttsRate: 0.85, newPerDay: 10 });
+    expect((await repository.load('2026-11-01T00:00:00.000Z')).settings?.newPerDay).toBe(10);
+  });
+
+  it('saves the daily quota in a new profile without settings', async () => {
+    await repository.saveNewPerDay(8);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({ newPerDay: 8 });
+  });
+
+  it('refuses to store a daily quota out of range', async () => {
+    await expect(repository.saveNewPerDay(0)).rejects.toThrow(RangeError);
+    await expect(repository.saveNewPerDay(Number.NaN)).rejects.toThrow(RangeError);
+    expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
+  });
 });
