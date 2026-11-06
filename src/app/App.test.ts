@@ -1,9 +1,13 @@
 import 'fake-indexeddb/auto';
 import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import fr from '../i18n/fr.json';
 import App from './App.svelte';
+
+function bulkEntry(): HTMLElement {
+  return screen.getByRole('region', { name: fr.bulkEntry.title });
+}
 
 describe('App', () => {
   it('renders the application title from the French strings', () => {
@@ -38,7 +42,7 @@ describe('App', () => {
 
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('狗 || chien\nhorse | cheval');
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Animaux');
+    await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), 'Animaux');
     await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
     await screen.findByRole('status');
     unmount();
@@ -50,6 +54,107 @@ describe('App', () => {
     await user.selectOptions(screen.getByLabelText(fr.wordList.languageFilter), fr.languages.en);
     expect(within(list).queryByRole('row', { name: /狗/ })).toBeNull();
     expect(within(list).getByRole('row', { name: /horse/ })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: 'Animaux' })).toBeInTheDocument();
+    expect(within(bulkEntry()).getByRole('checkbox', { name: 'Animaux' })).toBeInTheDocument();
+  });
+
+  it('asks the browser to keep the data once a first word is saved', async () => {
+    const user = userEvent.setup();
+    const requestPersistence = vi.fn(() => Promise.resolve());
+    render(App, { databaseName: 'app-test-persistence', requestPersistence });
+
+    expect(requestPersistence).not.toHaveBeenCalled();
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('apple | pomme');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+    await screen.findByRole('status');
+
+    expect(requestPersistence).toHaveBeenCalled();
+  });
+
+  it('stores a word entered alone and lists it with its proposed pinyin', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-word-form' });
+
+    await user.type(screen.getByLabelText(fr.wordForm.term), '书');
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText(fr.wordForm.pinyin)).toHaveValue('shū');
+    });
+    await user.type(screen.getByLabelText(fr.wordForm.translation), 'livre');
+    await user.click(screen.getByRole('button', { name: fr.wordForm.add }));
+
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /书/ })).toHaveTextContent('shū');
+  });
+
+  it('edits a word from the list and deletes another once confirmed', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-edit-delete' });
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('apple | pomme\npear | poire');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+
+    await user.click(within(list).getByRole('button', { name: 'Modifier apple' }));
+    const editor = screen.getByRole('form', { name: 'Modifier « apple »' });
+    await user.clear(within(editor).getByLabelText(fr.wordForm.translation));
+    await user.type(within(editor).getByLabelText(fr.wordForm.translation), 'une pomme');
+    await user.click(within(editor).getByRole('button', { name: fr.wordForm.saveChanges }));
+
+    expect(await within(list).findByRole('row', { name: /une pomme/ })).toBeVisible();
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('form', { name: 'Modifier « apple »' })).toBeNull();
+    });
+
+    await user.click(within(list).getByRole('button', { name: 'Supprimer pear' }));
+    await user.click(screen.getByRole('button', { name: fr.wordList.confirmDeleteButton }));
+
+    await vi.waitFor(() => {
+      expect(within(list).queryByRole('row', { name: /pear/ })).toBeNull();
+    });
+  });
+
+  it('deletes a label from the label screen while its words stay', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-label-manager' });
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('apple | pomme');
+    await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), 'Fruits');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+    const manager = await screen.findByRole('region', { name: fr.labelManager.title });
+
+    await user.click(
+      await within(manager).findByRole('button', { name: 'Supprimer le label Fruits' }),
+    );
+    await user.click(
+      within(manager).getByRole('button', { name: fr.labelManager.confirmDeleteButton }),
+    );
+
+    expect(await within(manager).findByText(fr.labelManager.empty)).toBeVisible();
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /apple/ })).not.toHaveTextContent('Fruits');
+  });
+
+  it('renames a label while other labels exist, and shows the new name on its words', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-label-rename' });
+    for (const [line, labelName] of [
+      ['apple | pomme', 'Fruits'],
+      ['cat | chat', 'Animaux'],
+    ] as const) {
+      await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+      await user.paste(line);
+      await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), labelName);
+      await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+      await within(bulkEntry()).findByRole('status');
+      await user.clear(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput));
+    }
+    const manager = screen.getByRole('region', { name: fr.labelManager.title });
+
+    await user.type(within(manager).getByLabelText('Nouveau nom pour Fruits'), 'Fruits rouges');
+    await user.click(within(manager).getByRole('button', { name: 'Renommer Fruits' }));
+
+    expect(await within(manager).findByRole('status')).toHaveTextContent(fr.labelManager.saved);
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /apple/ })).toHaveTextContent('Fruits rouges');
   });
 });

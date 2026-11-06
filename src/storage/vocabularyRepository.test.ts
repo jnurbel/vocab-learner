@@ -134,4 +134,24 @@ describe('VocabularyRepository', () => {
     expect(await repository.allCards()).toEqual([{ ...cat, labelIds: ['lesson-3'] }]);
     expect(await repository.cardsWithLabels(['animals'])).toEqual([]);
   });
+
+  it('deletes a word and keeps the others', async () => {
+    const cat = card('c1', '猫', []);
+    const dog = card('c2', '狗', []);
+    await repository.saveImport({ cardsToCreate: [cat, dog], cardsToUpdate: [] });
+
+    await repository.deleteCard('c1');
+
+    expect(await repository.allCards()).toEqual([dog]);
+  });
+
+  it('frees the former term of an edited word, so that it can be entered again', async () => {
+    const cat = card('c1', '猫', []);
+    await repository.saveImport({ cardsToCreate: [cat], cardsToUpdate: [] });
+
+    await repository.saveImport({ cardsToCreate: [], cardsToUpdate: [{ ...cat, term: '小猫' }] });
+    await repository.saveImport({ cardsToCreate: [card('c2', '猫', [])], cardsToUpdate: [] });
+
+    expect((await repository.allCards()).map(({ term }) => term).sort()).toEqual(['小猫', '猫']);
+  });
 });

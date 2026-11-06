@@ -1,8 +1,9 @@
 import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Card, Language } from '../../domain/card';
 import type { Label } from '../../domain/label';
+import { format } from '../../i18n/format';
 import fr from '../../i18n/fr.json';
 import WordList from './WordList.svelte';
 
@@ -73,5 +74,68 @@ describe('WordList', () => {
 
     expect(screen.getByText(fr.wordList.empty)).toBeVisible();
     expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('opens a word for editing from its row', async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    render(WordList, { cards, labels, onEdit });
+
+    await user.click(
+      screen.getByRole('button', { name: format(fr.wordList.editWord, { term: '书' }) }),
+    );
+
+    expect(onEdit).toHaveBeenCalledWith(cards[1]);
+  });
+
+  it('deletes a word only once the deletion is confirmed', async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn(() => Promise.resolve());
+    render(WordList, { cards, labels, onDelete });
+
+    await user.click(
+      screen.getByRole('button', { name: format(fr.wordList.deleteWord, { term: '猫' }) }),
+    );
+
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByText(format(fr.wordList.confirmDelete, { term: '猫' }))).toBeVisible();
+    expect(screen.getByRole('button', { name: fr.confirm.cancel })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: fr.wordList.confirmDeleteButton }));
+
+    expect(onDelete).toHaveBeenCalledWith(cards[0]);
+  });
+
+  it('keeps the word when the deletion is cancelled, with the button or Escape', async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn(() => Promise.resolve());
+    render(WordList, { cards, labels, onDelete });
+    const deleteCat = screen.getByRole('button', {
+      name: format(fr.wordList.deleteWord, { term: '猫' }),
+    });
+
+    await user.click(deleteCat);
+    await user.click(screen.getByRole('button', { name: fr.confirm.cancel }));
+    expect(screen.queryByText(format(fr.wordList.confirmDelete, { term: '猫' }))).toBeNull();
+
+    await user.click(
+      screen.getByRole('button', { name: format(fr.wordList.deleteWord, { term: '猫' }) }),
+    );
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByText(format(fr.wordList.confirmDelete, { term: '猫' }))).toBeNull();
+    expect(
+      screen.getByRole('button', { name: format(fr.wordList.deleteWord, { term: '猫' }) }),
+    ).toHaveFocus();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it('shows the pinyin with one colour per tone, the tone marks kept', () => {
+    const tea = { ...card('c5', '茶叶', 'zh', []), pinyin: 'cháyè' };
+    render(WordList, { cards: [tea], labels });
+
+    const row = screen.getByRole('row', { name: /茶叶/ });
+    expect(row).toHaveTextContent('cháyè');
+    expect(within(row).getByText('chá')).toHaveClass('tone-2');
+    expect(within(row).getByText('yè')).toHaveClass('tone-4');
   });
 });

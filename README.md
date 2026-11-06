@@ -72,6 +72,8 @@ Code **source disponible** sous [PolyForm Noncommercial 1.0.0](LICENSE.md) :
 - **Libre pour tout usage non commercial** : élèves, familles, professeurs, établissements scolaires, associations.
 - **Usage commercial, y compris la revente** : uniquement avec l'accord de l'autrice. Pour une licence commerciale, contacter l'autrice (voir [NOTICE](NOTICE)).
 
+Les bibliothèques tierces gardent leur propre licence : pinyin-pro (MIT), zod (MIT) et dexie (Apache-2.0). Textes complets dans [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+
 ## Contribuer
 
 Voir [CONTRIBUTING.md](CONTRIBUTING.md).

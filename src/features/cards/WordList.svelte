@@ -4,13 +4,28 @@
   import type { Label } from '../../domain/label';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
+  import ConfirmAction from '../../ui/ConfirmAction.svelte';
+  import Pinyin from '../../ui/Pinyin.svelte';
 
   interface Props {
     cards: readonly Card[];
     labels: readonly Label[];
+    onEdit?: (card: Card) => void;
+    onDelete?: (card: Card) => Promise<void>;
   }
 
-  const { cards, labels }: Props = $props();
+  const { cards, labels, onEdit, onDelete }: Props = $props();
+
+  let deletion = $state<{ kind: 'done'; term: string } | { kind: 'failed' } | undefined>();
+
+  async function remove(card: Card) {
+    try {
+      await onDelete?.(card);
+      deletion = { kind: 'done', term: card.term };
+    } catch {
+      deletion = { kind: 'failed' };
+    }
+  }
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
 
@@ -58,6 +73,12 @@
     </div>
   </div>
 
+  {#if deletion?.kind === 'done'}
+    <p role="status">{format(fr.wordList.deleted, { term: deletion.term })}</p>
+  {:else if deletion?.kind === 'failed'}
+    <p role="alert" class="error">{fr.wordList.deleteFailed}</p>
+  {/if}
+
   {#if shown.length === 0}
     <p>{fr.wordList.empty}</p>
   {:else}
@@ -70,15 +91,32 @@
           <th scope="col">{fr.wordList.columnPinyin}</th>
           <th scope="col">{fr.wordList.columnTranslation}</th>
           <th scope="col">{fr.wordList.columnLabels}</th>
+          <th scope="col">{fr.wordList.columnActions}</th>
         </tr>
       </thead>
       <tbody>
         {#each shown as card (card.id)}
           <tr>
             <td lang={card.language === 'zh' ? 'zh-CN' : 'en'}>{card.term}</td>
-            <td>{card.pinyin ?? ''}</td>
+            <td><Pinyin pinyin={card.pinyin ?? ''} /></td>
             <td>{card.translation}</td>
             <td>{labelsOf(card)}</td>
+            <td>
+              <div class="actions">
+                <button
+                  type="button"
+                  aria-label={format(fr.wordList.editWord, { term: card.term })}
+                  onclick={() => onEdit?.(card)}>{fr.wordList.edit}</button
+                >
+                <ConfirmAction
+                  text={fr.wordList.delete}
+                  label={format(fr.wordList.deleteWord, { term: card.term })}
+                  question={format(fr.wordList.confirmDelete, { term: card.term })}
+                  confirmText={fr.wordList.confirmDeleteButton}
+                  onConfirm={() => remove(card)}
+                />
+              </div>
+            </td>
           </tr>
         {/each}
       </tbody>
@@ -87,6 +125,16 @@
 </section>
 
 <style>
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .error {
+    color: #b00020;
+  }
+
   .filters {
     display: flex;
     flex-wrap: wrap;

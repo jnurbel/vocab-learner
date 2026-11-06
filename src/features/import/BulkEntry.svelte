@@ -1,30 +1,44 @@
 <script lang="ts">
-  import { parseBulkEntry, type BulkLineError } from '../../domain/bulkEntryParser';
+  import { SvelteMap } from 'svelte/reactivity';
+  import { applyEntryEdits, type EntryEdit } from '../../domain/batchEdits';
+  import {
+    detectLanguage,
+    parseBulkEntry,
+    type BulkEntries,
+    type BulkEntry,
+    type BulkLineError,
+  } from '../../domain/bulkEntryParser';
   import type { Card } from '../../domain/card';
-  import { uniqueValues } from '../../domain/collections';
   import { applyImportPlan, planImport } from '../../domain/importPlan';
   import type { Label } from '../../domain/label';
-  import { findOrCreateLabel } from '../../domain/labelOperations';
+  import { resolveLabelChoice } from '../../domain/labelOperations';
   import { completeMissingPinyin, type PinyinGenerator } from '../../domain/pinyinGeneration';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
-  import type { BulkEntrySave } from './bulkEntrySave';
+  import LabelPicker from '../labels/LabelPicker.svelte';
+  import { PinyinSource } from '../pinyinSource.svelte';
+  import type { VocabularySave } from '../vocabularySave';
 
   interface Props {
     existingCards: readonly Card[];
     existingLabels: readonly Label[];
-    generatePinyin: PinyinGenerator;
+    loadPinyin: () => Promise<PinyinGenerator>;
     newId: () => string;
     clock: () => string;
-    onSave: (save: BulkEntrySave) => Promise<void>;
+    onSave: (save: VocabularySave) => Promise<void>;
   }
 
-  const { existingCards, existingLabels, generatePinyin, newId, clock, onSave }: Props = $props();
+  const { existingCards, existingLabels, loadPinyin, newId, clock, onSave }: Props = $props();
+  const pinyinSource = new PinyinSource(() => loadPinyin());
 
   /** Stands for the label being typed until it receives a real id on save. */
   const PENDING_LABEL_ID = 'pending-new-label';
+  const EDITABLE_COLUMNS = ['term', 'pinyin', 'translation'] as const;
+  type EditableColumn = (typeof EDITABLE_COLUMNS)[number];
 
   let text = $state('');
+  /** Corrections made in the preview, by line number; they apply to the text as pasted. */
+  const edits = new SvelteMap<number, EntryEdit>();
   let chosenLabelIds = $state<string[]>([]);
   let labelName = $state('');
   let status = $state<
@@ -32,32 +46,31 @@
   >();
 
   const parsed = $derived(parseBulkEntry(text));
-  const batch = $derived(
-    parsed.ok
-      ? {
-          entries: completeMissingPinyin(parsed.value.entries, generatePinyin),
-          errors: parsed.value.errors,
-        }
-      : undefined,
+  const edited = $derived(parsed.ok ? applyEntryEdits(parsed.value, edits) : undefined);
+  const needsPinyin = $derived(
+    edited?.entries.some(({ language, pinyin }) => language === 'zh' && pinyin === undefined) ??
+      false,
   );
-  const typedLabel = $derived(
-    labelName.trim() === ''
-      ? undefined
-      : findOrCreateLabel(existingLabels, labelName, { id: PENDING_LABEL_ID, now: '' }),
+  const batch = $derived(edited && withPinyin(edited, pinyinSource.generator));
+  const labelChoice = $derived(
+    resolveLabelChoice(existingLabels, chosenLabelIds, labelName, {
+      id: PENDING_LABEL_ID,
+      now: '',
+    }),
   );
   const preview = $derived(
     batch &&
       planImport(
         batch,
         existingCards,
-        typedLabel?.ok ? [...chosenLabelIds, typedLabel.value.label.id] : chosenLabelIds,
+        labelChoice.ok ? labelChoice.value.labelIds : chosenLabelIds,
       ),
   );
   const newWordCount = $derived(preview?.newWords.length ?? 0);
   const relabelledCount = $derived(
     preview?.existingWords.filter(({ addedLabelIds }) => addedLabelIds.length > 0).length ?? 0,
   );
-  const canSave = $derived(typedLabel?.ok !== false && (newWordCount > 0 || relabelledCount > 0));
+  const canSave = $derived(labelChoice.ok && (newWordCount > 0 || relabelledCount > 0));
   const saveText = $derived.by(() => {
     if (newWordCount === 0 && (preview?.existingWords.length ?? 0) > 0) {
       return fr.bulkEntry.addLabelsOnly;
@@ -67,39 +80,84 @@
       : format(fr.bulkEntry.addWordsMany, { count: newWordCount });
   });
 
+  $effect(() => {
+    if (needsPinyin) {
+      pinyinSource.request();
+    }
+  });
+
+  function withPinyin(entries: BulkEntries, generate: PinyinGenerator | undefined): BulkEntries {
+    return generate === undefined
+      ? entries
+      : { entries: completeMissingPinyin(entries.entries, generate), errors: entries.errors };
+  }
+
+  function editLine(lineNumber: number, change: EntryEdit) {
+    edits.set(lineNumber, { ...edits.get(lineNumber), ...change });
+  }
+
+  /** What a preview cell shows: the correction, otherwise the value to be saved. */
+  function shown(line: BulkEntry, column: EditableColumn): string {
+    const corrected = edits.get(line.lineNumber)?.[column];
+    if (corrected !== undefined) {
+      return corrected;
+    }
+    const planned = batch?.entries.find(({ lineNumber }) => lineNumber === line.lineNumber);
+    return (planned ?? line)[column] ?? '';
+  }
+
+  function isExcluded(lineNumber: number): boolean {
+    return edits.get(lineNumber)?.excluded === true;
+  }
+
+  function lineStatus(lineNumber: number): string {
+    if (isExcluded(lineNumber)) {
+      return fr.bulkEntry.status.excluded;
+    }
+    if (preview?.newWords.some((word) => word.lineNumber === lineNumber)) {
+      return fr.bulkEntry.status.new;
+    }
+    if (preview?.existingWords.some((word) => word.lineNumber === lineNumber)) {
+      return fr.bulkEntry.status.existing;
+    }
+    const error = preview?.errors.find((candidate) => candidate.lineNumber === lineNumber);
+    return error === undefined ? '' : reasonOf(error);
+  }
+
+  function reasonOf(error: BulkLineError): string {
+    return error.reason === 'duplicateInBatch'
+      ? format(fr.bulkEntry.errors.duplicateInBatch, { first: error.firstLineNumber })
+      : fr.bulkEntry.errors[error.reason];
+  }
+
   function describe(error: BulkLineError): string {
-    const reason =
-      error.reason === 'duplicateInBatch'
-        ? format(fr.bulkEntry.errors.duplicateInBatch, { first: error.firstLineNumber })
-        : fr.bulkEntry.errors[error.reason];
-    return format(fr.bulkEntry.errorLine, { line: error.lineNumber, reason });
+    return format(fr.bulkEntry.errorLine, { line: error.lineNumber, reason: reasonOf(error) });
   }
 
   async function save() {
-    if (batch === undefined) {
+    if (edited === undefined) {
       return;
     }
+    const batch = withPinyin(edited, needsPinyin ? await pinyinSource.ready() : undefined);
     const now = clock();
-    const label =
-      labelName.trim() === ''
-        ? undefined
-        : findOrCreateLabel(existingLabels, labelName, { id: newId(), now });
-    if (label?.ok === false) {
+    const choice = resolveLabelChoice(existingLabels, chosenLabelIds, labelName, {
+      id: newId(),
+      now,
+    });
+    if (!choice.ok) {
       return;
     }
-    const labelIds = uniqueValues(
-      label === undefined ? chosenLabelIds : [...chosenLabelIds, label.value.label.id],
-    );
-    const plan = planImport(batch, existingCards, labelIds);
+    const plan = planImport(batch, existingCards, choice.value.labelIds);
     const changes = applyImportPlan(plan, { nextId: newId, now, source: 'manual' });
     try {
-      await onSave({ newLabel: label?.value.created ? label.value.label : undefined, changes });
+      await onSave({ newLabel: choice.value.newLabel, changes });
       status = {
         kind: 'saved',
         created: changes.cardsToCreate.length,
         updated: changes.cardsToUpdate.length,
       };
       text = '';
+      edits.clear();
     } catch {
       status = { kind: 'failed' };
     }
@@ -109,49 +167,67 @@
 <section aria-labelledby="bulk-entry-title">
   <h2 id="bulk-entry-title">{fr.bulkEntry.title}</h2>
   <label for="bulk-entry-input">{fr.bulkEntry.inputLabel}</label>
-  <textarea id="bulk-entry-input" rows="8" aria-describedby="bulk-entry-help" bind:value={text}
-  ></textarea>
+  <textarea
+    id="bulk-entry-input"
+    rows="8"
+    aria-describedby="bulk-entry-help"
+    bind:value={text}
+    oninput={() => {
+      edits.clear();
+    }}></textarea>
   <p id="bulk-entry-help" class="help">{fr.bulkEntry.inputHelp}</p>
-
-  <fieldset>
-    <legend>{fr.bulkEntry.labelsLegend}</legend>
-    {#each existingLabels as label (label.id)}
-      <label class="choice">
-        <input type="checkbox" value={label.id} bind:group={chosenLabelIds} />
-        {label.name}
-      </label>
-    {:else}
-      <p>{fr.bulkEntry.noLabels}</p>
-    {/each}
-    <label for="bulk-entry-label">{fr.bulkEntry.labelInput}</label>
-    <input id="bulk-entry-label" type="text" maxlength="200" bind:value={labelName} />
-    {#if typedLabel?.ok === false}
-      <p role="alert" class="error">
-        {fr.bulkEntry.labelErrors[typedLabel.errors[0] ?? 'required']}
-      </p>
-    {/if}
-  </fieldset>
 
   {#if !parsed.ok}
     <p role="alert" class="error">{fr.bulkEntry.inputErrors[parsed.errors[0] ?? 'inputTooLong']}</p>
-  {/if}
-
-  {#if preview && preview.newWords.length > 0}
+  {:else if parsed.value.entries.length > 0}
     <table>
-      <caption>{fr.bulkEntry.newWordsCaption}</caption>
+      <caption>{fr.bulkEntry.previewCaption}</caption>
       <thead>
         <tr>
-          <th scope="col">{fr.bulkEntry.columnTerm}</th>
-          <th scope="col">{fr.bulkEntry.columnPinyin}</th>
-          <th scope="col">{fr.bulkEntry.columnTranslation}</th>
+          <th scope="col">{fr.bulkEntry.columnLine}</th>
+          {#each EDITABLE_COLUMNS as column (column)}
+            <th scope="col">{fr.bulkEntry.columns[column]}</th>
+          {/each}
+          <th scope="col">{fr.bulkEntry.columnStatus}</th>
+          <th scope="col">{fr.bulkEntry.columnExclude}</th>
         </tr>
       </thead>
       <tbody>
-        {#each preview.newWords as word (word.lineNumber)}
-          <tr>
-            <td lang={word.language === 'zh' ? 'zh-CN' : 'en'}>{word.term}</td>
-            <td>{word.pinyin ?? ''}</td>
-            <td>{word.translation}</td>
+        {#each parsed.value.entries as line (line.lineNumber)}
+          {@const isChinese = detectLanguage(shown(line, 'term')) === 'zh'}
+          <tr class:excluded={isExcluded(line.lineNumber)}>
+            <th scope="row">{line.lineNumber}</th>
+            {#each EDITABLE_COLUMNS as column (column)}
+              <td>
+                {#if column !== 'pinyin' || isChinese}
+                  <input
+                    type="text"
+                    maxlength="600"
+                    lang={column === 'term' && isChinese ? 'zh-CN' : undefined}
+                    aria-label={format(fr.bulkEntry.cellLabel, {
+                      column: fr.bulkEntry.columns[column],
+                      line: line.lineNumber,
+                    })}
+                    value={shown(line, column)}
+                    disabled={isExcluded(line.lineNumber)}
+                    oninput={(event) => {
+                      editLine(line.lineNumber, { [column]: event.currentTarget.value });
+                    }}
+                  />
+                {/if}
+              </td>
+            {/each}
+            <td>{lineStatus(line.lineNumber)}</td>
+            <td>
+              <input
+                type="checkbox"
+                aria-label={format(fr.bulkEntry.excludeLine, { line: line.lineNumber })}
+                checked={isExcluded(line.lineNumber)}
+                onchange={(event) => {
+                  editLine(line.lineNumber, { excluded: event.currentTarget.checked });
+                }}
+              />
+            </td>
           </tr>
         {/each}
       </tbody>
@@ -171,6 +247,15 @@
     </ul>
   {/if}
 
+  <LabelPicker
+    legend={fr.bulkEntry.labelsLegend}
+    idPrefix="bulk-entry"
+    labels={existingLabels}
+    bind:chosenLabelIds
+    bind:labelName
+    error={labelChoice.ok ? undefined : labelChoice.errors[0]}
+  />
+
   {#if status?.kind === 'saved'}
     <p role="status">
       {status.created > 0
@@ -185,16 +270,18 @@
 </section>
 
 <style>
-  textarea,
-  input[type='text'] {
+  textarea {
     display: block;
     width: 100%;
   }
 
-  .choice {
-    display: inline-flex;
-    gap: 0.25rem;
-    margin-right: 1rem;
+  table input[type='text'] {
+    width: 100%;
+    min-width: 5rem;
+  }
+
+  .excluded {
+    text-decoration: line-through;
   }
 
   .help {

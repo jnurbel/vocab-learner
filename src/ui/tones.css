@@ -1,0 +1,46 @@
+/*
+ * Tone colours (DESIGN §8.2): 1 red, 2 green, 3 blue, 4 purple, neutral grey.
+ * They always double the tone mark, never replace it. Each colour reaches the WCAG AA
+ * contrast of 4.5:1 on the page background, light or dark (checked by Pinyin.test.ts).
+ */
+.tone-1 {
+  color: #c62828;
+}
+
+.tone-2 {
+  color: #2e7d32;
+}
+
+.tone-3 {
+  color: #1565c0;
+}
+
+.tone-4 {
+  color: #6a1b9a;
+}
+
+.tone-neutral {
+  color: #616161;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tone-1 {
+    color: #ff8a80;
+  }
+
+  .tone-2 {
+    color: #81c784;
+  }
+
+  .tone-3 {
+    color: #90caf9;
+  }
+
+  .tone-4 {
+    color: #ce93d8;
+  }
+
+  .tone-neutral {
+    color: #bdbdbd;
+  }
+}

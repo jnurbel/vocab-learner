@@ -20,23 +20,43 @@ export interface ImportPlan {
   errors: BulkLineError[];
 }
 
+/** Existing words by identity, to recognise a word typed again. */
+export function indexCardsByTerm(cards: readonly Card[]): Map<string, Card> {
+  return new Map(cards.map((card) => [termKey(card.language, card.term), card]));
+}
+
+export function findCard(
+  cardsByKey: ReadonlyMap<string, Card>,
+  language: Card['language'],
+  term: string,
+): Card | undefined {
+  return cardsByKey.get(termKey(language, term));
+}
+
+/** The chosen labels that the word does not carry yet. */
+export function missingLabelIds(card: Card, labelIds: readonly string[]): string[] {
+  return labelIds.filter((labelId) => !card.labelIds.includes(labelId));
+}
+
+export function addLabels(card: Card, labelIds: readonly string[], now: string): Card {
+  return { ...card, labelIds: [...card.labelIds, ...labelIds], updatedAt: now };
+}
+
 export function planImport(
   batch: BulkEntries,
   existingCards: readonly Card[],
   chosenLabelIds: readonly string[],
 ): ImportPlan {
   const labelIds = uniqueValues(chosenLabelIds);
-  const cardsByKey = new Map(
-    existingCards.map((card) => [termKey(card.language, card.term), card]),
-  );
+  const cardsByKey = indexCardsByTerm(existingCards);
   const plan: ImportPlan = { newWords: [], existingWords: [], errors: [...batch.errors] };
 
   for (const entry of batch.entries) {
-    const card = cardsByKey.get(termKey(entry.language, entry.term));
+    const card = findCard(cardsByKey, entry.language, entry.term);
     if (card === undefined) {
       plan.newWords.push({ ...entry, labelIds });
     } else {
-      const addedLabelIds = labelIds.filter((labelId) => !card.labelIds.includes(labelId));
+      const addedLabelIds = missingLabelIds(card, labelIds);
       plan.existingWords.push({ lineNumber: entry.lineNumber, card, addedLabelIds });
     }
   }
@@ -71,10 +91,6 @@ export function applyImportPlan(plan: ImportPlan, context: ApplyContext): Import
   );
   const cardsToUpdate = plan.existingWords
     .filter(({ addedLabelIds }) => addedLabelIds.length > 0)
-    .map(({ card, addedLabelIds }) => ({
-      ...card,
-      labelIds: [...card.labelIds, ...addedLabelIds],
-      updatedAt: context.now,
-    }));
+    .map(({ card, addedLabelIds }) => addLabels(card, addedLabelIds, context.now));
   return { cardsToCreate, cardsToUpdate };
 }

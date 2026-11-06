@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '../../domain/card';
 import type { Label } from '../../domain/label';
+import { format } from '../../i18n/format';
 import fr from '../../i18n/fr.json';
 import BulkEntry from './BulkEntry.svelte';
 
@@ -10,11 +11,12 @@ const now = '2026-11-05T12:00:00.000Z';
 
 function setup(options: { cards?: Card[]; labels?: Label[] } = {}) {
   const onSave = vi.fn(() => Promise.resolve());
+  const loadPinyin = vi.fn(() => Promise.resolve((hanzi: string) => `auto(${hanzi})`));
   let sequence = 0;
   render(BulkEntry, {
     existingCards: options.cards ?? [],
     existingLabels: options.labels ?? [],
-    generatePinyin: (hanzi: string) => `auto(${hanzi})`,
+    loadPinyin,
     newId: () => {
       sequence += 1;
       return `id-${String(sequence)}`;
@@ -22,7 +24,7 @@ function setup(options: { cards?: Card[]; labels?: Label[] } = {}) {
     clock: () => now,
     onSave,
   });
-  return { onSave, user: userEvent.setup() };
+  return { onSave, loadPinyin, user: userEvent.setup() };
 }
 
 async function typeLines(user: ReturnType<typeof userEvent.setup>, text: string) {
@@ -31,17 +33,116 @@ async function typeLines(user: ReturnType<typeof userEvent.setup>, text: string)
   await user.paste(text);
 }
 
+/** An editable cell of the preview, named after its column and line. */
+function cell(column: 'term' | 'pinyin' | 'translation', line: number): HTMLElement {
+  return screen.getByLabelText(
+    format(fr.bulkEntry.cellLabel, { column: fr.bulkEntry.columns[column], line }),
+  );
+}
+
 describe('BulkEntry', () => {
+  it('does not load the pinyin generator while no Chinese word lacks a pinyin', async () => {
+    const { user, loadPinyin } = setup();
+
+    await typeLines(user, '你好 | nǐ hǎo | bonjour\napple | pomme');
+
+    expect(screen.getByRole('button', { name: 'Ajouter 2 mots' })).toBeEnabled();
+    expect(loadPinyin).not.toHaveBeenCalled();
+  });
+
   it('previews the new words with their generated or converted pinyin', async () => {
     const { user } = setup();
 
     await typeLines(user, '你好 || bonjour\n谢谢 | xie4xie | merci\napple | pomme');
 
-    const preview = screen.getByRole('table', { name: fr.bulkEntry.newWordsCaption });
-    expect(preview).toHaveTextContent('auto(你好)');
-    expect(preview).toHaveTextContent('xièxie');
-    expect(preview).toHaveTextContent('apple');
+    await vi.waitFor(() => {
+      expect(cell('pinyin', 1)).toHaveValue('auto(你好)');
+    });
+    expect(cell('pinyin', 2)).toHaveValue('xièxie');
+    expect(cell('term', 3)).toHaveValue('apple');
     expect(screen.getByRole('button', { name: 'Ajouter 3 mots' })).toBeEnabled();
+  });
+
+  it('saves the corrections made in the preview to the term, the pinyin and the meaning', async () => {
+    const { user, onSave } = setup();
+
+    await typeLines(user, '你好 | nǐ hǎo | bonjour\naple | pome');
+    await user.clear(cell('pinyin', 1));
+    await user.type(cell('pinyin', 1), 'ni2 hao3');
+    await user.clear(cell('term', 2));
+    await user.type(cell('term', 2), 'apple');
+    await user.clear(cell('translation', 2));
+    await user.type(cell('translation', 2), 'pomme');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
+
+    expect(onSave).toHaveBeenCalledWith({
+      newLabel: undefined,
+      changes: {
+        cardsToCreate: [
+          expect.objectContaining({ term: '你好', pinyin: 'ní hǎo' }),
+          expect.objectContaining({ term: 'apple', translation: 'pomme' }),
+        ],
+        cardsToUpdate: [],
+      },
+    });
+  });
+
+  it('excludes a line from the import, and includes it again', async () => {
+    const { user, onSave } = setup();
+
+    await typeLines(user, 'apple | pomme\npear | poire');
+    const exclude = screen.getByRole('checkbox', {
+      name: format(fr.bulkEntry.excludeLine, { line: 2 }),
+    });
+    await user.click(exclude);
+
+    expect(screen.getByRole('row', { name: /pear|poire/ })).toHaveTextContent(
+      fr.bulkEntry.status.excluded,
+    );
+    await user.click(exclude);
+    await user.click(exclude);
+    await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changes: { cardsToCreate: [expect.objectContaining({ term: 'apple' })], cardsToUpdate: [] },
+      }),
+    );
+  });
+
+  it('reports a correction that leaves a line invalid and does not save that line', async () => {
+    const { user } = setup();
+
+    await typeLines(user, 'apple | pomme\npear | poire');
+    await user.clear(cell('translation', 1));
+
+    expect(screen.getByRole('list', { name: fr.bulkEntry.errorsTitle })).toHaveTextContent(
+      `Ligne 1 : ${fr.bulkEntry.errors.missingTranslation}`,
+    );
+    expect(screen.getByRole('button', { name: 'Ajouter 1 mot' })).toBeEnabled();
+  });
+
+  it('recognises a word that a correction made identical to an existing one', async () => {
+    const { user } = setup({ cards: [makeCard('card-cat', '猫')] });
+
+    await typeLines(user, '狗 || chien');
+    await user.clear(cell('term', 1));
+    await user.type(cell('term', 1), '猫');
+
+    expect(screen.getByRole('row', { name: /猫/ })).toHaveTextContent(fr.bulkEntry.status.existing);
+    expect(screen.getByText(fr.bulkEntry.existingWords.replace('{count}', '1'))).toBeVisible();
+  });
+
+  it('forgets the corrections when the pasted text changes', async () => {
+    const { user } = setup();
+
+    await typeLines(user, 'aple | pomme');
+    await user.clear(cell('term', 1));
+    await user.type(cell('term', 1), 'apple');
+    await typeLines(user, '\npear | poire');
+
+    expect(cell('term', 1)).toHaveValue('aple');
+    expect(cell('term', 2)).toHaveValue('pear');
   });
 
   it('lists line errors in French with their line number', async () => {
@@ -60,7 +161,7 @@ describe('BulkEntry', () => {
 
     await typeLines(user, '<img src=x onerror=alert(1)> | <b>gras</b>');
 
-    expect(screen.getByRole('table')).toHaveTextContent('<img src=x onerror=alert(1)>');
+    expect(cell('term', 1)).toHaveValue('<img src=x onerror=alert(1)>');
     expect(document.querySelector('img')).toBeNull();
     expect(document.querySelector('b')).toBeNull();
   });
@@ -95,7 +196,7 @@ describe('BulkEntry', () => {
     const { user, onSave } = setup({ labels: [animals] });
 
     await typeLines(user, '狗 || chien');
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'animaux');
+    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'animaux');
     await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
 
     expect(onSave).toHaveBeenCalledWith({
@@ -113,7 +214,7 @@ describe('BulkEntry', () => {
     const { user, onSave } = setup();
 
     await typeLines(user, 'apple | pomme');
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Fruits');
+    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'Fruits');
     await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
 
     expect(onSave).toHaveBeenCalledWith({
@@ -129,10 +230,10 @@ describe('BulkEntry', () => {
     const { user, onSave } = setup();
 
     await typeLines(user, 'apple | pomme');
-    await user.click(screen.getByLabelText(fr.bulkEntry.labelInput));
+    await user.click(screen.getByLabelText(fr.labelPicker.nameInput));
     await user.paste('L'.repeat(61));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(fr.bulkEntry.labelErrors.tooLong);
+    expect(screen.getByRole('alert')).toHaveTextContent(fr.labelPicker.errors.tooLong);
     expect(screen.getByRole('button', { name: 'Ajouter 1 mot' })).toBeDisabled();
     expect(onSave).not.toHaveBeenCalled();
   });
@@ -154,7 +255,7 @@ describe('BulkEntry', () => {
     await typeLines(user, '狗 || chien');
     await user.click(screen.getByRole('checkbox', { name: 'Animaux' }));
     await user.click(screen.getByRole('checkbox', { name: 'Leçon 3' }));
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Verbes');
+    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'Verbes');
     await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
 
     expect(onSave).toHaveBeenCalledWith({

@@ -301,8 +301,39 @@ L'élève **colle un texte** (article, texte du manuel, paroles…) ou le **phot
 
 ## 9. Synchro PC ↔ téléphone
 
-- **MVP** : export/import JSON versionné (Web Share API ou fichier), avec rappel de sauvegarde.
+- **MVP (0.3.0)** : sauvegarde locale complète, voir §9.1. Elle sert aussi au transfert PC → téléphone (Web Share API ou fichier).
 - **Plus tard** : blob **chiffré de bout en bout** (AES-GCM, clé dérivée d'un code d'appairage) stocké via le même Worker. Pas de compte.
+
+### 9.1 Sauvegarde et restauration locales (v0.3.0)
+
+**But** : l'élève ne perd jamais son vocabulaire ni sa progression. IndexedDB peut être vidé : nettoyage du navigateur, purge iOS, changement de PC.
+
+- **Contenu de la sauvegarde** : un fichier `vocab-learner-<pseudo>-<AAAA-MM-JJ>.vocab-backup.json` avec :
+  - `format: "vocab-learner-backup"` et `schemaVersion` ;
+  - date et version de l'appli ;
+  - mots, labels, `IgnoredTerm` ;
+  - **progression** : `ReviewState` (FSRS), historique des sessions, `Progress` (XP, niveau, série, déblocages), avancement des parcours ;
+  - réglages ;
+  - empreinte SHA-256 du contenu (WebCrypto) pour détecter un fichier abîmé.
+
+  Elle ne contient ni photo, ni audio, ni secret.
+- **Sauvegarder** : bouton « Sauvegarder sur cet appareil » qui télécharge le fichier (`Blob` + lien de téléchargement). Rien n'est envoyé sur Internet.
+- **Sauvegarde automatique sur PC** (Chrome/Edge) : option « Choisir un dossier de sauvegarde » via la File System Access API. L'appli réécrit le fichier dans ce dossier après chaque session (un fichier par jour, les 7 derniers conservés). Le dossier peut être synchronisé (OneDrive…) si la famille le souhaite. Sur Firefox et Safari, sans cette API, il reste le téléchargement manuel.
+- **Rappel** : bandeau discret si la dernière sauvegarde date de plus de 7 jours et que la progression a changé. On peut le désactiver.
+- **Restaurer** : on choisit un fichier, puis :
+  1. contrôle du format, du `schemaVersion` (migrations si plus ancien, refus si plus récent que l'appli) et de l'empreinte ;
+  2. aperçu : « 312 mots, 9 labels, niveau 7, série 12 jours, sauvegardé le 05/11 » ;
+  3. choix entre **Remplacer** (avec une sauvegarde automatique de l'état actuel juste avant) et **Fusionner**. Fusionner signifie : union des mots par `(language, term)` et des labels ; pour un même mot, on garde l'état FSRS le plus récent (`lastReviewAt`) ; l'XP et les déblocages prennent le maximum.
+- **Sécurité (OWASP)** :
+  - fichier = entrée non fiable : schéma **zod strict** (clés inconnues refusées, dont `__proto__`), tailles bornées (fichier ≤ 20 Mo, nombre d'éléments), caractères de contrôle refusés ;
+  - écriture **atomique** en une transaction Dexie : tout ou rien ;
+  - jamais de `eval` ni de HTML interprété.
+- **Tests** :
+  - aller-retour sauvegarde → restauration identique (propriété) ;
+  - migrations de chaque `schemaVersion` ;
+  - fusion (conflits FSRS, labels) ;
+  - fichiers hostiles (tronqué, empreinte fausse, version future, énorme) ;
+  - E2E : sauvegarder, vider la base, restaurer.
 
 ## 9 bis. Utilisateurs mineurs : vie privée et cadre légal
 
@@ -358,15 +389,17 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 
 ## 10. Jalons (SemVer)
 
+> **Recalage (2026-11-06)** : la release `v0.1.0` contient le squelette **et** le contenu prévu en 0.2.0 ci-dessous (mots, labels, saisie en lot). La **0.2.0** termine la saisie (formulaire unitaire, aperçu éditable, gestion des labels, tons colorés). À partir de la **0.3.0**, la numérotation du tableau reste valable.
+
 | Version | Contenu |
 |---|---|
 | 0.1.0 | Squelette Vite/Svelte/TS, CI (lint, typecheck, Vitest, audit), déploiement Pages, CSP |
 | 0.2.0 | Mots et labels (plusieurs labels par mot), saisie manuelle et en lot, pinyin auto, dédoublonnage |
-| 0.3.0 | Flashcards + SRS (FSRS), dont flashcard audio, pinyin masqué par défaut |
+| 0.3.0 | Flashcards + SRS (FSRS), dont flashcard audio, pinyin masqué par défaut ; **sauvegarde et restauration locales du vocabulaire et de la progression** (§9.1) |
 | 0.4.0 | Dictée vocale : réponse tapée en hanzi avec correction automatique, ou mode papier avec auto-correction |
 | 0.5.0 | **Labels à travailler + objectif contrôle + jauge de maîtrise**, jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
 | 0.6.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
-| 0.7.0 | PWA installable et hors ligne, import/export CSV et JSON, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité |
+| 0.7.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
 | 1.1.0 | `ToneEcho`, `SentenceListen`, `BridgeMatch` |
 | 1.2.0 | Atelier de phrases, `SentenceShuffle`, vue parent |
