@@ -202,5 +202,24 @@
   "thirst": {
     "1": "a soif",
     "2": "très soif"
+  },
+  "backup": {
+    "issues": {
+      "fileTooLarge": "Ce fichier est trop gros pour être une sauvegarde (20 Mo au maximum).",
+      "unreadableFile": "Ce fichier n’a pas pu être lu. Réessaie ou choisis-en un autre.",
+      "invalidJson": "Ce fichier est abîmé ou n’est pas une sauvegarde : son contenu est illisible.",
+      "tooDeep": "Ce fichier a une structure anormale : il n’est pas accepté.",
+      "notABackup": "Ce fichier n’est pas une sauvegarde de vocab-learner.",
+      "newerVersion": "Ce fichier vient d’une version plus récente de l’appli (format {version}) : mets l’appli à jour, puis réessaie.",
+      "unsupportedVersion": "Ce fichier vient d’une version trop ancienne de l’appli : il ne peut pas être converti.",
+      "migrationFailed": "Ce fichier vient d’une version plus ancienne et n’a pas pu être converti.",
+      "fingerprintMismatch": "Ce fichier a été modifié ou abîmé depuis la sauvegarde : son empreinte ne correspond plus.",
+      "forbiddenKey": "Le fichier contient une clé interdite ({path}).",
+      "invalidValue": "Une donnée du fichier est invalide ({path}).",
+      "brokenReference": "Le fichier fait référence à un mot ou un label absent ({path}).",
+      "duplicate": "Le fichier contient un doublon ({path}).",
+      "more": "Et {count} autre(s) problème(s).",
+      "generic": "Ce fichier ne peut pas être restauré : il n’est pas une sauvegarde valide."
+    }
   }
 }
