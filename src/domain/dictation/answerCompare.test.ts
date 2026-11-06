@@ -1,7 +1,26 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { PinyinGenerator } from '../pinyinGeneration';
 import { compareAnswer } from './answerCompare';
 
-const zh = (expected: string, given: string) => compareAnswer({ language: 'zh', expected, given });
+/** A tiny pinyin table, enough for the words of these tests. */
+const PINYIN: Readonly<Record<string, string>> = {
+  在: 'zài',
+  再: 'zài',
+  见: 'jiàn',
+  件: 'jiàn',
+  你: 'nǐ',
+  好: 'hǎo',
+  号: 'hào',
+};
+const fakePinyin: PinyinGenerator = (hanzi) =>
+  Array.from(hanzi, (char) => PINYIN[char] ?? char).join(' ');
+
+function pinyinLoader() {
+  return vi.fn(() => Promise.resolve(fakePinyin));
+}
+
+const zh = (expected: string, given: string, loadPinyin = pinyinLoader()) =>
+  compareAnswer({ language: 'zh', expected, given }, { loadPinyin });
 
 describe('compareAnswer in Chinese', () => {
   it('accepts the exact hanzi as correct', async () => {
@@ -66,5 +85,32 @@ describe('compareAnswer in Chinese', () => {
       { kind: 'correct', given: '\u{20bb7}', expected: '\u{20bb7}' },
       { kind: 'wrong', given: '们', expected: '好' },
     ]);
+  });
+
+  it('tells a same-sounding answer written with other characters, which stays wrong', async () => {
+    const result = await zh('再见', '在见');
+
+    expect(result.outcome).toBe('wrong');
+    expect(result.reason).toBe('sameSoundOtherCharacter');
+  });
+
+  it('gives no reason when the sound differs too', async () => {
+    const result = await zh('你好', '你号');
+
+    expect(result.outcome).toBe('wrong');
+    expect(result.reason).toBeUndefined();
+  });
+
+  it('does not take pinyin typed in Latin letters for a same-sounding character', async () => {
+    expect((await zh('再', 'zài')).reason).toBeUndefined();
+  });
+
+  it('loads the pinyin only when an answer in hanzi is wrong', async () => {
+    const loadPinyin = pinyinLoader();
+
+    await zh('你好', '你好', loadPinyin);
+    await zh('你好', 'nihao', loadPinyin);
+
+    expect(loadPinyin).not.toHaveBeenCalled();
   });
 });

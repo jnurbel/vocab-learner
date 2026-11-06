@@ -1,7 +1,11 @@
 import type { Language } from '../card';
+import type { PinyinGenerator } from '../pinyinGeneration';
 import { characterDiff, type DiffPart } from './characterDiff';
 
 export type CompareOutcome = 'correct' | 'almost' | 'wrong';
+
+/** Why a wrong answer deserves a specific message. */
+export type CompareReason = 'sameSoundOtherCharacter';
 
 export interface AnswerToCompare {
   language: Language;
@@ -11,22 +15,49 @@ export interface AnswerToCompare {
   given: string;
 }
 
+export interface CompareDependencies {
+  /** pinyin-pro is large: it is loaded only to explain a wrong answer in hanzi. */
+  loadPinyin: () => Promise<PinyinGenerator>;
+}
+
 export interface Comparison {
   outcome: CompareOutcome;
   diff: DiffPart[];
+  reason?: CompareReason;
 }
 
 /** Full-width forms of the ASCII characters (U+FF01 to U+FF5E) sit 0xFEE0 above them. */
 const FULL_WIDTH = /[！-～]/g;
 const FULL_WIDTH_OFFSET = 0xfee0;
 const WHITESPACE = /\s+/gu;
+const ONLY_HAN = /^\p{Script=Han}+$/u;
 
 /** Checks a dictated word typed by the learner (GAME_DESIGN.md 6.2). */
-export function compareAnswer({ expected, given }: AnswerToCompare): Promise<Comparison> {
+export async function compareAnswer(
+  { expected, given }: AnswerToCompare,
+  { loadPinyin }: CompareDependencies,
+): Promise<Comparison> {
   const wanted = normalizeChinese(expected);
   const typed = normalizeChinese(given);
-  const outcome = typed === wanted ? 'correct' : 'wrong';
-  return Promise.resolve({ outcome, diff: characterDiff(wanted, typed) });
+  const diff = characterDiff(wanted, typed);
+  if (typed === wanted) {
+    return { outcome: 'correct', diff };
+  }
+  if (ONLY_HAN.test(typed) && (await soundsAlike(wanted, typed, loadPinyin))) {
+    return { outcome: 'wrong', diff, reason: 'sameSoundOtherCharacter' };
+  }
+  return { outcome: 'wrong', diff };
+}
+
+async function soundsAlike(
+  wanted: string,
+  typed: string,
+  loadPinyin: CompareDependencies['loadPinyin'],
+): Promise<boolean> {
+  const pinyin = await loadPinyin();
+  const sound = (hanzi: string) =>
+    pinyin(hanzi).normalize('NFC').toLowerCase().replace(WHITESPACE, '');
+  return sound(typed) === sound(wanted);
 }
 
 function normalizeChinese(text: string): string {
