@@ -21,6 +21,8 @@ export interface SrsConfig {
   readonly choiceSlowMs: number;
   /** Ordered from the highest stage down: the first one satisfied wins. */
   readonly stageThresholds: readonly StageThreshold[];
+  /** Lowest current stage counted as mastered in the label gauge. */
+  readonly masteryStage: Stage;
   /** Below this recall probability, a due word is very thirsty. */
   readonly strongThirstRetrievability: number;
 }
@@ -44,5 +46,6 @@ export const GAME_CONFIG: SrsConfig = Object.freeze({
     Object.freeze({ stage: 'bud', minStabilityDays: 7, minSuccessDays: 3 }),
     Object.freeze({ stage: 'stem', minStabilityDays: 3, minSuccessDays: 2 }),
   ]),
+  masteryStage: 'stem',
   strongThirstRetrievability: 0.7,
 });
