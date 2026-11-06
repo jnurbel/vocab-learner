@@ -153,6 +153,45 @@
     "flower": "Fleur",
     "lantern": "Lanterne"
   },
+  "practice": {
+    "start": "Entraînement libre",
+    "banner": "Entraînement libre : tes réponses ne changent pas tes révisions",
+    "summaryTitle": "Entraînement terminé",
+    "seen": {
+      "one": "{count} mot vu",
+      "other": "{count} mots vus"
+    },
+    "known": "Je savais : {count}",
+    "toReview": "À revoir : {count}",
+    "retry": "Recommencer avec les mots à revoir",
+    "empty": "Aucun mot à travailler dans cette sélection : ajoute des mots ou choisis d'autres labels."
+  },
+  "outlook": {
+    "today": {
+      "one": "Aujourd'hui : {due} à revoir, {count} nouveau",
+      "other": "Aujourd'hui : {due} à revoir, {count} nouveaux"
+    },
+    "waiting": {
+      "one": "{count} mot nouveau attend ({perDay} par jour)",
+      "other": "{count} mots nouveaux attendent ({perDay} par jour)"
+    },
+    "reviewedToday": {
+      "one": "{count} mot déjà revu aujourd'hui : il reviendra plus tard",
+      "other": "{count} mots déjà revus aujourd'hui : ils reviendront plus tard"
+    },
+    "nextReview": {
+      "one": "Prochaine révision : {day}, {count} mot",
+      "other": "Prochaine révision : {day}, {count} mots"
+    },
+    "tomorrow": "demain"
+  },
+  "settings": {
+    "title": "Réglages",
+    "newPerDay": "Mots nouveaux par jour",
+    "newPerDayHelp": "Avant un contrôle, augmente ce nombre. Plus de mots nouveaux = séances plus longues les jours suivants.",
+    "saved": "Réglage enregistré : il s'applique à la prochaine séance.",
+    "saveFailed": "Le réglage n'a pas pu être enregistré. Réessaie."
+  },
   "flashcards": {
     "title": "Flashcards",
     "languageLegend": "Langue",
@@ -197,7 +236,8 @@
     "label": "Menu",
     "words": "Mes mots",
     "flashcards": "Flashcards",
-    "backup": "Sauvegarde"
+    "backup": "Sauvegarde",
+    "settings": "Réglages"
   },
   "thirst": {
     "1": "a soif",

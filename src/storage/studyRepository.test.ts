@@ -123,4 +123,50 @@ describe('StudyRepository', () => {
 
     expect((await db.sessions.get('s1'))?.endedAt).toBe('2026-11-06T08:10:00.000Z');
   });
+
+  it('records a free practice answer in its session only: review state and progress unchanged', async () => {
+    await db.reviewStates.put(reviewState('a', 3));
+    await db.progress.put({ lastActiveDate: '2026-11-05' }, SINGLETON_KEY);
+    await repository.startSession({
+      ...session('p1', '2026-11-06T08:00:00.000Z'),
+      mode: 'practice',
+    });
+    const result = { cardId: 'a', outcome: 'correct' as const, at: '2026-11-06T08:01:00.000Z' };
+
+    await repository.recordPracticeAnswer({ sessionId: 'p1', result });
+
+    expect((await db.sessions.get('p1'))?.results).toEqual([result]);
+    expect(await db.reviewStates.get('a')).toEqual(reviewState('a', 3));
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({ lastActiveDate: '2026-11-05' });
+  });
+
+  it('refuses a free practice answer for an unknown session', async () => {
+    await expect(
+      repository.recordPracticeAnswer({
+        sessionId: 'missing',
+        result: { cardId: 'a', outcome: 'wrong' },
+      }),
+    ).rejects.toThrow('Unknown session: missing');
+  });
+
+  it('saves the daily quota of new words and keeps the other settings', async () => {
+    await db.settings.put({ ttsRate: 0.85, newPerDay: 5 }, SINGLETON_KEY);
+
+    await repository.saveNewPerDay(10);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({ ttsRate: 0.85, newPerDay: 10 });
+    expect((await repository.load('2026-11-01T00:00:00.000Z')).settings?.newPerDay).toBe(10);
+  });
+
+  it('saves the daily quota in a new profile without settings', async () => {
+    await repository.saveNewPerDay(8);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({ newPerDay: 8 });
+  });
+
+  it('refuses to store a daily quota out of range', async () => {
+    await expect(repository.saveNewPerDay(0)).rejects.toThrow(RangeError);
+    await expect(repository.saveNewPerDay(Number.NaN)).rejects.toThrow(RangeError);
+    expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
+  });
 });

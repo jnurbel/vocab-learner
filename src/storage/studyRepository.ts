@@ -6,6 +6,7 @@ import type {
   SessionResultRecord,
   SettingsRecord,
 } from '../domain/progressRecords';
+import { isValidNewPerDay } from '../domain/studySettings';
 import { SINGLETON_KEY, VocabularyDatabase } from './database';
 
 /** What a study session starts from. */
@@ -24,6 +25,12 @@ export interface AnswerRecord {
   result: SessionResultRecord;
   /** The day of the session, which becomes the last active day. */
   activeDay: LocalDay;
+}
+
+/** A free practice answer: kept for the history, it changes no review state. */
+export interface PracticeAnswerRecord {
+  sessionId: string;
+  result: SessionResultRecord;
 }
 
 /** Stores the learning progress; the spaced repetition decides, the repository only stores. */
@@ -65,19 +72,40 @@ export class StudyRepository {
   async recordAnswer({ sessionId, state, result, activeDay }: AnswerRecord): Promise<void> {
     const { reviewStates, sessions, progress } = this.db;
     await this.db.transaction('rw', [reviewStates, sessions, progress], async () => {
-      const session = await sessions.get(sessionId);
-      if (session === undefined) {
-        throw new Error(`Unknown session: ${sessionId}`);
-      }
-      await sessions.put({ ...session, results: [...session.results, result] });
+      await this.appendResult(sessionId, result);
       await reviewStates.put(state);
       const current = await progress.get(SINGLETON_KEY);
       await progress.put({ ...current, lastActiveDate: activeDay }, SINGLETON_KEY);
     });
   }
 
+  /** Free practice never touches the review states nor the progress (DESIGN.md, 0.4.0). */
+  async recordPracticeAnswer({ sessionId, result }: PracticeAnswerRecord): Promise<void> {
+    await this.db.transaction('rw', this.db.sessions, () => this.appendResult(sessionId, result));
+  }
+
+  /** The daily quota of new words, from the next session on; the other settings are kept. */
+  async saveNewPerDay(newPerDay: number): Promise<void> {
+    if (!isValidNewPerDay(newPerDay)) {
+      throw new RangeError(`Invalid daily quota of new words: ${String(newPerDay)}`);
+    }
+    const { settings } = this.db;
+    await this.db.transaction('rw', settings, async () => {
+      const current = await settings.get(SINGLETON_KEY);
+      await settings.put({ ...current, newPerDay }, SINGLETON_KEY);
+    });
+  }
+
   async endSession(sessionId: string, endedAt: string): Promise<void> {
     await this.db.sessions.update(sessionId, { endedAt });
+  }
+
+  private async appendResult(sessionId: string, result: SessionResultRecord): Promise<void> {
+    const session = await this.db.sessions.get(sessionId);
+    if (session === undefined) {
+      throw new Error(`Unknown session: ${sessionId}`);
+    }
+    await this.db.sessions.put({ ...session, results: [...session.results, result] });
   }
 
   async deleteDatabase(): Promise<void> {
