@@ -300,4 +300,22 @@ describe('App', () => {
 
     expect(new Set(changes).size).toBe(4);
   });
+
+  it('offers the automatic backup folder only where the browser can write into one', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(App, { databaseName: 'app-test-folder-unsupported' });
+    await user.click(screen.getByRole('button', { name: fr.nav.backup }));
+    expect(screen.queryByRole('button', { name: fr.backup.chooseFolder })).toBeNull();
+    unmount();
+
+    const directoryPicker = vi.fn(() =>
+      Promise.reject(new DOMException('Cancelled', 'AbortError')),
+    );
+    render(App, { databaseName: 'app-test-folder-supported', directoryPicker });
+    await user.click(screen.getByRole('button', { name: fr.nav.backup }));
+    await user.click(screen.getByRole('button', { name: fr.backup.chooseFolder }));
+
+    expect(directoryPicker).toHaveBeenCalledOnce();
+    expect(await screen.findByText(fr.backup.noFolder)).toBeVisible();
+  });
 });
