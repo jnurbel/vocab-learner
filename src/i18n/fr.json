@@ -105,7 +105,9 @@
     "confirmDelete": "Supprimer « {term} » ? Le mot sera effacé définitivement ; ses labels restent.",
     "confirmDeleteButton": "Confirmer la suppression",
     "deleted": "« {term} » supprimé.",
-    "deleteFailed": "La suppression a échoué. Réessaie."
+    "deleteFailed": "La suppression a échoué. Réessaie.",
+    "columnProgress": "Progrès",
+    "progressBadge": "{stage} · {thirst}"
   },
   "confirm": {
     "cancel": "Annuler"
@@ -194,5 +196,9 @@
     "words": "Mes mots",
     "flashcards": "Flashcards",
     "backup": "Sauvegarde"
+  },
+  "thirst": {
+    "1": "a soif",
+    "2": "très soif"
   }
 }

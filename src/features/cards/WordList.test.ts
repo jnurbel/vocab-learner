@@ -42,6 +42,19 @@ function shownTerms(): string[] {
 }
 
 describe('WordList', () => {
+  it('shows the stage and the thirst of each word as a text badge', () => {
+    render(WordList, {
+      cards,
+      labels,
+      progressOf: (shown: Card) =>
+        shown.id === 'c1' ? { stage: 'sprout', thirst: 2 } : { stage: 'seed', thirst: 0 },
+    });
+
+    const cat = screen.getByRole('row', { name: /猫/ });
+    expect(within(cat).getByText('Pousse · très soif')).toBeVisible();
+    expect(within(screen.getByRole('row', { name: /书/ })).getByText('Graine')).toBeVisible();
+  });
+
   it('shows every word with the names of its labels by default', () => {
     render(WordList, { cards, labels });
 
