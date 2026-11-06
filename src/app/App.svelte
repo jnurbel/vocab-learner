@@ -10,6 +10,11 @@
   import BackupPanel from '../features/backup/BackupPanel.svelte';
   import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
+  import Dictation from '../features/dictation/Dictation.svelte';
+  import {
+    startDictationSession,
+    type DictationSelection,
+  } from '../features/dictation/dictationSession';
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import {
     startFlashcardSession,
@@ -69,8 +74,8 @@
   /** Profiles come later: the pseudonym written into the backup file names. */
   const PROFILE_NAME = 'profil';
 
-  type Page = 'words' | 'flashcards' | 'backup';
-  const PAGES: readonly Page[] = ['words', 'flashcards', 'backup'];
+  type Page = 'words' | 'flashcards' | 'dictation' | 'backup';
+  const PAGES: readonly Page[] = ['words', 'flashcards', 'dictation', 'backup'];
   let page = $state<Page>('words');
 
   let repository: VocabularyRepository | undefined;
@@ -165,6 +170,17 @@
   function startSession(selection: FlashcardSelection) {
     return startFlashcardSession(selection, { store: flashcardStore, srs, clock: now, newId });
   }
+
+  /** The same store as the flashcards: every answer is a change to back up. */
+  function startDictation(selection: DictationSelection) {
+    return startDictationSession(selection, { store: flashcardStore, srs, clock: now, newId });
+  }
+
+  /** Typing suits a computer; on a touch screen, writing on paper is the default. */
+  const dictationMode =
+    typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+      ? 'paper'
+      : 'keyboard';
 
   async function sessionEnded() {
     await reload(storage());
@@ -288,6 +304,16 @@
       {labels}
       {startSession}
       {speaker}
+      onSessionEnd={() => void sessionEnded()}
+    />
+  {:else if page === 'dictation'}
+    <Dictation
+      {cards}
+      {labels}
+      {speaker}
+      startSession={startDictation}
+      loadPinyin={loadPinyinGenerator}
+      defaultMode={dictationMode}
       onSessionEnd={() => void sessionEnded()}
     />
   {:else}

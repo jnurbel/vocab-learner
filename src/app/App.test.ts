@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import fr from '../i18n/fr.json';
 import packageJson from '../../package.json';
 import type { BackupFile } from '../services/backup/backupService';
+import { FakeSpeaker } from '../features/dictation/dictation.fixtures';
 import { BackupMetaStore } from '../storage/backupMetaStore';
 import App from './App.svelte';
 
@@ -317,5 +318,33 @@ describe('App', () => {
 
     expect(directoryPicker).toHaveBeenCalledOnce();
     expect(await screen.findByText(fr.backup.noFolder)).toBeVisible();
+  });
+
+  it('dictates the entered words from the menu, and the answer counts as a change to back up', async () => {
+    const user = userEvent.setup();
+    const databaseName = 'app-test-dictation';
+    const meta = new BackupMetaStore(databaseName);
+    render(App, { databaseName, download: vi.fn(), speaker: new FakeSpeaker(true, true) });
+    await addWord(user, '猫 | māo | chat');
+    await vi.waitFor(async () => {
+      expect(await meta.lastChangeAt()).toBeDefined();
+    });
+    const changedBefore = await meta.lastChangeAt();
+
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.dictation }));
+    await user.click(screen.getByRole('button', { name: fr.dictation.start }));
+    const field = await screen.findByRole('textbox', { name: fr.dictation.answerLabel });
+    await user.type(field, '猫{Enter}');
+    expect(await screen.findByText(fr.dictation.correct)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: fr.dictation.continue }));
+    expect(await screen.findByText('Score : 1 / 1')).toBeVisible();
+
+    await vi.waitFor(async () => {
+      expect(await meta.lastChangeAt()).not.toBe(changedBefore);
+    });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
   });
 });
