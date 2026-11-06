@@ -94,12 +94,23 @@ export async function startFlashcardSession(
   return new FlashcardSession(id, context.today, items, selection, deps);
 }
 
+/** Today's outlook, with the day it was computed for and the daily quota of new words. */
+export interface StudyOutlookView extends StudyOutlook {
+  today: LocalDay;
+  newPerDay: number;
+}
+
 /** Explains what a session on this selection would hold today, and what comes next. */
 export async function loadStudyOutlook(
   selection: FlashcardSelection,
   deps: Pick<FlashcardSessionDependencies, 'store' | 'srs' | 'clock'>,
-): Promise<StudyOutlook> {
-  return summarizeStudyOutlook(await loadStudyContext(selection, deps), deps.srs);
+): Promise<StudyOutlookView> {
+  const context = await loadStudyContext(selection, deps);
+  return {
+    ...summarizeStudyOutlook(context, deps.srs),
+    today: context.today,
+    newPerDay: context.newPerDay,
+  };
 }
 
 /** One pass through the queue; every answer is stored as soon as it is given. */

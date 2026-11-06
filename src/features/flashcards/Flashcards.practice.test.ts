@@ -8,7 +8,11 @@ import type { StudyData } from '../../storage/studyRepository';
 import { startPracticeSession } from '../practice/practiceSession';
 import { card, FakeStore, reviewed, srs } from './flashcards.fixtures';
 import Flashcards from './Flashcards.svelte';
-import { startFlashcardSession, type FlashcardSelection } from './flashcardSession';
+import {
+  loadStudyOutlook,
+  startFlashcardSession,
+  type FlashcardSelection,
+} from './flashcardSession';
 
 const morning = new Date('2026-11-06T08:00:00Z');
 
@@ -34,9 +38,20 @@ function setup({
   const startPractice = vi.fn((selection: FlashcardSelection) =>
     startPracticeSession(selection, { store, clock: () => morning, newId }),
   );
+  const loadOutlook = vi.fn((selection: FlashcardSelection) =>
+    loadStudyOutlook(selection, { store, srs, clock: () => morning }),
+  );
   const onSessionEnd = vi.fn();
-  render(Flashcards, { cards, labels: [], startSession, startPractice, speaker, onSessionEnd });
-  return { store, startPractice, onSessionEnd, user: userEvent.setup() };
+  render(Flashcards, {
+    cards,
+    labels: [],
+    startSession,
+    startPractice,
+    loadOutlook,
+    speaker,
+    onSessionEnd,
+  });
+  return { store, startPractice, loadOutlook, onSessionEnd, user: userEvent.setup() };
 }
 
 const region = () => screen.getByRole('region', { name: fr.flashcards.title });
@@ -110,5 +125,31 @@ describe('Flashcards free practice', () => {
     await user.click(screen.getByRole('button', { name: fr.practice.start }));
 
     expect(await screen.findByText(fr.practice.banner)).toBeVisible();
+  });
+});
+
+describe('Flashcards study outlook', () => {
+  it('explains the queue of the chosen language on the first screen', async () => {
+    const { user, loadOutlook } = setup({
+      cards: [cat, dog, card('apple', undefined, { language: 'en' })],
+    });
+
+    expect(await screen.findByText("Aujourd'hui : 0 à revoir, 2 nouveaux")).toBeVisible();
+
+    await user.click(screen.getByRole('radio', { name: fr.languages.en }));
+
+    expect(await screen.findByText("Aujourd'hui : 0 à revoir, 1 nouveau")).toBeVisible();
+    expect(loadOutlook).toHaveBeenLastCalledWith(expect.objectContaining({ language: 'en' }));
+  });
+
+  it('tells when the next reviews come once nothing is thirsty', async () => {
+    const ratedToday = { lastRatedDay: '2026-11-06', due: '2026-11-07T08:00:00.000Z' };
+    const { user } = setup({
+      data: { reviewStates: [reviewed('cat', ratedToday), reviewed('dog', ratedToday)] },
+    });
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+
+    expect(await screen.findByText(fr.flashcards.nothingDue)).toBeVisible();
+    expect(await screen.findByText('Prochaine révision : demain, 2 mots')).toBeVisible();
   });
 });

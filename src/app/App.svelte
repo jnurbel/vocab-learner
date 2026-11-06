@@ -12,6 +12,7 @@
   import WordList from '../features/cards/WordList.svelte';
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import {
+    loadStudyOutlook,
     startFlashcardSession,
     type FlashcardSelection,
     type FlashcardStore,
@@ -177,6 +178,10 @@
     endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
   };
 
+  function loadOutlook(selection: FlashcardSelection) {
+    return loadStudyOutlook(selection, { store: flashcardStore, srs, clock: now });
+  }
+
   function startPractice(selection: FlashcardSelection) {
     return startPracticeSession(selection, { store: practiceStore, clock: now, newId });
   }
@@ -303,6 +308,7 @@
       {labels}
       {startSession}
       {startPractice}
+      {loadOutlook}
       {speaker}
       onSessionEnd={() => void sessionEnded()}
     />

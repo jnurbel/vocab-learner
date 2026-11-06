@@ -17,7 +17,9 @@
     FlashcardSession,
     SelfEvaluation,
     SessionSummary,
+    StudyOutlookView,
   } from './flashcardSession';
+  import StudyOutlookPanel from './StudyOutlookPanel.svelte';
 
   interface Props {
     cards: readonly Card[];
@@ -25,12 +27,15 @@
     startSession: (selection: FlashcardSelection) => Promise<FlashcardSession>;
     /** Free practice: every chosen word, without any effect on the planning. */
     startPractice: (selection: FlashcardSelection) => PracticeSession;
+    /** Explains today's queue of the selection, and what comes next. */
+    loadOutlook: (selection: FlashcardSelection) => Promise<StudyOutlookView>;
     speaker: Speaker;
     /** Called once a session with at least one answer ends, finished or left. */
     onSessionEnd: () => void;
   }
 
-  const { cards, labels, startSession, startPractice, speaker, onSessionEnd }: Props = $props();
+  const { cards, labels, startSession, startPractice, loadOutlook, speaker, onSessionEnd }: Props =
+    $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
   /** Keys 1, 2, 3 rate the card once turned over. */
@@ -69,6 +74,31 @@
   let voice = $state<'available' | 'missing' | 'failed'>('available');
   let busy = $state(false);
   let cardElement = $state<HTMLElement>();
+
+  let outlook = $state.raw<StudyOutlookView>();
+  /** Only the latest request is shown, should an earlier one answer late. */
+  let outlookRequest = 0;
+  const outlookShown = $derived(
+    view.kind === 'setup' || (view.kind === 'summary' && view.answered === 0 && !view.left),
+  );
+
+  $effect(() => {
+    if (!outlookShown) {
+      return;
+    }
+    const request = (outlookRequest += 1);
+    loadOutlook({ cards, language, labelIds: [...labelIds] }).then(
+      (loaded) => {
+        if (request === outlookRequest) {
+          outlook = loaded;
+        }
+      },
+      () => {
+        // The outlook only explains: without it, the session still works.
+        outlook = undefined;
+      },
+    );
+  });
 
   const lang = (code: Language) => (code === 'zh' ? 'zh-CN' : 'en');
   const showWord = $derived(voice !== 'available' || flipped);
@@ -257,6 +287,9 @@
         void start();
       }}
     >
+      {#if outlook !== undefined}
+        <StudyOutlookPanel {outlook} />
+      {/if}
       <fieldset>
         <legend>{fr.flashcards.languageLegend}</legend>
         {#each LANGUAGES as code (code)}
@@ -377,6 +410,9 @@
   {:else if view.kind === 'summary'}
     {#if view.answered === 0 && !view.left}
       <p>{fr.flashcards.nothingDue}</p>
+      {#if outlook !== undefined}
+        <StudyOutlookPanel {outlook} />
+      {/if}
     {:else}
       <h3>{fr.flashcards.summaryTitle}</h3>
       {#if view.left}

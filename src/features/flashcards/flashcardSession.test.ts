@@ -236,6 +236,8 @@ describe('the study outlook', () => {
       reviewedToday: 1,
       newAvailableToday: 2,
       newWaiting: 1,
+      newPerDay: 3,
+      today: '2026-11-06',
     });
   });
 });

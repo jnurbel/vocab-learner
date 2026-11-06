@@ -9,7 +9,11 @@ import type { Speaker } from '../../services/tts/speaker';
 import { startPracticeSession } from '../practice/practiceSession';
 import { card, FakeStore, reviewed, srs } from './flashcards.fixtures';
 import Flashcards from './Flashcards.svelte';
-import { startFlashcardSession, type FlashcardSelection } from './flashcardSession';
+import {
+  loadStudyOutlook,
+  startFlashcardSession,
+  type FlashcardSelection,
+} from './flashcardSession';
 
 const morning = new Date('2026-11-06T08:00:00Z');
 
@@ -71,6 +75,8 @@ function setup({
     labels: [animals],
     startSession,
     startPractice,
+    loadOutlook: (selection: FlashcardSelection) =>
+      loadStudyOutlook(selection, { store, srs, clock: () => morning }),
     speaker,
     onSessionEnd,
   });
