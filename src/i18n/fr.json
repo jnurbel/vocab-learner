@@ -153,6 +153,19 @@
     "flower": "Fleur",
     "lantern": "Lanterne"
   },
+  "practice": {
+    "start": "Entraînement libre",
+    "banner": "Entraînement libre : tes réponses ne changent pas tes révisions",
+    "summaryTitle": "Entraînement terminé",
+    "seen": {
+      "one": "{count} mot vu",
+      "other": "{count} mots vus"
+    },
+    "known": "Je savais : {count}",
+    "toReview": "À revoir : {count}",
+    "retry": "Recommencer avec les mots à revoir",
+    "empty": "Aucun mot à travailler dans cette sélection : ajoute des mots ou choisis d'autres labels."
+  },
   "flashcards": {
     "title": "Flashcards",
     "languageLegend": "Langue",

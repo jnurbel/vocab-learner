@@ -17,6 +17,7 @@
     type FlashcardStore,
   } from '../features/flashcards/flashcardSession';
   import BulkEntry from '../features/import/BulkEntry.svelte';
+  import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
   import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import type { VocabularySave } from '../features/vocabularySave';
@@ -166,6 +167,20 @@
     return startFlashcardSession(selection, { store: flashcardStore, srs, clock: now, newId });
   }
 
+  /** Free practice answers are history to back up too, though they change no review. */
+  const practiceStore: PracticeStore = {
+    startSession: (session) => ready(study).startSession(session),
+    recordPracticeAnswer: async (answer) => {
+      await ready(study).recordPracticeAnswer(answer);
+      await recordChange();
+    },
+    endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
+  };
+
+  function startPractice(selection: FlashcardSelection) {
+    return startPracticeSession(selection, { store: practiceStore, clock: now, newId });
+  }
+
   async function sessionEnded() {
     await reload(storage());
     await writeAutomaticBackup();
@@ -287,6 +302,7 @@
       {cards}
       {labels}
       {startSession}
+      {startPractice}
       {speaker}
       onSessionEnd={() => void sessionEnded()}
     />
