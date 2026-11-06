@@ -1,19 +1,8 @@
-import { termKey, type Card, type Language } from '../domain/card';
+import type { Card, Language } from '../domain/card';
 import type { ImportChanges } from '../domain/importPlan';
 import type { Label } from '../domain/label';
 import type { LabelChanges } from '../domain/labelOperations';
-import { VocabularyDatabase, type StoredCard } from './database';
-
-function toStored(card: Card): StoredCard {
-  return { ...card, termKey: termKey(card.language, card.term) };
-}
-
-/** Drops the storage-only identity key. */
-function toCard(stored: StoredCard): Card {
-  const card: Card & { termKey?: string } = { ...stored };
-  delete card.termKey;
-  return card;
-}
+import { toCard, toStored, VocabularyDatabase } from './database';
 
 /** Persists words and labels; the domain decides, the repository only stores. */
 export class VocabularyRepository {

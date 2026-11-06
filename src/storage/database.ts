@@ -1,5 +1,5 @@
 import { Dexie, type EntityTable, type Table } from 'dexie';
-import type { Card } from '../domain/card';
+import { termKey, type Card } from '../domain/card';
 import type { Label } from '../domain/label';
 import type {
   IgnoredTerm,
@@ -13,6 +13,17 @@ import type {
 /** A card as stored: its identity key makes (language, term) unique at the database level. */
 export interface StoredCard extends Card {
   termKey: string;
+}
+
+export function toStored(card: Card): StoredCard {
+  return { ...card, termKey: termKey(card.language, card.term) };
+}
+
+/** Drops the storage-only identity key. */
+export function toCard(stored: StoredCard): Card {
+  const card: Card & { termKey?: string } = { ...stored };
+  delete card.termKey;
+  return card;
 }
 
 /** Key of the single row of the singleton tables (progress, settings). */
