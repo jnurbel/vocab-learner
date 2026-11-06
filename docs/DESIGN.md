@@ -358,6 +358,8 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 
 ## 10. Jalons (SemVer)
 
+> **Recalage (2026-11-06)** : la release `v0.1.0` contient le squelette **et** le contenu prévu en 0.2.0 ci-dessous (mots, labels, saisie en lot). Les numéros suivants sont donc décalés d'un cran : la fin de la saisie (formulaire unitaire, aperçu éditable, gestion des labels) sortira en **0.2.0**, les flashcards + SRS en **0.3.0**, etc. Le contenu et l'ordre des jalons ne changent pas.
+
 | Version | Contenu |
 |---|---|
 | 0.1.0 | Squelette Vite/Svelte/TS, CI (lint, typecheck, Vitest, audit), déploiement Pages, CSP |
