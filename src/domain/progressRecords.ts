@@ -1,4 +1,5 @@
 import type { Language } from './card';
+import type { Outcome, Rating } from './srs/reviewState';
 
 /**
  * Stored shapes of the learning progress (DESIGN §3, GAME_DESIGN §0.6), as they are kept in the
@@ -6,24 +7,8 @@ import type { Language } from './card';
  * Fields that the app does not use yet are optional.
  */
 
-export type Stage = 'seed' | 'sprout' | 'stem' | 'bud' | 'flower' | 'lantern';
-
-export interface ReviewStateRecord {
-  cardId: string;
-  /** ISO datetime. */
-  due: string;
-  stability: number;
-  difficulty: number;
-  reps: number;
-  lapses: number;
-  state: 'new' | 'review' | 'relearning';
-  lastReviewAt?: string;
-  successDays: number;
-  /** 'YYYY-MM-DD'. */
-  lastSuccessDay?: string;
-  lastRatedDay?: string;
-  peakStage: Stage;
-}
+/** The spaced repetition owns the review state: storage and backups keep it as it is. */
+export type { Rating, ReviewState as ReviewStateRecord, Stage } from './srs/reviewState';
 
 export type ExerciseType =
   | 'discovery'
@@ -37,10 +22,8 @@ export type ExerciseType =
   | 'typeEcho'
   | 'seasonRush';
 
-export type Rating = 'again' | 'hard' | 'good' | 'easy';
-
 /** Outcomes of DESIGN §3 and of GAME_DESIGN §0.6 together. */
-export type SessionOutcome = Rating | 'correct' | 'correctWithHint' | 'almost' | 'wrong';
+export type SessionOutcome = Rating | Outcome;
 
 export interface SessionResultRecord {
   cardId: string;

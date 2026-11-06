@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteMap } from 'svelte/reactivity';
-  import type { Card } from '../../domain/card';
+  import type { Card, Language } from '../../domain/card';
+  import type { Mastery } from '../../domain/srs/mastery';
   import type { Label } from '../../domain/label';
   import {
     countWordsByLabel,
@@ -20,9 +21,11 @@
     cards: readonly Card[];
     clock: () => string;
     onChange: (changes: LabelChanges) => Promise<void>;
+    /** Mastery gauge per language; the column is hidden without it. */
+    masteryOf?: (label: Label) => Partial<Record<Language, Mastery>>;
   }
 
-  const { labels, cards, clock, onChange }: Props = $props();
+  const { labels, cards, clock, onChange, masteryOf }: Props = $props();
 
   const usages = $derived(countWordsByLabel(labels, cards));
   /** Typed new names and chosen merge targets, by label id. */
@@ -31,6 +34,28 @@
   let status = $state<
     { kind: 'saved' } | { kind: 'refused'; reason: string } | { kind: 'failed' } | undefined
   >();
+
+  const LANGUAGES: readonly Language[] = ['zh', 'en'];
+
+  function gaugesOf(label: Label) {
+    const mastery = masteryOf?.(label) ?? {};
+    return LANGUAGES.flatMap((language) => {
+      const gauge = mastery[language];
+      return gauge === undefined
+        ? []
+        : [
+            {
+              language,
+              ...gauge,
+              text: format(fr.labelManager.mastery, {
+                language: fr.languages[language],
+                mastered: gauge.mastered,
+                total: gauge.total,
+              }),
+            },
+          ];
+    });
+  }
 
   const nameOf = (labelId: string) => labels.find(({ id }) => id === labelId)?.name ?? '';
 
@@ -88,6 +113,9 @@
         <tr>
           <th scope="col">{fr.labelManager.columnName}</th>
           <th scope="col">{fr.labelManager.columnCount}</th>
+          {#if masteryOf !== undefined}
+            <th scope="col">{fr.labelManager.columnMastery}</th>
+          {/if}
           <th scope="col">{fr.labelManager.columnActions}</th>
         </tr>
       </thead>
@@ -96,6 +124,17 @@
           <tr>
             <th scope="row">{label.name}</th>
             <td>{format(fr.labelManager.count, { count: wordCount })}</td>
+            {#if masteryOf !== undefined}
+              <td>
+                {#each gaugesOf(label) as gauge (gauge.language)}
+                  <div class="gauge">
+                    <span>{gauge.text}</span>
+                    <meter min="0" max={gauge.total} value={gauge.mastered} aria-label={gauge.text}
+                    ></meter>
+                  </div>
+                {/each}
+              </td>
+            {/if}
             <td>
               <div class="actions">
                 <div class="action">
@@ -163,6 +202,12 @@
 </section>
 
 <style>
+  .gauge {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
   .actions,
   .action {
     display: flex;

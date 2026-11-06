@@ -2,6 +2,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import packageJson from './package.json' with { type: 'json' };
 
 /**
  * The CSP in index.html is the production policy. The dev server injects styles
@@ -24,6 +25,10 @@ export default defineConfig({
   // Served from https://<user>.github.io/vocab-learner/
   base: '/vocab-learner/',
   plugins: [svelte(), svelteTesting(), devCspRelaxation()],
+  // Written into backups, so that a later app knows which version produced a file.
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   build: {
     sourcemap: false,
   },
@@ -51,6 +56,11 @@ export default defineConfig({
         },
         // Storage holds the user's only copy of their progress: fully covered as well.
         'src/storage/**': {
+          100: true,
+          perFile: true,
+        },
+        // Backups are the way back after a lost database: fully covered too.
+        'src/services/backup/**': {
           100: true,
           perFile: true,
         },
