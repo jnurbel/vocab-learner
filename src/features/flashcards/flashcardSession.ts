@@ -15,7 +15,7 @@ import type { StudyRepository } from '../../storage/studyRepository';
 /** The self-evaluation buttons: "À revoir", "Difficile", "Je savais", "Je le connais déjà". */
 export type SelfEvaluation = 'again' | 'hard' | 'good' | 'known';
 
-const OUTCOME_OF: Record<SelfEvaluation, Outcome> = {
+export const OUTCOME_OF: Readonly<Record<SelfEvaluation, Outcome>> = {
   again: 'wrong',
   hard: 'correctWithHint',
   good: 'correct',
