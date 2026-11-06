@@ -28,10 +28,12 @@
   }: Props = $props();
 
   let repository: VocabularyRepository | undefined;
-  let cards = $state<Card[]>([]);
-  let labels = $state<Label[]>([]);
+  // Raw state: the data read from storage is replaced as a whole, never mutated, and must stay
+  // plain objects, because IndexedDB cannot clone the proxies of deep reactive state.
+  let cards = $state.raw<Card[]>([]);
+  let labels = $state.raw<Label[]>([]);
   /** The word open in the edit form, if any. */
-  let editing = $state<Card>();
+  let editing = $state.raw<Card>();
 
   async function reload(from: VocabularyRepository) {
     [cards, labels] = await Promise.all([from.allCards(), from.allLabels()]);

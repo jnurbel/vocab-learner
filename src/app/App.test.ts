@@ -133,4 +133,28 @@ describe('App', () => {
     const list = screen.getByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /apple/ })).not.toHaveTextContent('Fruits');
   });
+
+  it('renames a label while other labels exist, and shows the new name on its words', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-label-rename' });
+    for (const [line, labelName] of [
+      ['apple | pomme', 'Fruits'],
+      ['cat | chat', 'Animaux'],
+    ] as const) {
+      await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+      await user.paste(line);
+      await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), labelName);
+      await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+      await within(bulkEntry()).findByRole('status');
+      await user.clear(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput));
+    }
+    const manager = screen.getByRole('region', { name: fr.labelManager.title });
+
+    await user.type(within(manager).getByLabelText('Nouveau nom pour Fruits'), 'Fruits rouges');
+    await user.click(within(manager).getByRole('button', { name: 'Renommer Fruits' }));
+
+    expect(await within(manager).findByRole('status')).toHaveTextContent(fr.labelManager.saved);
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /apple/ })).toHaveTextContent('Fruits rouges');
+  });
 });
