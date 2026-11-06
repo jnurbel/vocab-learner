@@ -141,7 +141,9 @@
       "nameTaken": "Un autre label porte déjà ce nom.",
       "labelNotFound": "Ce label n'existe plus.",
       "sameLabel": "Choisis un autre label."
-    }
+    },
+    "columnMastery": "Maîtrise",
+    "mastery": "{language} : {mastered}/{total} mots maîtrisés"
   },
   "stages": {
     "seed": "Graine",

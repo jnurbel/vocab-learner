@@ -50,6 +50,28 @@ function rowOf(name: string): HTMLElement {
 }
 
 describe('LabelManager', () => {
+  it('shows the mastery gauge of each label in each language it has words in', () => {
+    render(LabelManager, {
+      labels: [lesson, animals],
+      cards: [cat, dog],
+      clock: () => now,
+      onChange: vi.fn(() => Promise.resolve()),
+      masteryOf: (shown: Label) =>
+        shown.id === 'animals'
+          ? { zh: { mastered: 1, total: 2 }, en: { mastered: 0, total: 3 } }
+          : {},
+    });
+
+    const row = screen.getByRole('row', { name: /Animaux/ });
+    expect(within(row).getByText('Chinois : 1/2 mots maîtrisés')).toBeVisible();
+    expect(within(row).getByText('Anglais : 0/3 mots maîtrisés')).toBeVisible();
+    expect(
+      within(row).getByRole('meter', { name: 'Chinois : 1/2 mots maîtrisés' }),
+    ).toHaveAttribute('value', '1');
+    const lessonRow = screen.getByRole('row', { name: /Leçon 3/ });
+    expect(within(lessonRow).queryByRole('meter')).toBeNull();
+  });
+
   it('lists the labels in alphabetical order with their number of words', () => {
     setup();
 
