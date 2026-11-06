@@ -49,9 +49,15 @@ export class VocabularyRepository {
     return stored.map(toCard);
   }
 
-  /** Deletes a word; its labels stay, even when no other word carries them. */
+  /**
+   * Deletes a word with its learning progress, atomically; its labels stay, even when no other
+   * word carries them.
+   */
   async deleteCard(cardId: string): Promise<void> {
-    await this.db.cards.delete(cardId);
+    await this.db.transaction('rw', this.db.cards, this.db.reviewStates, async () => {
+      await this.db.cards.delete(cardId);
+      await this.db.reviewStates.delete(cardId);
+    });
   }
 
   async saveLabel(label: Label): Promise<void> {
