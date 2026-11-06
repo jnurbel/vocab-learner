@@ -1,3 +1,5 @@
+import type { Stage } from './reviewState';
+
 export interface FsrsSettings {
   readonly requestRetention: number;
   readonly enableShortTerm: boolean;
@@ -5,10 +7,18 @@ export interface FsrsSettings {
   readonly maximumIntervalDays: number;
 }
 
+export interface StageThreshold {
+  readonly stage: Stage;
+  readonly minStabilityDays: number;
+  readonly minSuccessDays: number;
+}
+
 export interface SrsConfig {
   readonly fsrs: FsrsSettings;
   /** Beyond this response time, a correct choice is rated `hard`. */
   readonly choiceSlowMs: number;
+  /** Ordered from the highest stage down: the first one satisfied wins. */
+  readonly stageThresholds: readonly StageThreshold[];
 }
 
 /**
@@ -23,4 +33,10 @@ export const GAME_CONFIG: SrsConfig = Object.freeze({
     maximumIntervalDays: 36500,
   }),
   choiceSlowMs: 8000,
+  stageThresholds: Object.freeze([
+    Object.freeze({ stage: 'lantern', minStabilityDays: 60, minSuccessDays: 5 }),
+    Object.freeze({ stage: 'flower', minStabilityDays: 21, minSuccessDays: 4 }),
+    Object.freeze({ stage: 'bud', minStabilityDays: 7, minSuccessDays: 3 }),
+    Object.freeze({ stage: 'stem', minStabilityDays: 3, minSuccessDays: 2 }),
+  ]),
 });
