@@ -7,14 +7,22 @@
   import type { BulkEntrySave } from '../features/import/bulkEntrySave';
   import fr from '../i18n/fr.json';
   import { loadPinyinGenerator } from '../services/pinyinLoader';
+  import { persistenceRequester } from '../services/storagePersistence';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
     databaseName?: string;
+    /** Asks the browser to keep the data; called after every successful save. */
+    requestPersistence?: () => Promise<void>;
   }
 
-  const { databaseName = 'vocab-learner-default' }: Props = $props();
+  const {
+    databaseName = 'vocab-learner-default',
+    requestPersistence = persistenceRequester(
+      'storage' in navigator ? navigator.storage : undefined,
+    ),
+  }: Props = $props();
 
   let repository: VocabularyRepository | undefined;
   let cards = $state<Card[]>([]);
@@ -34,6 +42,7 @@
       throw new Error('Storage is not ready');
     }
     await repository.saveImport(changes, newLabel);
+    void requestPersistence();
     await reload(repository);
   }
 </script>

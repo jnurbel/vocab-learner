@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import fr from '../i18n/fr.json';
 import App from './App.svelte';
 
@@ -51,5 +51,19 @@ describe('App', () => {
     expect(within(list).queryByRole('row', { name: /狗/ })).toBeNull();
     expect(within(list).getByRole('row', { name: /horse/ })).toBeVisible();
     expect(screen.getByRole('checkbox', { name: 'Animaux' })).toBeInTheDocument();
+  });
+
+  it('asks the browser to keep the data once a first word is saved', async () => {
+    const user = userEvent.setup();
+    const requestPersistence = vi.fn(() => Promise.resolve());
+    render(App, { databaseName: 'app-test-persistence', requestPersistence });
+
+    expect(requestPersistence).not.toHaveBeenCalled();
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('apple | pomme');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+    await screen.findByRole('status');
+
+    expect(requestPersistence).toHaveBeenCalled();
   });
 });
