@@ -9,6 +9,7 @@
   import type { Label } from '../../domain/label';
   import { resolveLabelChoice } from '../../domain/labelOperations';
   import { completeMissingPinyin, type PinyinGenerator } from '../../domain/pinyinGeneration';
+  import LabelPicker from '../labels/LabelPicker.svelte';
   import { PinyinSource } from '../pinyinSource.svelte';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
@@ -125,24 +126,14 @@
   ></textarea>
   <p id="bulk-entry-help" class="help">{fr.bulkEntry.inputHelp}</p>
 
-  <fieldset>
-    <legend>{fr.bulkEntry.labelsLegend}</legend>
-    {#each existingLabels as label (label.id)}
-      <label class="choice">
-        <input type="checkbox" value={label.id} bind:group={chosenLabelIds} />
-        {label.name}
-      </label>
-    {:else}
-      <p>{fr.bulkEntry.noLabels}</p>
-    {/each}
-    <label for="bulk-entry-label">{fr.bulkEntry.labelInput}</label>
-    <input id="bulk-entry-label" type="text" maxlength="200" bind:value={labelName} />
-    {#if !labelChoice.ok}
-      <p role="alert" class="error">
-        {fr.bulkEntry.labelErrors[labelChoice.errors[0] ?? 'required']}
-      </p>
-    {/if}
-  </fieldset>
+  <LabelPicker
+    legend={fr.bulkEntry.labelsLegend}
+    idPrefix="bulk-entry"
+    labels={existingLabels}
+    bind:chosenLabelIds
+    bind:labelName
+    error={labelChoice.ok ? undefined : labelChoice.errors[0]}
+  />
 
   {#if !parsed.ok}
     <p role="alert" class="error">{fr.bulkEntry.inputErrors[parsed.errors[0] ?? 'inputTooLong']}</p>
@@ -197,16 +188,9 @@
 </section>
 
 <style>
-  textarea,
-  input[type='text'] {
+  textarea {
     display: block;
     width: 100%;
-  }
-
-  .choice {
-    display: inline-flex;
-    gap: 0.25rem;
-    margin-right: 1rem;
   }
 
   .help {

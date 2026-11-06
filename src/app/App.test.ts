@@ -38,7 +38,7 @@ describe('App', () => {
 
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('狗 || chien\nhorse | cheval');
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Animaux');
+    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'Animaux');
     await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
     await screen.findByRole('status');
     unmount();

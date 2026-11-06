@@ -8,9 +8,7 @@ export interface PersistableStorage {
  * Asks the browser, once, not to evict the words (DESIGN §11, data loss on iOS).
  * Called after each save; the answer does not matter and any failure is silent.
  */
-export function persistenceRequester(
-  storage: PersistableStorage | undefined,
-): () => Promise<void> {
+export function persistenceRequester(storage: PersistableStorage | undefined): () => Promise<void> {
   let request: Promise<void> | undefined;
   return () => {
     request ??= ask(storage);

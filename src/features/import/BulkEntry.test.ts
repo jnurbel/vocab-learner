@@ -105,7 +105,7 @@ describe('BulkEntry', () => {
     const { user, onSave } = setup({ labels: [animals] });
 
     await typeLines(user, '狗 || chien');
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'animaux');
+    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'animaux');
     await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
 
     expect(onSave).toHaveBeenCalledWith({
@@ -123,7 +123,7 @@ describe('BulkEntry', () => {
     const { user, onSave } = setup();
 
     await typeLines(user, 'apple | pomme');
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Fruits');
+    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'Fruits');
     await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
 
     expect(onSave).toHaveBeenCalledWith({
@@ -139,10 +139,10 @@ describe('BulkEntry', () => {
     const { user, onSave } = setup();
 
     await typeLines(user, 'apple | pomme');
-    await user.click(screen.getByLabelText(fr.bulkEntry.labelInput));
+    await user.click(screen.getByLabelText(fr.labelPicker.nameInput));
     await user.paste('L'.repeat(61));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(fr.bulkEntry.labelErrors.tooLong);
+    expect(screen.getByRole('alert')).toHaveTextContent(fr.labelPicker.errors.tooLong);
     expect(screen.getByRole('button', { name: 'Ajouter 1 mot' })).toBeDisabled();
     expect(onSave).not.toHaveBeenCalled();
   });
@@ -164,7 +164,7 @@ describe('BulkEntry', () => {
     await typeLines(user, '狗 || chien');
     await user.click(screen.getByRole('checkbox', { name: 'Animaux' }));
     await user.click(screen.getByRole('checkbox', { name: 'Leçon 3' }));
-    await user.type(screen.getByLabelText(fr.bulkEntry.labelInput), 'Verbes');
+    await user.type(screen.getByLabelText(fr.labelPicker.nameInput), 'Verbes');
     await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
 
     expect(onSave).toHaveBeenCalledWith({
