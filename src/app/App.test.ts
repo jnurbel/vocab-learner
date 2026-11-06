@@ -163,8 +163,10 @@ describe('App', () => {
     render(App, { databaseName: 'app-test-flashcards' });
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('猫 | māo | chat');
+    await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), 'Animaux');
     await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
     await screen.findByRole('status');
+    expect(await screen.findByText('Chinois : 0/1 mots maîtrisés')).toBeVisible();
 
     const menu = screen.getByRole('navigation', { name: fr.nav.label });
     await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
@@ -180,6 +182,6 @@ describe('App', () => {
 
     await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
     const list = screen.getByRole('table', { name: fr.wordList.caption });
-    expect(within(list).getByRole('row', { name: /猫/ })).toBeVisible();
+    expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
   });
 });

@@ -19,6 +19,9 @@
   import { browserSpeechHost, createWebSpeechSpeaker, type Speaker } from '../services/tts/speaker';
   import { StudyRepository } from '../storage/studyRepository';
   import { srs } from './srs';
+  import type { ReviewStateRecord } from '../domain/progressRecords';
+  import { studyDay } from '../domain/srs/studyDay';
+  import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
 
   interface Props {
@@ -50,9 +53,26 @@
   let labels = $state.raw<Label[]>([]);
   /** The word open in the edit form, if any. */
   let editing = $state.raw<Card>();
+  let reviewStates = $state.raw<ReviewStateRecord[]>([]);
+
+  const stateByCardId = $derived(new Map(reviewStates.map((state) => [state.cardId, state])));
+  /** Taken again on each reload: a page left open overnight would show yesterday's thirst. */
+  let moment = $state.raw(currentMoment());
+
+  function currentMoment() {
+    const now = new Date();
+    return { now, today: studyDay(now, undefined, srs) };
+  }
+  const progressOf = (card: Card) => wordProgress(stateByCardId.get(card.id), moment, srs);
+  const masteryOf = (label: Label) => labelMastery(label.id, cards, reviewStates, srs.config);
 
   async function reload(from: VocabularyRepository) {
-    [cards, labels] = await Promise.all([from.allCards(), from.allLabels()]);
+    [cards, labels, reviewStates] = await Promise.all([
+      from.allCards(),
+      from.allLabels(),
+      study?.reviewStates() ?? [],
+    ]);
+    moment = currentMoment();
   }
 
   onMount(() => {
@@ -165,9 +185,9 @@
       {/key}
     {/if}
 
-    <WordList {cards} {labels} onEdit={startEditing} onDelete={deleteCard} />
+    <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
 
-    <LabelManager {labels} {cards} {clock} onChange={changeLabels} />
+    <LabelManager {labels} {cards} {clock} {masteryOf} onChange={changeLabels} />
   {/if}
 </main>
 
