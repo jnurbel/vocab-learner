@@ -47,3 +47,8 @@ function wallClockParts(date: Date, timeZone: string | undefined): WallClock {
 export function isOnOrAfter(day: LocalDay | undefined, today: LocalDay): boolean {
   return day !== undefined && day >= today;
 }
+
+/** The local day `days` days after `day`, in UTC arithmetic: calendar days have no daylight saving. */
+export function addDays(day: LocalDay, days: number): LocalDay {
+  return new Date(Date.parse(`${day}T00:00:00Z`) + days * MS_PER_DAY).toISOString().slice(0, 10);
+}
