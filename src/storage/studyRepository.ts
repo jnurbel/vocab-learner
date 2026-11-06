@@ -53,6 +53,10 @@ export class StudyRepository {
     });
   }
 
+  async reviewStates(): Promise<ReviewStateRecord[]> {
+    return this.db.reviewStates.toArray();
+  }
+
   async startSession(session: SessionRecord): Promise<void> {
     await this.db.sessions.add(session);
   }

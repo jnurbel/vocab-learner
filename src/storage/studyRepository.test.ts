@@ -107,6 +107,15 @@ describe('StudyRepository', () => {
     expect(await db.progress.get(SINGLETON_KEY)).toBeUndefined();
   });
 
+  it('reads the review states alone, for the word list and the label gauges', async () => {
+    await db.reviewStates.bulkAdd([reviewState('a'), reviewState('b')]);
+
+    expect((await repository.reviewStates()).map(({ cardId }) => cardId).sort()).toEqual([
+      'a',
+      'b',
+    ]);
+  });
+
   it('marks a session as ended', async () => {
     await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
 
