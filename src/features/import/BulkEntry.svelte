@@ -1,10 +1,9 @@
 <script lang="ts">
   import { parseBulkEntry, type BulkLineError } from '../../domain/bulkEntryParser';
   import type { Card } from '../../domain/card';
-  import { uniqueValues } from '../../domain/collections';
   import { applyImportPlan, planImport } from '../../domain/importPlan';
   import type { Label } from '../../domain/label';
-  import { findOrCreateLabel } from '../../domain/labelOperations';
+  import { resolveLabelChoice } from '../../domain/labelOperations';
   import { completeMissingPinyin, type PinyinGenerator } from '../../domain/pinyinGeneration';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
@@ -40,24 +39,25 @@
         }
       : undefined,
   );
-  const typedLabel = $derived(
-    labelName.trim() === ''
-      ? undefined
-      : findOrCreateLabel(existingLabels, labelName, { id: PENDING_LABEL_ID, now: '' }),
+  const labelChoice = $derived(
+    resolveLabelChoice(existingLabels, chosenLabelIds, labelName, {
+      id: PENDING_LABEL_ID,
+      now: '',
+    }),
   );
   const preview = $derived(
     batch &&
       planImport(
         batch,
         existingCards,
-        typedLabel?.ok ? [...chosenLabelIds, typedLabel.value.label.id] : chosenLabelIds,
+        labelChoice.ok ? labelChoice.value.labelIds : chosenLabelIds,
       ),
   );
   const newWordCount = $derived(preview?.newWords.length ?? 0);
   const relabelledCount = $derived(
     preview?.existingWords.filter(({ addedLabelIds }) => addedLabelIds.length > 0).length ?? 0,
   );
-  const canSave = $derived(typedLabel?.ok !== false && (newWordCount > 0 || relabelledCount > 0));
+  const canSave = $derived(labelChoice.ok && (newWordCount > 0 || relabelledCount > 0));
   const saveText = $derived.by(() => {
     if (newWordCount === 0 && (preview?.existingWords.length ?? 0) > 0) {
       return fr.bulkEntry.addLabelsOnly;
@@ -80,20 +80,17 @@
       return;
     }
     const now = clock();
-    const label =
-      labelName.trim() === ''
-        ? undefined
-        : findOrCreateLabel(existingLabels, labelName, { id: newId(), now });
-    if (label?.ok === false) {
+    const choice = resolveLabelChoice(existingLabels, chosenLabelIds, labelName, {
+      id: newId(),
+      now,
+    });
+    if (!choice.ok) {
       return;
     }
-    const labelIds = uniqueValues(
-      label === undefined ? chosenLabelIds : [...chosenLabelIds, label.value.label.id],
-    );
-    const plan = planImport(batch, existingCards, labelIds);
+    const plan = planImport(batch, existingCards, choice.value.labelIds);
     const changes = applyImportPlan(plan, { nextId: newId, now, source: 'manual' });
     try {
-      await onSave({ newLabel: label?.value.created ? label.value.label : undefined, changes });
+      await onSave({ newLabel: choice.value.newLabel, changes });
       status = {
         kind: 'saved',
         created: changes.cardsToCreate.length,
@@ -125,9 +122,9 @@
     {/each}
     <label for="bulk-entry-label">{fr.bulkEntry.labelInput}</label>
     <input id="bulk-entry-label" type="text" maxlength="200" bind:value={labelName} />
-    {#if typedLabel?.ok === false}
+    {#if !labelChoice.ok}
       <p role="alert" class="error">
-        {fr.bulkEntry.labelErrors[typedLabel.errors[0] ?? 'required']}
+        {fr.bulkEntry.labelErrors[labelChoice.errors[0] ?? 'required']}
       </p>
     {/if}
   </fieldset>

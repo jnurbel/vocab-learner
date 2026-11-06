@@ -31,6 +31,33 @@ export function findOrCreateLabel(
   );
 }
 
+export interface LabelChoice {
+  labelIds: string[];
+  /** Set when the typed name was new: the label must be stored with the words. */
+  newLabel: Label | undefined;
+}
+
+/** Labels chosen in an entry form: the ticked ones plus the typed name, if any. */
+export function resolveLabelChoice(
+  labels: readonly Label[],
+  tickedLabelIds: readonly string[],
+  typedName: string,
+  context: CreationContext,
+): Result<LabelChoice, LabelError> {
+  if (typedName.trim() === '') {
+    return success({ labelIds: uniqueValues(tickedLabelIds), newLabel: undefined });
+  }
+  const typed = findOrCreateLabel(labels, typedName, context);
+  if (!typed.ok) {
+    return typed;
+  }
+  const { label, created } = typed.value;
+  return success({
+    labelIds: uniqueValues([...tickedLabelIds, label.id]),
+    newLabel: created ? label : undefined,
+  });
+}
+
 export type LabelOperationError = LabelError | 'nameTaken' | 'labelNotFound';
 
 export function renameLabel(
