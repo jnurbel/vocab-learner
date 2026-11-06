@@ -1,6 +1,12 @@
 import { vi } from 'vitest';
-import type { Language } from '../../domain/card';
+import type { Card, Language } from '../../domain/card';
+import type { SessionRecord } from '../../domain/progressRecords';
+import { GAME_CONFIG } from '../../domain/srs/config';
+import { createFsrsMemoryModel } from '../../domain/srs/fsrsMemoryModel';
+import type { ReviewState } from '../../domain/srs/reviewState';
+import type { AnswerRecord, StudyData } from '../../storage/studyRepository';
 import type { SpeakOptions, Speaker } from '../../services/tts/speaker';
+import type { DictationStore } from './dictationSession';
 
 /** Test helpers shared by the dictation tests. */
 
@@ -52,5 +58,73 @@ export class FakeSpeaker implements Speaker {
       throw new Error('Nothing was read');
     }
     return reading;
+  }
+}
+
+export const srs = {
+  model: createFsrsMemoryModel({ ...GAME_CONFIG.fsrs, enableFuzz: false }),
+  config: GAME_CONFIG,
+  timeZone: 'Europe/Paris',
+};
+
+export function card(id: string, overrides: Partial<Card> = {}): Card {
+  return {
+    id,
+    language: 'zh',
+    term: id,
+    translation: `meaning of ${id}`,
+    labelIds: [],
+    source: 'manual',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function reviewed(cardId: string, overrides: Partial<ReviewState> = {}): ReviewState {
+  return {
+    cardId,
+    due: '2026-11-05T08:00:00.000Z',
+    stability: 4,
+    difficulty: 5,
+    reps: 3,
+    lapses: 0,
+    state: 'review',
+    lastReviewAt: '2026-11-01T08:00:00.000Z',
+    successDays: 2,
+    lastSuccessDay: '2026-11-01',
+    lastRatedDay: '2026-11-01',
+    peakStage: 'stem',
+    ...overrides,
+  };
+}
+
+/** In-memory store that behaves like StudyRepository. */
+export class FakeStore implements DictationStore {
+  sessions: SessionRecord[] = [];
+  answers: AnswerRecord[] = [];
+
+  constructor(private readonly data: Partial<StudyData> = {}) {}
+
+  load(): Promise<StudyData> {
+    return Promise.resolve({ reviewStates: [], recentSessions: [], ...this.data });
+  }
+
+  startSession(session: SessionRecord): Promise<void> {
+    this.sessions.push(session);
+    return Promise.resolve();
+  }
+
+  recordAnswer(answer: AnswerRecord): Promise<void> {
+    this.answers.push(answer);
+    return Promise.resolve();
+  }
+
+  endSession(sessionId: string, endedAt: string): Promise<void> {
+    const session = this.sessions.find(({ id }) => id === sessionId);
+    if (session !== undefined) {
+      session.endedAt = endedAt;
+    }
+    return Promise.resolve();
   }
 }
