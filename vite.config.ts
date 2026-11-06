@@ -43,6 +43,11 @@ export default defineConfig({
           100: true,
           perFile: true,
         },
+        // Storage holds the user's only copy of their progress: fully covered as well.
+        'src/storage/**': {
+          100: true,
+          perFile: true,
+        },
       },
     },
   },
