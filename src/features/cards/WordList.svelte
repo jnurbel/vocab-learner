@@ -6,15 +6,18 @@
   import fr from '../../i18n/fr.json';
   import ConfirmAction from '../../ui/ConfirmAction.svelte';
   import Pinyin from '../../ui/Pinyin.svelte';
+  import type { WordProgress } from '../progress/wordProgress';
 
   interface Props {
     cards: readonly Card[];
     labels: readonly Label[];
     onEdit?: (card: Card) => void;
     onDelete?: (card: Card) => Promise<void>;
+    /** Stage and thirst of a word; the column is hidden without it. */
+    progressOf?: (card: Card) => WordProgress;
   }
 
-  const { cards, labels, onEdit, onDelete }: Props = $props();
+  const { cards, labels, onEdit, onDelete, progressOf }: Props = $props();
 
   let deletion = $state<{ kind: 'done'; term: string } | { kind: 'failed' } | undefined>();
 
@@ -40,6 +43,13 @@
     }),
   );
   const labelNames = $derived(new Map(labels.map((label) => [label.id, label.name])));
+
+  /** Text first: the stage and the thirst are never told by a colour alone. */
+  function badgeOf({ stage, thirst }: WordProgress): string {
+    return thirst === 0
+      ? fr.stages[stage]
+      : format(fr.wordList.progressBadge, { stage: fr.stages[stage], thirst: fr.thirst[thirst] });
+  }
 
   function labelsOf(card: Card): string {
     return card.labelIds
@@ -91,6 +101,9 @@
           <th scope="col">{fr.wordList.columnPinyin}</th>
           <th scope="col">{fr.wordList.columnTranslation}</th>
           <th scope="col">{fr.wordList.columnLabels}</th>
+          {#if progressOf !== undefined}
+            <th scope="col">{fr.wordList.columnProgress}</th>
+          {/if}
           <th scope="col">{fr.wordList.columnActions}</th>
         </tr>
       </thead>
@@ -101,6 +114,9 @@
             <td><Pinyin pinyin={card.pinyin ?? ''} /></td>
             <td>{card.translation}</td>
             <td>{labelsOf(card)}</td>
+            {#if progressOf !== undefined}
+              <td><span class="badge">{badgeOf(progressOf(card))}</span></td>
+            {/if}
             <td>
               <div class="actions">
                 <button
@@ -125,6 +141,15 @@
 </section>
 
 <style>
+  .badge {
+    display: inline-block;
+    border: 1px solid currentColor;
+    border-radius: 1rem;
+    padding: 0 0.5rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
   .actions {
     display: flex;
     flex-wrap: wrap;

@@ -3,6 +3,8 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Card, Language } from '../domain/card';
 import type { Label } from '../domain/label';
+import type { ReviewStateRecord } from '../domain/progressRecords';
+import { VocabularyDatabase } from './database';
 import { VocabularyRepository } from './vocabularyRepository';
 
 const now = '2026-11-05T12:00:00.000Z';
@@ -24,12 +26,28 @@ function label(id: string, name: string): Label {
   return { id, name, isFocus: false, createdAt: now, updatedAt: now };
 }
 
+function reviewState(cardId: string): ReviewStateRecord {
+  return {
+    cardId,
+    due: now,
+    stability: 1,
+    difficulty: 5,
+    reps: 1,
+    lapses: 0,
+    state: 'review',
+    successDays: 1,
+    peakStage: 'sprout',
+  };
+}
+
 let repository: VocabularyRepository;
+let databaseName: string;
 let databaseCount = 0;
 
 beforeEach(() => {
   databaseCount += 1;
-  repository = new VocabularyRepository(`vocab-learner-test-${String(databaseCount)}`);
+  databaseName = `vocab-learner-test-${String(databaseCount)}`;
+  repository = new VocabularyRepository(databaseName);
 });
 
 afterEach(async () => {
@@ -135,6 +153,25 @@ describe('VocabularyRepository', () => {
     expect(await repository.cardsWithLabels(['animals'])).toEqual([]);
   });
 
+  it('drops the path progress of a removed label and keeps that of the others', async () => {
+    const lesson = label('lesson-3', 'Leçon 3');
+    await repository.saveLabel(lesson);
+    await repository.saveLabel(label('animals', 'Animaux'));
+    const database = new VocabularyDatabase(databaseName);
+    await database.pathProgress.bulkAdd([
+      { labelId: 'lesson-3', language: 'zh' },
+      { labelId: 'animals', language: 'zh' },
+      { labelId: 'animals', language: 'en' },
+    ]);
+
+    await repository.applyLabelChanges({ labels: [lesson], cardsToUpdate: [] });
+
+    expect(await database.pathProgress.toArray()).toEqual([
+      { labelId: 'lesson-3', language: 'zh' },
+    ]);
+    database.close();
+  });
+
   it('deletes a word and keeps the others', async () => {
     const cat = card('c1', '猫', []);
     const dog = card('c2', '狗', []);
@@ -143,6 +180,20 @@ describe('VocabularyRepository', () => {
     await repository.deleteCard('c1');
 
     expect(await repository.allCards()).toEqual([dog]);
+  });
+
+  it('deletes the learning progress of a deleted word, and only of that word', async () => {
+    await repository.saveImport({
+      cardsToCreate: [card('c1', '猫', []), card('c2', '狗', [])],
+      cardsToUpdate: [],
+    });
+    const database = new VocabularyDatabase(databaseName);
+    await database.reviewStates.bulkAdd([reviewState('c1'), reviewState('c2')]);
+
+    await repository.deleteCard('c1');
+
+    expect(await database.reviewStates.toArray()).toEqual([reviewState('c2')]);
+    database.close();
   });
 
   it('frees the former term of an edited word, so that it can be entered again', async () => {

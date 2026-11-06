@@ -18,6 +18,10 @@ updates:
       # npm ci fails with a peer dependency conflict. Revisit when both accept it.
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+      # ts-fsrs 6 defaults to FSRS-7 (needs a stabilityFast field not in our ReviewState),
+      # loads its preset asynchronously and pulls a BSD-3-Clause dependency. Stay on 5.x for now.
+      - dependency-name: ts-fsrs
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: build
       include: scope

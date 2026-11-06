@@ -1,19 +1,8 @@
-import { termKey, type Card, type Language } from '../domain/card';
+import type { Card, Language } from '../domain/card';
 import type { ImportChanges } from '../domain/importPlan';
 import type { Label } from '../domain/label';
 import type { LabelChanges } from '../domain/labelOperations';
-import { VocabularyDatabase, type StoredCard } from './database';
-
-function toStored(card: Card): StoredCard {
-  return { ...card, termKey: termKey(card.language, card.term) };
-}
-
-/** Drops the storage-only identity key. */
-function toCard(stored: StoredCard): Card {
-  const card: Card & { termKey?: string } = { ...stored };
-  delete card.termKey;
-  return card;
-}
+import { toCard, toStored, VocabularyDatabase } from './database';
 
 /** Persists words and labels; the domain decides, the repository only stores. */
 export class VocabularyRepository {
@@ -49,9 +38,15 @@ export class VocabularyRepository {
     return stored.map(toCard);
   }
 
-  /** Deletes a word; its labels stay, even when no other word carries them. */
+  /**
+   * Deletes a word with its learning progress, atomically; its labels stay, even when no other
+   * word carries them.
+   */
   async deleteCard(cardId: string): Promise<void> {
-    await this.db.cards.delete(cardId);
+    await this.db.transaction('rw', this.db.cards, this.db.reviewStates, async () => {
+      await this.db.cards.delete(cardId);
+      await this.db.reviewStates.delete(cardId);
+    });
   }
 
   async saveLabel(label: Label): Promise<void> {
@@ -62,14 +57,16 @@ export class VocabularyRepository {
     return this.db.labels.toArray();
   }
 
-  /** Stores the outcome of a rename, merge or deletion atomically. */
+  /** Stores the outcome of a rename, merge or deletion atomically; a removed label loses its path. */
   async applyLabelChanges(changes: LabelChanges): Promise<void> {
-    await this.db.transaction('rw', this.db.labels, this.db.cards, async () => {
+    const { labels, cards, pathProgress } = this.db;
+    await this.db.transaction('rw', labels, cards, pathProgress, async () => {
       const keptIds = new Set(changes.labels.map(({ id }) => id));
       const removedIds = (await this.db.labels.toCollection().primaryKeys()).filter(
         (id) => !keptIds.has(id),
       );
       await this.db.labels.bulkDelete(removedIds);
+      await this.db.pathProgress.where('labelId').anyOf(removedIds).delete();
       await this.db.labels.bulkPut(changes.labels);
       await this.db.cards.bulkPut(changes.cardsToUpdate.map(toStored));
     });

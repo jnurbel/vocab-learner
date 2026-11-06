@@ -4,7 +4,7 @@
 
 - **Code en anglais** : identifiants, noms de fichiers, commentaires, logs, messages d'erreur, noms de tests.
 - **Commits** : en anglais, au format [Conventional Commits](https://www.conventionalcommits.org/), à l'impératif. Exemples : `feat: add bulk word entry`, `fix: keep IME composition from submitting`.
-- **Versions** : [SemVer](https://semver.org/) `X.Y.Z`, tags `vX.Y.Z`, [CHANGELOG.md](CHANGELOG.md) au format Keep a Changelog. La version découle des commits :
+- **Versions** : [SemVer](https://semver.org/) `X.Y.Z`, tags `vX.Y.Z`, [CHANGELOG.md](CHANGELOG.md) **généré par release-please** à partir des commits (ne pas l'éditer à la main : soignez plutôt le message de vos commits, il devient la ligne du CHANGELOG). La version découle des commits :
   - `feat` → MINOR ;
   - `fix` → PATCH ;
   - `!` ou `BREAKING CHANGE` → MAJOR.

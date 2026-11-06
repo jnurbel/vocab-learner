@@ -1,0 +1,126 @@
+// @vitest-environment node
+import 'fake-indexeddb/auto';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { ReviewStateRecord, SessionRecord } from '../domain/progressRecords';
+import { SINGLETON_KEY, VocabularyDatabase } from './database';
+import { StudyRepository } from './studyRepository';
+
+function reviewState(cardId: string, reps = 1): ReviewStateRecord {
+  return {
+    cardId,
+    due: '2026-11-06T12:00:00.000Z',
+    stability: 1,
+    difficulty: 5,
+    reps,
+    lapses: 0,
+    state: 'review',
+    successDays: 1,
+    peakStage: 'sprout',
+  };
+}
+
+function session(id: string, startedAt: string): SessionRecord {
+  return { id, language: 'zh', startedAt, results: [], labelIds: [], mode: 'flashcards' };
+}
+
+let repository: StudyRepository;
+let db: VocabularyDatabase;
+let databaseCount = 0;
+
+beforeEach(() => {
+  databaseCount += 1;
+  const name = `study-test-${String(databaseCount)}`;
+  repository = new StudyRepository(name);
+  db = new VocabularyDatabase(name);
+});
+
+afterEach(async () => {
+  db.close();
+  await repository.deleteDatabase();
+});
+
+describe('StudyRepository', () => {
+  it('reads an empty progress in a new profile', async () => {
+    expect(await repository.load('2026-11-01T00:00:00.000Z')).toEqual({
+      reviewStates: [],
+      recentSessions: [],
+    });
+  });
+
+  it('reads the review states, settings, progress and the sessions started since a date', async () => {
+    await db.reviewStates.bulkAdd([reviewState('a'), reviewState('b')]);
+    await db.progress.put({ lastActiveDate: '2026-11-05' }, SINGLETON_KEY);
+    await db.settings.put({ newPerDay: 8 }, SINGLETON_KEY);
+    await repository.startSession(session('old', '2026-10-01T08:00:00.000Z'));
+    await repository.startSession(session('recent', '2026-11-05T08:00:00.000Z'));
+
+    const data = await repository.load('2026-11-04T00:00:00.000Z');
+
+    expect(data.reviewStates.map(({ cardId }) => cardId).sort()).toEqual(['a', 'b']);
+    expect(data.progress).toEqual({ lastActiveDate: '2026-11-05' });
+    expect(data.settings).toEqual({ newPerDay: 8 });
+    expect(data.recentSessions.map(({ id }) => id)).toEqual(['recent']);
+  });
+
+  it('records an answer at once: the new state, the result in its session and the active day', async () => {
+    await db.progress.put({ xp: 40, lastActiveDate: '2026-11-05' }, SINGLETON_KEY);
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+    const result = { cardId: 'a', outcome: 'correct' as const, at: '2026-11-06T08:01:00.000Z' };
+
+    await repository.recordAnswer({
+      sessionId: 's1',
+      state: reviewState('a', 2),
+      result,
+      activeDay: '2026-11-06',
+    });
+
+    expect(await db.reviewStates.get('a')).toEqual(reviewState('a', 2));
+    expect((await db.sessions.get('s1'))?.results).toEqual([result]);
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({ xp: 40, lastActiveDate: '2026-11-06' });
+  });
+
+  it('keeps every answer of a session, in order', async () => {
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+    for (const cardId of ['a', 'b']) {
+      await repository.recordAnswer({
+        sessionId: 's1',
+        state: reviewState(cardId),
+        result: { cardId, outcome: 'wrong' },
+        activeDay: '2026-11-06',
+      });
+    }
+
+    expect((await db.sessions.get('s1'))?.results.map(({ cardId }) => cardId)).toEqual(['a', 'b']);
+  });
+
+  it('records nothing when the session is unknown, rather than a stray state', async () => {
+    await expect(
+      repository.recordAnswer({
+        sessionId: 'missing',
+        state: reviewState('a'),
+        result: { cardId: 'a', outcome: 'wrong' },
+        activeDay: '2026-11-06',
+      }),
+    ).rejects.toThrow('Unknown session: missing');
+
+    expect(await db.reviewStates.count()).toBe(0);
+    expect(await db.progress.get(SINGLETON_KEY)).toBeUndefined();
+  });
+
+  it('reads the review states alone, for the word list and the label gauges', async () => {
+    await db.reviewStates.bulkAdd([reviewState('a'), reviewState('b')]);
+
+    expect((await repository.reviewStates()).map(({ cardId }) => cardId).sort()).toEqual([
+      'a',
+      'b',
+    ]);
+  });
+
+  it('marks a session as ended', async () => {
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+
+    await repository.endSession('s1', '2026-11-06T08:10:00.000Z');
+
+    expect((await db.sessions.get('s1'))?.endedAt).toBe('2026-11-06T08:10:00.000Z');
+  });
+});
