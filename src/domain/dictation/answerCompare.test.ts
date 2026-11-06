@@ -30,12 +30,12 @@ describe('compareAnswer in Chinese', () => {
   });
 
   it('ignores spaces, the Unicode composition form and full-width punctuation', async () => {
-    expect((await zh('你好', ' 你 好　')).outcome).toBe('correct');
+    expect((await zh('你好', ' 你 好\u3000')).outcome).toBe('correct');
     expect((await zh('你好！', '你好!')).outcome).toBe('correct');
     expect((await zh('你好!', '你好！')).outcome).toBe('correct');
     expect((await zh('好吗?', '好吗？')).outcome).toBe('correct');
     expect((await zh('好。', '好.')).outcome).toBe('correct');
-    expect((await zh('é', 'é')).outcome).toBe('correct');
+    expect((await zh('e\u0301', 'é')).outcome).toBe('correct');
   });
 
   it('is strict about the characters themselves', async () => {
@@ -207,5 +207,37 @@ describe('compareAnswer in English', () => {
     await en('cat', 'cut', loadPinyin);
 
     expect(loadPinyin).not.toHaveBeenCalled();
+  });
+});
+
+describe('compareAnswer with hostile input', () => {
+  it('ignores control characters, bidi overrides and zero-width characters', async () => {
+    expect((await zh('你好', '你\u0000好\u202E')).outcome).toBe('correct');
+    expect((await zh('你好', '\u200B你\u200D好\uFEFF')).outcome).toBe('correct');
+    expect((await en('apple', 'ap\u0007ple\u2066')).outcome).toBe('correct');
+  });
+
+  it('bounds the work on a very long answer, which is wrong', async () => {
+    const huge = '再'.repeat(100_000);
+
+    const started = performance.now();
+    const chinese = await zh('再见', huge);
+    const english = await en('necessary', 'a'.repeat(100_000));
+
+    expect(performance.now() - started).toBeLessThan(1_000);
+    expect(chinese.outcome).toBe('wrong');
+    expect(chinese.reason).toBeUndefined();
+    expect(chinese.diff.length).toBeLessThanOrEqual(202);
+    expect(english.outcome).toBe('wrong');
+    expect(english.diff.length).toBeLessThanOrEqual(209);
+  });
+
+  it('keeps markup as plain text in the diff, for the screen to escape', async () => {
+    const result = await en('cat', '<img src=x onerror=alert(1)>');
+
+    expect(result.outcome).toBe('wrong');
+    expect(result.diff.map((part) => ('given' in part ? part.given : '')).join('')).toBe(
+      '<img src=x onerror=alert(1)>',
+    );
   });
 });

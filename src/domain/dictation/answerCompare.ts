@@ -1,5 +1,6 @@
 import type { Language } from '../card';
 import type { PinyinGenerator } from '../pinyinGeneration';
+import { cleanAnswer } from './answerText';
 import { characterDiff, editDistance, type DiffPart } from './characterDiff';
 import { canonicalEnglish, normalizeEnglish } from './englishAnswer';
 
@@ -41,9 +42,14 @@ export async function compareAnswer(
   answer: AnswerToCompare,
   dependencies: CompareDependencies,
 ): Promise<Comparison> {
-  return answer.language === 'zh'
-    ? compareChinese(answer, dependencies)
-    : Promise.resolve(compareEnglish(answer));
+  const cleaned = {
+    ...answer,
+    expected: cleanAnswer(answer.expected),
+    given: cleanAnswer(answer.given),
+  };
+  return cleaned.language === 'zh'
+    ? compareChinese(cleaned, dependencies)
+    : Promise.resolve(compareEnglish(cleaned));
 }
 
 function compareEnglish({ expected, given }: AnswerToCompare): Comparison {
