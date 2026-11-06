@@ -25,10 +25,12 @@ export function buildPracticeQueue(input: PracticeQueueInput): Card[] {
     labelIds: input.labelIds ?? [],
     language: input.language,
   });
-  // A draw per card, depending on the seed and the card only: the input order does not matter.
+  // A draw per card, depending on the seed and the card only. Sorting by id first, then by draw
+  // (a stable sort), makes the order independent of the input order, even for equal draws.
   return cards
+    .sort((a, b) => a.id.localeCompare(b.id))
     .map((card) => ({ card, rank: createRng(`${input.seed}:${card.id}`)() }))
-    .sort((a, b) => a.rank - b.rank || a.card.id.localeCompare(b.card.id))
+    .sort((a, b) => a.rank - b.rank)
     .map(({ card }) => card)
     .slice(0, wordsAllowed(input.limit));
 }
