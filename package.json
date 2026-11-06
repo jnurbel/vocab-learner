@@ -1,7 +1,7 @@
 {
   "name": "vocab-learner",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Gamified offline-first PWA to learn the vocabulary of the current lesson in Chinese and English.",
   "license": "SEE LICENSE IN LICENSE.md",
   "type": "module",
