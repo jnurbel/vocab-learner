@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import type { Card } from '../domain/card';
   import type { Label } from '../domain/label';
+  import type { LabelChanges } from '../domain/labelOperations';
   import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
   import BulkEntry from '../features/import/BulkEntry.svelte';
+  import LabelManager from '../features/labels/LabelManager.svelte';
   import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
   import { loadPinyinGenerator } from '../services/pinyinLoader';
@@ -54,6 +56,12 @@
     const store = storage();
     await store.saveImport(changes, newLabel);
     void requestPersistence();
+    await reload(store);
+  }
+
+  async function changeLabels(changes: LabelChanges) {
+    const store = storage();
+    await store.applyLabelChanges(changes);
     await reload(store);
   }
 
@@ -113,6 +121,8 @@
   {/if}
 
   <WordList {cards} {labels} onEdit={startEditing} onDelete={deleteCard} />
+
+  <LabelManager {labels} {cards} {clock} onChange={changeLabels} />
 </main>
 
 <style>

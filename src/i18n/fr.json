@@ -108,5 +108,36 @@
   },
   "confirm": {
     "cancel": "Annuler"
+  },
+  "labelManager": {
+    "title": "Mes labels",
+    "caption": "Labels et nombre de mots",
+    "columnName": "Label",
+    "columnCount": "Mots",
+    "columnActions": "Actions",
+    "count": "{count} mot(s)",
+    "empty": "Aucun label pour l'instant.",
+    "renameInput": "Nouveau nom pour {name}",
+    "rename": "Renommer",
+    "renameLabel": "Renommer {name}",
+    "mergeSelect": "Fusionner {name} dans",
+    "mergeNone": "Choisir un label",
+    "merge": "Fusionner",
+    "mergeLabel": "Fusionner {name}",
+    "confirmMerge": "Fusionner « {source} » dans « {target} » ? Ses mots recevront « {target} » et « {source} » disparaîtra.",
+    "confirmMergeButton": "Confirmer la fusion",
+    "delete": "Supprimer",
+    "deleteLabel": "Supprimer le label {name}",
+    "confirmDelete": "Supprimer le label « {name} » ? Ses {count} mot(s) restent dans « Tous les mots ».",
+    "confirmDeleteButton": "Confirmer la suppression du label",
+    "saved": "Labels mis à jour.",
+    "saveFailed": "La modification a échoué : rien n’a changé. Réessaie.",
+    "errors": {
+      "required": "Le nouveau nom est vide.",
+      "tooLong": "Le nouveau nom est trop long.",
+      "nameTaken": "Un autre label porte déjà ce nom.",
+      "labelNotFound": "Ce label n'existe plus.",
+      "sameLabel": "Choisis un autre label."
+    }
   }
 }

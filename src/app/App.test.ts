@@ -112,4 +112,25 @@ describe('App', () => {
       expect(within(list).queryByRole('row', { name: /pear/ })).toBeNull();
     });
   });
+
+  it('deletes a label from the label screen while its words stay', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-label-manager' });
+    await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
+    await user.paste('apple | pomme');
+    await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), 'Fruits');
+    await user.click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+    const manager = await screen.findByRole('region', { name: fr.labelManager.title });
+
+    await user.click(
+      await within(manager).findByRole('button', { name: 'Supprimer le label Fruits' }),
+    );
+    await user.click(
+      within(manager).getByRole('button', { name: fr.labelManager.confirmDeleteButton }),
+    );
+
+    expect(await within(manager).findByText(fr.labelManager.empty)).toBeVisible();
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /apple/ })).not.toHaveTextContent('Fruits');
+  });
 });

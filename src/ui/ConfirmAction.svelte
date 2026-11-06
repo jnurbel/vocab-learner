@@ -10,9 +10,10 @@
     question: string;
     confirmText: string;
     onConfirm: () => void | Promise<void>;
+    disabled?: boolean;
   }
 
-  const { text, label, question, confirmText, onConfirm }: Props = $props();
+  const { text, label, question, confirmText, onConfirm, disabled = false }: Props = $props();
 
   let asking = $state(false);
   let trigger = $state<HTMLButtonElement>();
@@ -43,7 +44,8 @@
   }
 </script>
 
-<button type="button" aria-label={label} bind:this={trigger} onclick={ask}>{text}</button>
+<button type="button" aria-label={label} {disabled} bind:this={trigger} onclick={ask}>{text}</button
+>
 {#if asking}
   <div class="confirmation" role="group" aria-label={question}>
     <p>{question}</p>
