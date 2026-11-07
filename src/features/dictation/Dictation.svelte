@@ -20,6 +20,8 @@
   import Pinyin from '../../ui/Pinyin.svelte';
   import { belongsToInputMethod } from '../typing/imeKeys';
   import AnswerDiff from './AnswerDiff.svelte';
+  import RewardsPanel from '../game/RewardsPanel.svelte';
+  import type { RewardsSummary } from '../game/sessionRewards';
   import {
     DictationPlayer,
     pauseWhenHidden,
@@ -84,6 +86,8 @@
   let voice = $state<'available' | 'missing'>('available');
   let results = $state.raw<{ card: Card; outcome: Outcome }[]>([]);
   let session: DictationSession | undefined;
+  /** What the finished dictation brought to the game. */
+  let rewards = $state.raw<RewardsSummary>();
   let player: DictationPlayer | undefined;
   let release: (() => void) | undefined;
 
@@ -277,6 +281,7 @@
     release?.();
     release = undefined;
     await session?.end();
+    rewards = session?.rewards();
     if (results.length > 0) {
       onSessionEnd();
     }
@@ -692,6 +697,9 @@
   {:else if view === 'summary'}
     <h3>{fr.dictation.summaryTitle}</h3>
     <p class="score">{format(fr.dictation.score, { score, total: results.length })}</p>
+    {#if rewards !== undefined}
+      <RewardsPanel {rewards} />
+    {/if}
     {#if mistakes.length === 0}
       <p>{fr.dictation.noMistakes}</p>
     {:else}

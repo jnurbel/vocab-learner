@@ -24,6 +24,8 @@
     StudyOutlookView,
   } from './flashcardSession';
   import StudyOutlookPanel from './StudyOutlookPanel.svelte';
+  import RewardsPanel from '../game/RewardsPanel.svelte';
+  import type { RewardsSummary } from '../game/sessionRewards';
   import TypedAnswer from './TypedAnswer.svelte';
 
   interface Props {
@@ -106,6 +108,10 @@
   let cardElement = $state<HTMLElement>();
 
   let outlook = $state.raw<StudyOutlookView>();
+  /** What the session that just ended brought to the game. */
+  let rewards = $state.raw<RewardsSummary>();
+  /** Words still thirsty after a review session, offered as a bonus. */
+  let thirstyLeft = $state(0);
   /** Only the latest request is shown, should an earlier one answer late. */
   let outlookRequest = 0;
   const outlookShown = $derived(
@@ -281,6 +287,8 @@
     speaker.cancel();
     const ended = summaryScreen(session, left);
     view = ended;
+    rewards = session.rewards();
+    void loadThirstyLeft(session instanceof PracticeSession || ended.answered === 0);
     if (ended.answered > 0) {
       onSessionEnd();
     }
@@ -296,6 +304,19 @@
     }
     const summary = ended.summary();
     return { kind: 'summary', summary, left, answered: summary.reviewed + summary.introduced };
+  }
+
+  /** The bonus offer of the summary: the words of the selection still due today. */
+  async function loadThirstyLeft(skip: boolean) {
+    thirstyLeft = 0;
+    if (skip) {
+      return;
+    }
+    try {
+      thirstyLeft = (await loadOutlook({ cards, language, labelIds: [...labelIds] })).dueToday;
+    } catch {
+      // The offer is a comfort: without it, the summary still shows.
+    }
   }
 
   async function quit() {
@@ -532,6 +553,9 @@
         <li>{format(fr.flashcards.reviewed, { count: view.summary.reviewed })}</li>
         <li>{format(fr.flashcards.introduced, { count: view.summary.introduced })}</li>
       </ul>
+      {#if rewards !== undefined}
+        <RewardsPanel {rewards} {thirstyLeft} onContinue={() => void start()} />
+      {/if}
       {#if view.summary.stageChanges.length > 0}
         <h4 id="flashcards-stage-changes">{fr.flashcards.stageChangesTitle}</h4>
         <ul aria-labelledby="flashcards-stage-changes">
@@ -564,6 +588,9 @@
         <li>{format(fr.practice.known, { count: view.summary.known })}</li>
         <li>{format(fr.practice.toReview, { count: view.summary.toReview.length })}</li>
       </ul>
+      {#if rewards !== undefined}
+        <RewardsPanel {rewards} />
+      {/if}
       {#if view.summary.toReview.length > 0}
         {@const toReview = view.summary.toReview}
         <button type="button" class="primary" onclick={() => practiseAgain(toReview)}
