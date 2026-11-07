@@ -5,7 +5,7 @@ import type { Card } from '../../domain/card';
 import type { Label } from '../../domain/label';
 import type { StudyData } from '../../storage/studyRepository';
 import fr from '../../i18n/fr.json';
-import type { Speaker } from '../../services/tts/speaker';
+import { SpeechBlockedError, type Speaker } from '../../services/tts/speaker';
 import { startPracticeSession } from '../practice/practiceSession';
 import { card, FakeStore, reviewed, srs } from './flashcards.fixtures';
 import Flashcards from './Flashcards.svelte';
@@ -24,6 +24,8 @@ function fakeSpeaker(withVoice = true) {
       withVoice ? Promise.resolve() : Promise.reject(new Error('No voice')),
     ),
     cancel: vi.fn(),
+    unlock: vi.fn(),
+    setRate: vi.fn(),
   } satisfies Speaker;
 }
 
@@ -131,6 +133,45 @@ describe('Flashcards', () => {
 
     expect(await screen.findByText(fr.flashcards.audioError)).toBeVisible();
     expect(within(region()).getByText('猫')).toBeVisible();
+  });
+
+  it('unlocks the speech in the clicks on Start, Practice and Replay, before any await', async () => {
+    const { user, speaker } = setup();
+
+    screen.getByRole('button', { name: fr.flashcards.start }).click();
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+    const replay = await screen.findByRole('button', { name: fr.flashcards.replay });
+    speaker.unlock.mockClear();
+    replay.click();
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: fr.flashcards.quit }));
+    speaker.unlock.mockClear();
+    screen.getByRole('button', { name: fr.practice.start }).click();
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers to turn the sound on when the browser refused to speak', async () => {
+    const speaker = fakeSpeaker();
+    speaker.speak.mockRejectedValueOnce(new SpeechBlockedError());
+    const { user } = setup({ speaker });
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+
+    expect(await screen.findByText(fr.voice.blocked)).toBeVisible();
+    expect(within(region()).getByText('猫')).toBeVisible();
+    speaker.unlock.mockClear();
+    await user.click(screen.getByRole('button', { name: fr.voice.enable }));
+
+    expect(speaker.unlock).toHaveBeenCalled();
+    expect(speaker.speak).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(fr.voice.blocked)).toBeNull();
+  });
+
+  it('explains how to install the Chinese voice when there is none', async () => {
+    const { user } = setup({ speaker: fakeSpeaker(false) });
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+
+    expect(await screen.findByText(fr.voice.missingHelpTitle)).toBeVisible();
   });
 
   it('turns the card over to show the word, its coloured pinyin, its meaning and example', async () => {

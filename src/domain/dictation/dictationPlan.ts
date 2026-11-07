@@ -1,5 +1,6 @@
 import type { Card, Language } from '../card';
 import { selectCards } from '../cardSelection';
+import { SPEECH_RATES, type SpeechSpeed } from '../speechRate';
 import { createRng, type Rng } from '../srs/random';
 
 export const DICTATION_WORD_COUNT = { min: 5, max: 20, default: 10 } as const;
@@ -8,9 +9,9 @@ export const DICTATION_WORD_COUNT = { min: 5, max: 20, default: 10 } as const;
 export const DICTATION_DELAYS = [3, 5, 8, 12, 'manual'] as const;
 export type DictationDelay = (typeof DICTATION_DELAYS)[number];
 
-/** Speech rates of the three speeds (DESIGN.md 6). */
-export const DICTATION_RATES = { slow: 0.6, normal: 0.85, fast: 1 } as const;
-export type DictationSpeed = keyof typeof DICTATION_RATES;
+/** Speech rates of the three speeds (DESIGN.md 6), the same as the voice's elsewhere. */
+export const DICTATION_RATES = SPEECH_RATES;
+export type DictationSpeed = SpeechSpeed;
 
 export interface DictationOptions {
   language: Language;
