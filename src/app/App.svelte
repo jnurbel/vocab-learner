@@ -48,6 +48,8 @@
   import { appVersion } from './appVersion';
   import NavIcon from '../ui/NavIcon.svelte';
   import { srs } from './srs';
+  import { EXAM_CONFIG } from '../domain/exam/examConfig';
+  import { unfocusPastExams } from '../domain/labelFocus';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -136,9 +138,19 @@
       profileName: PROFILE_NAME,
     });
     directory = new DirectoryBackup({ store: meta, picker: directoryPicker, clock: now });
-    void reload(repository);
+    void unpinPastExams(repository).then(() => reload(ready(repository)));
     void refreshBackupState();
   });
+
+  /** The day after a test, its label is unpinned (GAME_DESIGN.md 2.6); the home offers the undo. */
+  async function unpinPastExams(from: VocabularyRepository) {
+    const { today } = currentMoment();
+    const unpinned = unfocusPastExams(await from.allLabels(), { today, now: clock() }, EXAM_CONFIG);
+    if (unpinned.length > 0) {
+      await from.saveLabels(unpinned);
+      await recordChange();
+    }
+  }
 
   function ready<T>(service: T | undefined): T {
     if (service === undefined) {
@@ -449,7 +461,14 @@
 
         <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
 
-        <LabelManager {labels} {cards} {clock} {masteryOf} onChange={changeLabels} />
+        <LabelManager
+          {labels}
+          {cards}
+          {clock}
+          {masteryOf}
+          today={moment.today}
+          onChange={changeLabels}
+        />
       {/if}
     </div>
   </main>

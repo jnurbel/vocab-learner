@@ -7,6 +7,7 @@ import packageJson from '../../package.json';
 import type { BackupFile } from '../services/backup/backupService';
 import { FakeSpeaker } from '../features/dictation/dictation.fixtures';
 import { BackupMetaStore } from '../storage/backupMetaStore';
+import { VocabularyRepository } from '../storage/vocabularyRepository';
 import App from './App.svelte';
 
 function bulkEntry(): HTMLElement {
@@ -389,6 +390,45 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: fr.nav.settings }));
     await vi.waitFor(() => {
       expect(screen.getByRole('combobox', { name: fr.settings.newPerDay })).toHaveValue('10');
+    });
+  });
+
+  describe('labels to work on', () => {
+    const created = '2026-11-01T00:00:00.000Z';
+
+    async function seedLabel(databaseName: string, examDate: string) {
+      const repository = new VocabularyRepository(databaseName);
+      await repository.saveLabel({
+        id: 'lesson',
+        name: 'Leçon 7',
+        isFocus: true,
+        examDate,
+        createdAt: created,
+        updatedAt: created,
+      });
+    }
+
+    it('unpins at start-up a label whose test was yesterday, and stores it', async () => {
+      const databaseName = 'app-test-auto-unfocus';
+      await seedLabel(databaseName, '2026-11-12');
+      const now = () => new Date('2026-11-13T10:00:00+01:00');
+
+      render(App, { databaseName, now });
+      await userEvent.setup().click(screen.getByRole('button', { name: fr.nav.words }));
+
+      expect(await screen.findByRole('button', { name: 'Épingler Leçon 7' })).toBeVisible();
+      const [stored] = await new VocabularyRepository(databaseName).allLabels();
+      expect(stored).toMatchObject({ isFocus: false, pastExamDate: '2026-11-12' });
+    });
+
+    it('keeps a label pinned on the day of its test', async () => {
+      const databaseName = 'app-test-exam-day';
+      await seedLabel(databaseName, '2026-11-13');
+
+      render(App, { databaseName, now: () => new Date('2026-11-13T10:00:00+01:00') });
+      await userEvent.setup().click(screen.getByRole('button', { name: fr.nav.words }));
+
+      expect(await screen.findByRole('button', { name: 'Désépingler Leçon 7' })).toBeVisible();
     });
   });
 });

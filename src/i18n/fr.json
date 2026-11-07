@@ -143,7 +143,19 @@
       "sameLabel": "Choisis un autre label."
     },
     "columnMastery": "Maîtrise",
-    "mastery": "{language} : {mastered}/{total} mots maîtrisés"
+    "mastery": "{language} : {mastered}/{total} mots maîtrisés",
+    "columnFocus": "À travailler",
+    "pin": "Épingler",
+    "pinLabel": "Épingler {name}",
+    "unpin": "Désépingler",
+    "unpinLabel": "Désépingler {name}",
+    "examDate": "Date du contrôle de {name}",
+    "examErrors": {
+      "invalidDate": "Cette date de contrôle n'est pas valide.",
+      "pastDate": "La date du contrôle est déjà passée.",
+      "tooFar": "La date du contrôle est à plus d'un an.",
+      "labelNotFound": "Ce label n'existe plus."
+    }
   },
   "stages": {
     "seed": "Graine",
