@@ -69,19 +69,28 @@ export class StudyRepository {
   }
 
   /** Each answer is kept at once, so that closing the tab loses nothing (GAME_DESIGN.md 1.4). */
-  async recordAnswer({ sessionId, state, result, activeDay }: AnswerRecord): Promise<void> {
-    const { reviewStates, sessions, progress } = this.db;
-    await this.db.transaction('rw', [reviewStates, sessions, progress], async () => {
-      await this.appendResult(sessionId, result);
-      await reviewStates.put(state);
-      const current = await progress.get(SINGLETON_KEY);
-      await progress.put({ ...current, lastActiveDate: activeDay }, SINGLETON_KEY);
-    });
+  async recordAnswer(answer: AnswerRecord): Promise<void> {
+    await this.storeAnswer(answer, 'append');
   }
 
   /** Free practice never touches the review states nor the progress (DESIGN.md, 0.4.0). */
   async recordPracticeAnswer({ sessionId, result }: PracticeAnswerRecord): Promise<void> {
     await this.db.transaction('rw', this.db.sessions, () => this.appendResult(sessionId, result));
+  }
+
+  /**
+   * Replaces the last answer of the word in its session, and its review state: "J'avais bon"
+   * corrects an answer, it never adds a second one.
+   */
+  async reviseAnswer(answer: AnswerRecord): Promise<void> {
+    await this.storeAnswer(answer, 'replaceLast');
+  }
+
+  /** Corrects a free practice answer; review states and progress stay untouched. */
+  async revisePracticeAnswer({ sessionId, result }: PracticeAnswerRecord): Promise<void> {
+    await this.db.transaction('rw', this.db.sessions, () =>
+      this.replaceLastResult(sessionId, result),
+    );
   }
 
   /** The daily quota of new words, from the next session on; the other settings are kept. */
@@ -112,12 +121,42 @@ export class StudyRepository {
     await this.db.sessions.update(sessionId, { endedAt });
   }
 
+  /** The result, the review state and the active day are written together, or not at all. */
+  private async storeAnswer(
+    { sessionId, state, result, activeDay }: AnswerRecord,
+    kind: 'append' | 'replaceLast',
+  ): Promise<void> {
+    const { reviewStates, sessions, progress } = this.db;
+    await this.db.transaction('rw', [reviewStates, sessions, progress], async () => {
+      await (kind === 'append'
+        ? this.appendResult(sessionId, result)
+        : this.replaceLastResult(sessionId, result));
+      await reviewStates.put(state);
+      const current = await progress.get(SINGLETON_KEY);
+      await progress.put({ ...current, lastActiveDate: activeDay }, SINGLETON_KEY);
+    });
+  }
+
   private async appendResult(sessionId: string, result: SessionResultRecord): Promise<void> {
+    const session = await this.sessionOf(sessionId);
+    await this.db.sessions.put({ ...session, results: [...session.results, result] });
+  }
+
+  private async replaceLastResult(sessionId: string, result: SessionResultRecord): Promise<void> {
+    const session = await this.sessionOf(sessionId);
+    const index = session.results.findLastIndex(({ cardId }) => cardId === result.cardId);
+    if (index === -1) {
+      throw new Error(`No answer to revise for ${result.cardId} in session ${sessionId}`);
+    }
+    await this.db.sessions.put({ ...session, results: session.results.with(index, result) });
+  }
+
+  private async sessionOf(sessionId: string): Promise<SessionRecord> {
     const session = await this.db.sessions.get(sessionId);
     if (session === undefined) {
       throw new Error(`Unknown session: ${sessionId}`);
     }
-    await this.db.sessions.put({ ...session, results: [...session.results, result] });
+    return session;
   }
 
   async deleteDatabase(): Promise<void> {
