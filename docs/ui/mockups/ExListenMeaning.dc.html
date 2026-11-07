@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écouter et choisir le sens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#17705A}a:hover{color:#0F4F3F}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; background: #F6F4EE; color: #1E2A2F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; gap: 20px; padding: 20px 48px; background: #FFFFFF; border-bottom: 1px solid #E3DFD5">
+    <button aria-label="Quitter la session" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #E3DFD5; background: #FFFFFF; color: #1E2A2F; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1">
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><strong>Arrosage</strong><span style="color: #5B6770">7 / 18</span></div>
+      <div style="height: 10px; background: #EDEAE2; border-radius: 999px; overflow: hidden"><div style="width: 39%; height: 100%; background: #17705A"></div></div>
+    </div>
+    <div aria-label="Plante du mot : tige" role="img" style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 44px; width: 44px">
+      <div style="width: 14px; height: 14px; border-radius: 50%; background: #3FA07F"></div>
+      <div style="width: 3px; height: 14px; background: #2F7D4F"></div>
+      <div style="width: 22px; height: 8px; border-radius: 0 0 6px 6px; background: #B5784A"></div>
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; padding: 32px 48px">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 14px">
+      <span style="font-size: 14px; font-weight: 700; color: #17705A; text-transform: uppercase; letter-spacing: 0.06em">Écoute · que veut dire ce mot ?</span>
+      <button aria-label="Rejouer le mot" style="width: 132px; height: 132px; border-radius: 50%; border: 0; background: #17705A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 12px #E3F1EC">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"></path></svg>
+      </button>
+      <span style="font-size: 13px; color: #5B6770">Espace ou R pour réécouter · L pour écouter lentement</span>
+    </div>
+
+    <div role="radiogroup" aria-label="Choisis le sens" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; max-width: 760px">
+      <sc-for list="{{options}}" as="o" hint-placeholder-count="4">
+        <button role="radio" aria-checked="false" style="display: flex; align-items: center; gap: 16px; background: #FFFFFF; border: 2px solid #E3DFD5; border-radius: 18px; padding: 18px 20px; font: inherit; text-align: left; min-height: 72px; color: #1E2A2F">
+          <span style="width: 36px; height: 36px; border-radius: 10px; background: #F6F4EE; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0">{{o.key}}</span>
+          <span style="font-size: 19px; font-weight: 700">{{o.label}}</span>
+        </button>
+      </sc-for>
+    </div>
+  </main>
+
+  <footer style="display: flex; justify-content: space-between; align-items: center; padding: 20px 48px; border-top: 1px solid #E3DFD5; background: #FFFFFF">
+    <div style="display: flex; gap: 10px">
+      <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Lent</button>
+      <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Voir le pinyin (indice)</button>
+    </div>
+    <button style="border: 0; background: transparent; color: #3B464D; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px; text-decoration: underline">Je ne sais pas (0)</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      options: [
+        { key: '1', label: 'humide' },
+        { key: '2', label: 'marée' },
+        { key: '3', label: 'chaud et étouffant' },
+        { key: '4', label: 'moment, époque' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

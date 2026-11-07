@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dictée tapée</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#17705A}a:hover{color:#0F4F3F}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; background: #F6F4EE; color: #1E2A2F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; padding: 32px 48px; display: flex; flex-direction: column; gap: 24px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <div style="display: flex; align-items: center; gap: 16px">
+      <a href="#" aria-label="Quitter la dictée" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #E3DFD5; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #1E2A2F">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </a>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-size: 13px; font-weight: 700; color: #17705A; text-transform: uppercase; letter-spacing: 0.06em">Dictée · Leçon 7</span>
+        <span style="font-size: 20px; font-weight: 800">Mot 6 sur 10</span>
+      </div>
+    </div>
+    <div role="radiogroup" aria-label="Mode de réponse" style="display: flex; background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 999px; padding: 4px">
+      <button role="radio" aria-checked="true" style="border: 0; background: #1E2A2F; color: #FFFFFF; border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 44px">Au clavier</button>
+      <button role="radio" aria-checked="false" style="border: 0; background: transparent; color: #1E2A2F; border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 600; font-size: 14px; min-height: 44px">Sur papier</button>
+    </div>
+  </header>
+
+  <div style="display: flex; gap: 6px" aria-hidden="true">
+    <sc-for list="{{dots}}" as="d" hint-placeholder-count="10">
+      <div style="{{d.style}}"></div>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; min-height: 0">
+    <section aria-label="Mot en cours" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 24px; padding: 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px">
+      <div style="position: relative; width: 168px; height: 168px; border-radius: 50%; background: conic-gradient(#17705A 0 62%, #E3F1EC 62% 100%); display: flex; align-items: center; justify-content: center">
+        <button aria-label="Réécouter le mot" style="width: 140px; height: 140px; border-radius: 50%; border: 0; background: #FFFFFF; color: #17705A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: inherit">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"></path></svg>
+          <span style="font-size: 13px; font-weight: 700; color: #1E2A2F">mot suivant dans 3 s</span>
+        </button>
+      </div>
+
+      <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 8px">
+        <label for="answer" style="font-weight: 700; font-size: 14px">Tape le mot entendu en caractères</label>
+        <div style="display: flex; gap: 10px">
+          <input id="answer" lang="zh-CN" value="潮湿" style="flex: 1; min-width: 0; font-family: 'Noto Sans SC', sans-serif; font-size: 34px; padding: 12px 18px; border: 2px solid #17705A; border-radius: 14px; color: #1E2A2F; background: #FFFFFF; box-sizing: border-box; height: 68px">
+          <button style="border: 0; background: #17705A; color: #FFFFFF; border-radius: 14px; padding: 0 24px; font: inherit; font-weight: 800; font-size: 16px; min-height: 68px">Valider</button>
+        </div>
+        <span style="font-size: 13px; color: #5B6770">Entrée pour valider (ignorée pendant la saisie avec le clavier chinois)</span>
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center">
+        <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">◀ Précédent</button>
+        <button style="border: 0; background: #1E2A2F; color: #FFFFFF; border-radius: 12px; padding: 12px 22px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Pause (Espace)</button>
+        <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Répéter (R)</button>
+        <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Suivant ▶</button>
+      </div>
+    </section>
+
+    <aside style="display: flex; flex-direction: column; gap: 16px; min-height: 0">
+      <section aria-labelledby="results" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+        <h2 id="results" style="margin: 0; font-size: 16px; font-weight: 800">Corrigé au fil de l'eau</h2>
+        <sc-for list="{{done}}" as="r" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; background: #FAF9F5">
+            <span style="{{r.iconStyle}}" aria-label="{{r.status}}">{{r.icon}}</span>
+            <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif; font-size: 22px; min-width: 64px">{{r.typed}}</span>
+            <span style="font-size: 13px; color: #5B6770; flex: 1">{{r.note}}</span>
+          </div>
+        </sc-for>
+      </section>
+      <section aria-label="Réglages de la dictée" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+          <span style="font-size: 14px; font-weight: 700">Vitesse</span>
+          <div style="display: flex; gap: 6px">
+            <button style="border: 1px solid #C9C3B5; background: #FFFFFF; border-radius: 10px; padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 600; min-height: 44px">Lente</button>
+            <button aria-pressed="true" style="border: 0; background: #E3F1EC; color: #0F4F3F; border-radius: 10px; padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 800; min-height: 44px">Normale</button>
+            <button style="border: 1px solid #C9C3B5; background: #FFFFFF; border-radius: 10px; padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 600; min-height: 44px">Rapide</button>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+          <label for="delay" style="font-size: 14px; font-weight: 700">Délai entre les mots</label>
+          <select id="delay" style="font: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid #C9C3B5; border-radius: 10px; background: #FFFFFF; min-height: 44px"><option>5 s</option></select>
+        </div>
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 14px"><input type="checkbox" checked="checked" style="width: 20px; height: 20px; accent-color: #17705A">Ordre aléatoire</label>
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 14px"><input type="checkbox" style="width: 20px; height: 20px; accent-color: #17705A">Lire chaque mot deux fois</label>
+      </section>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var dots = [];
+    for (var i = 0; i < 10; i++) {
+      var c = i < 5 ? (i === 2 ? '#C9783A' : '#17705A') : i === 5 ? '#1E2A2F' : '#DAD5C9';
+      dots.push({ style: 'flex: 1; height: 8px; border-radius: 999px; background: ' + c });
+    }
+    var icon = 'width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; ';
+    function row(ok, typed, note) {
+      return { typed: typed, note: note, icon: ok ? '✓' : '✗', status: ok ? 'juste' : 'faux', iconStyle: icon + (ok ? 'background: #E3F1EC; color: #0F4F3F' : 'background: #FBE7D8; color: #8A3D0B') };
+    }
+    return {
+      dots: dots,
+      done: [
+        row(true, '天气', 'tiānqì · temps (météo)'),
+        row(true, '季节', 'jìjié · saison'),
+        row(false, '予报', 'attendu 预报 · yùbào, à revoir'),
+        row(true, '凉快', 'liángkuai · frais'),
+        row(true, '下雪', 'xià xuě · neiger')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

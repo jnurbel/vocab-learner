@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Île-Jardin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#17705A}a:hover{color:#0F4F3F}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; background: #DCEBEF; color: #1E2A2F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; padding: 32px 48px; display: flex; flex-direction: column; gap: 20px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span style="font-size: 13px; font-weight: 700; color: #0F4F3F; text-transform: uppercase; letter-spacing: 0.06em">Île niveau 7 · 1 240 XP</span>
+      <h1 style="margin: 0; font-size: 26px; font-weight: 800">Ton jardin de mots</h1>
+    </div>
+    <div style="display: flex; gap: 10px">
+      <span style="background: #FFFFFF; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700">142 fleurs</span>
+      <span style="background: #FFF3DC; color: #7A4A00; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700">14 plantes ont soif</span>
+      <button style="border: 0; background: #17705A; color: #FFFFFF; border-radius: 12px; padding: 10px 18px; font: inherit; font-weight: 800; font-size: 15px; min-height: 44px">Arroser (réviser)</button>
+    </div>
+  </header>
+
+  <div style="flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; min-height: 0">
+    <section aria-label="Parcelles du jardin" style="background: #A7D3A0; border-radius: 48% 52% 44% 56% / 10% 12% 14% 10%; box-shadow: 0 18px 0 #8A6A4A, 0 30px 40px rgba(30, 42, 47, 0.18); padding: 32px 36px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px">
+      <div style="background: #C3E3B9; border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-weight: 800; font-size: 15px; color: #0F3B2F">Parcelle <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif">中文</span> · Leçon 7</span>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{zh}}" as="p" hint-placeholder-count="12">
+            <div style="background: #F4FAF1; border-radius: 14px; padding: 8px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative">
+              <sc-if value="{{p.thirsty}}" hint-placeholder-val="{{false}}">
+                <span style="position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 50%; background: #F2A33A; color: #3D2500; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center" aria-label="a soif">!</span>
+              </sc-if>
+              <div aria-hidden="true" style="height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end">
+                <div style="{{p.head}}"></div>
+                <div style="{{p.stem}}"></div>
+                <div style="width: 22px; height: 8px; border-radius: 0 0 6px 6px; background: #B5784A"></div>
+              </div>
+              <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif; font-size: 16px; font-weight: 500">{{p.w}}</span>
+              <span style="font-size: 10px; color: #3B464D">{{p.stage}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="background: #C3E3B9; border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-weight: 800; font-size: 15px; color: #0F3B2F">Parcelle English · Unit 4</span>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{en}}" as="p" hint-placeholder-count="12">
+            <div style="background: #F4FAF1; border-radius: 14px; padding: 8px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative">
+              <sc-if value="{{p.thirsty}}" hint-placeholder-val="{{false}}">
+                <span style="position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 50%; background: #F2A33A; color: #3D2500; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center" aria-label="a soif">!</span>
+              </sc-if>
+              <div aria-hidden="true" style="height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end">
+                <div style="{{p.head}}"></div>
+                <div style="{{p.stem}}"></div>
+                <div style="width: 22px; height: 8px; border-radius: 0 0 6px 6px; background: #B5784A"></div>
+              </div>
+              <span lang="en" style="font-size: 13px; font-weight: 700">{{p.w}}</span>
+              <span style="font-size: 10px; color: #3B464D">{{p.stage}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <aside style="display: flex; flex-direction: column; gap: 16px">
+      <section aria-labelledby="stages" style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+        <h2 id="stages" style="margin: 0; font-size: 16px; font-weight: 800">Les stades</h2>
+        <sc-for list="{{legend}}" as="l" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 13px">
+            <span style="{{l.dot}}" aria-hidden="true"></span>
+            <strong style="width: 70px">{{l.name}}</strong>
+            <span style="color: #5B6770">{{l.rule}}</span>
+          </div>
+        </sc-for>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #5B6770">Une plante qui a soif ne perd jamais son stade : il suffit de l'arroser.</p>
+      </section>
+      <section aria-labelledby="unlock" style="background: #1E2A2F; color: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+        <h2 id="unlock" style="margin: 0; font-size: 16px; font-weight: 800">Prochain déblocage</h2>
+        <span style="font-size: 14px; color: #D5DCDF">Une luciole tous les 10 mots en fleur</span>
+        <div style="height: 10px; background: #2C3A40; border-radius: 999px; overflow: hidden"><div style="width: 20%; height: 100%; background: #F2C94C"></div></div>
+        <span style="font-size: 13px; color: #D5DCDF">2 / 10 · niveau 8 : un pont vers une nouvelle parcelle</span>
+      </section>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var stages = [
+      { name: 'Graine', rule: 'nouveau mot', color: '#8A6A4A', size: 8, stem: 0 },
+      { name: 'Pousse', rule: '1re bonne réponse', color: '#7BC47F', size: 12, stem: 6 },
+      { name: 'Tige', rule: 'revu à 3 jours', color: '#3FA07F', size: 14, stem: 14 },
+      { name: 'Bouton', rule: 'revu à 7 jours', color: '#E59BB0', size: 16, stem: 18 },
+      { name: 'Fleur', rule: 'revu à 21 jours', color: '#D9506F', size: 20, stem: 20 },
+      { name: 'Lanterne', rule: 'revu à 60 jours', color: '#E8A11A', size: 22, stem: 20 }
+    ];
+    function plant(w, s, thirsty) {
+      var st = stages[s];
+      return {
+        w: w, stage: st.name, thirsty: !!thirsty,
+        head: 'width: ' + st.size + 'px; height: ' + st.size + 'px; border-radius: ' + (s === 5 ? '6px' : '50%') + '; background: ' + st.color,
+        stem: 'width: 3px; height: ' + st.stem + 'px; background: #2F7D4F'
+      };
+    }
+    return {
+      legend: stages.map(function (st) {
+        return { name: st.name, rule: st.rule, dot: 'width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; background: ' + st.color };
+      }),
+      zh: [
+        plant('天气', 4), plant('季节', 3), plant('预报', 1, true), plant('潮湿', 2, true),
+        plant('凉快', 3), plant('下雪', 4), plant('冷', 0), plant('暖和', 5),
+        plant('刮风', 2), plant('晴天', 4, true), plant('阴天', 3), plant('秋天', 5)
+      ],
+      en: [
+        plant('weather', 5), plant('forecast', 2, true), plant('humid', 1), plant('season', 4),
+        plant('chilly', 3), plant('snow', 5), plant('breeze', 0), plant('mild', 2),
+        plant('cloudy', 4), plant('storm', 3, true), plant('sunny', 5), plant('autumn', 4)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

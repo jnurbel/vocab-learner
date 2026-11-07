@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accueil téléphone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#17705A}a:hover{color:#0F4F3F}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #F6F4EE; color: #1E2A2F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; display: flex; flex-direction: column">
+  <main style="flex: 1; padding: 24px 16px 16px; display: flex; flex-direction: column; gap: 16px; overflow: hidden">
+    <header style="display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; flex-direction: column">
+        <span style="font-size: 13px; color: #5B6770">Bonsoir</span>
+        <h1 style="margin: 0; font-size: 22px; font-weight: 800">Panda</h1>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <span style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 700">12 j</span>
+        <span style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 700">80/120 XP</span>
+      </div>
+    </header>
+
+    <div role="tablist" aria-label="Langue étudiée" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 999px; padding: 4px">
+      <button role="tab" aria-selected="true" style="border: 0; background: #1E2A2F; color: #FFFFFF; border-radius: 999px; padding: 10px; font: inherit; font-weight: 700; font-size: 14px; min-height: 44px"><span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif">中文</span> Chinois</button>
+      <button role="tab" aria-selected="false" style="border: 0; background: transparent; color: #1E2A2F; border-radius: 999px; padding: 10px; font: inherit; font-weight: 600; font-size: 14px; min-height: 44px">Anglais</button>
+    </div>
+
+    <section aria-labelledby="m-lesson" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+        <span style="font-size: 12px; font-weight: 700; color: #17705A; text-transform: uppercase; letter-spacing: 0.06em">Label à travailler</span>
+        <span style="background: #FCEEE9; color: #8E2F1C; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700">Contrôle J-4</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <div role="img" aria-label="72 % maîtrisé" style="width: 84px; height: 84px; border-radius: 50%; background: conic-gradient(#17705A 0 72%, #E3F1EC 72% 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+          <div style="width: 66px; height: 66px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px">72 %</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <h2 id="m-lesson" style="margin: 0; font-size: 18px; font-weight: 800">Leçon 7 · <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif">天气</span></h2>
+          <span style="font-size: 13px; color: #5B6770">18/25 mots · étape 4/7</span>
+          <span style="font-size: 13px; color: #5B6770">6 à arroser · 4 nouveaux</span>
+        </div>
+      </div>
+      <button style="border: 0; background: #17705A; color: #FFFFFF; border-radius: 14px; padding: 14px; font: inherit; font-weight: 800; font-size: 16px; min-height: 52px">Commencer · ~12 min</button>
+    </section>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <button style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 16px; padding: 14px; font: inherit; text-align: left; display: flex; flex-direction: column; gap: 4px; min-height: 88px; color: #1E2A2F">
+        <span style="font-weight: 800; font-size: 15px">Dictée</span>
+        <span style="font-size: 12px; color: #5B6770">10 mots · papier ou clavier</span>
+      </button>
+      <button style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 16px; padding: 14px; font: inherit; text-align: left; display: flex; flex-direction: column; gap: 4px; min-height: 88px; color: #1E2A2F">
+        <span style="font-weight: 800; font-size: 15px">Écoute</span>
+        <span style="font-size: 12px; color: #5B6770">Entends, choisis le sens</span>
+      </button>
+      <button style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 16px; padding: 14px; font: inherit; text-align: left; display: flex; flex-direction: column; gap: 4px; min-height: 88px; color: #1E2A2F">
+        <span style="font-weight: 800; font-size: 15px">Tons</span>
+        <span style="font-size: 12px; color: #5B6770">shì ou shí ?</span>
+      </button>
+      <button style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 16px; padding: 14px; font: inherit; text-align: left; display: flex; flex-direction: column; gap: 4px; min-height: 88px; color: #1E2A2F">
+        <span style="font-weight: 800; font-size: 15px">Photo de liste</span>
+        <span style="font-size: 12px; color: #5B6770">Importer depuis le manuel</span>
+      </button>
+    </div>
+  </main>
+
+  <nav aria-label="Navigation principale" style="background: #FFFFFF; border-top: 1px solid #E3DFD5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px 8px 18px">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+      <a href="#" style="{{t.style}}">
+        <span style="{{t.dot}}" aria-hidden="true"></span>
+        {{t.label}}
+      </a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      tabs: ['Accueil', 'Parcours', 'Jardin', 'Mots'].map(function (label, i) {
+        var active = i === 0;
+        return {
+          label: label,
+          style: 'display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; min-height: 52px; box-sizing: border-box; text-decoration: none; font-size: 12px; font-weight: ' + (active ? '800; color: #0F4F3F' : '600; color: #5B6770'),
+          dot: 'width: 24px; height: 24px; border-radius: 8px; background: ' + (active ? '#17705A' : '#E3DFD5')
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
