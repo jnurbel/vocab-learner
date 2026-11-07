@@ -60,6 +60,38 @@ async function addWords(page: Page) {
   await expect(page.getByRole('table', { name: 'Liste des mots' }).getByRole('row')).toHaveCount(6);
 }
 
+/** A Chinese voice that reads nothing, so that the mini-game shows its audio screen. */
+async function installSilentVoice(page: Page) {
+  await page.addInitScript(() => {
+    const voices = [
+      { lang: 'zh-CN', name: 'Silent Chinese', default: true, localService: true, voiceURI: 'zh' },
+    ];
+    Object.defineProperty(window, 'speechSynthesis', {
+      configurable: true,
+      value: {
+        getVoices: () => voices,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        cancel: () => undefined,
+        speak: (utterance: { onend: (() => void) | null }) => {
+          setTimeout(() => utterance.onend?.(), 20);
+        },
+      },
+    });
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      configurable: true,
+      value: class {
+        lang = '';
+        rate = 1;
+        voice: unknown = null;
+        onend: (() => void) | null = null;
+        onerror: unknown = null;
+        constructor(readonly text: string) {}
+      },
+    });
+  });
+}
+
 function menu(page: Page) {
   return page.getByRole('navigation', { name: 'Menu' });
 }
@@ -138,6 +170,49 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await dictation.getByRole('textbox', { name: 'Ta réponse' }).press('Enter');
         await expect(dictation.getByRole('button', { name: 'Continuer' })).toBeVisible();
         await shoot(page, 'dictation-answer', device, scheme, dictation.getByRole('status'));
+      });
+
+      test('session summary, garden and ListenMeaning', async ({ page }) => {
+        await installSilentVoice(page);
+        await page.goto('./');
+        await addWords(page);
+        await menu(page).getByRole('button', { name: 'Flashcards' }).click();
+        const flashcards = page.getByRole('region', { name: 'Flashcards' });
+        await page.getByRole('radio', { name: "S'auto-évaluer" }).check();
+        await flashcards.getByRole('button', { name: 'Commencer' }).click();
+        const flip = flashcards.getByRole('button', { name: 'Retourner' });
+        const summary = flashcards.getByRole('heading', { name: 'Session terminée' });
+        await expect(flip.or(summary)).toBeVisible();
+        while (await flip.isVisible()) {
+          await flip.click();
+          await flashcards.getByRole('button', { name: 'Je savais' }).click();
+          await expect(flip.or(summary)).toBeVisible();
+        }
+        await flashcards.getByText('Détail des XP').click();
+        await shoot(page, 'session-summary', device, scheme, summary);
+
+        await menu(page).getByRole('button', { name: 'Jardin' }).click();
+        const garden = page.getByRole('region', { name: 'Ton jardin de mots' });
+        await expect(garden.getByRole('list', { name: 'Parcelle 中文' })).toBeVisible();
+        await shoot(page, 'garden', device, scheme, garden);
+        await garden.getByRole('button', { name: 'Vue liste' }).click();
+        await shoot(
+          page,
+          'garden-list',
+          device,
+          scheme,
+          garden.getByRole('table', { name: 'Mots du jardin' }),
+        );
+
+        await garden.getByRole('button', { name: 'Mini-jeu' }).click();
+        const game = page.getByRole('region', { name: 'Mini-jeu : écouter et choisir le sens' });
+        await game.getByRole('button', { name: 'Commencer le mini-jeu' }).click();
+        const options = game.getByRole('group', { name: 'Que veut dire ce mot ?' });
+        await expect(options).toBeVisible();
+        await shoot(page, 'listen-meaning', device, scheme, game);
+        await game.getByRole('button', { name: 'Je ne sais pas' }).click();
+        await expect(game.getByRole('status')).toBeVisible();
+        await shoot(page, 'listen-meaning-wrong', device, scheme, game);
       });
     });
   }
