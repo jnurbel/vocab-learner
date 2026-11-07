@@ -60,19 +60,16 @@
 <style>
   label {
     display: block;
-    font-weight: bold;
+    font-weight: var(--weight-heavy);
   }
 
   select {
-    min-height: 44px;
     min-width: 6rem;
   }
 
   .help {
-    font-size: 0.9rem;
-  }
-
-  .error {
-    color: #b00020;
+    margin-top: var(--space-2);
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 </style>

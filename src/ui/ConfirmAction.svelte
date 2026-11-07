@@ -57,14 +57,28 @@
 {/if}
 
 <style>
+  /* A destructive action asks first, in the colour of mistakes and with a question to read. */
   .confirmation {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: center;
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--ochre-soft);
   }
 
   .confirmation p {
+    flex: 1 1 100%;
     margin: 0;
+    color: var(--ink);
+    font-weight: var(--weight-bold);
+  }
+
+  .confirmation button:first-of-type {
+    border-color: var(--ochre);
+    color: var(--ochre);
+    font-weight: var(--weight-heavy);
   }
 </style>

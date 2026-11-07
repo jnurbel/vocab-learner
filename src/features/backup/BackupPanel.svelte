@@ -156,7 +156,7 @@
   <p>{fr.backup.intro}</p>
 
   {#if message?.kind === 'status'}
-    <div role="status">
+    <div role="status" class="status">
       <p>{message.text}</p>
       {#if message.safetyBackup !== undefined}
         {@const safetyBackup = message.safetyBackup}
@@ -169,7 +169,7 @@
       {/if}
     </div>
   {:else if message?.kind === 'alert'}
-    <div role="alert" class="error">
+    <div role="alert" class="error alert">
       <p>{message.text}</p>
       {#if message.details !== undefined}
         <ul>
@@ -186,7 +186,9 @@
       ? fr.backup.neverBackedUp
       : format(fr.backup.lastBackup, { date: dateTime.format(new Date(lastBackupAt)) })}
   </p>
-  <button type="button" disabled={busy} onclick={saveNow}>{fr.backup.saveNow}</button>
+  <button type="button" class="primary" disabled={busy} onclick={saveNow}
+    >{fr.backup.saveNow}</button
+  >
 
   {#if folder !== undefined}
     <h3>{fr.backup.folderTitle}</h3>
@@ -275,29 +277,55 @@
 </section>
 
 <style>
-  button {
-    min-height: 44px;
+  label {
+    display: block;
   }
 
   .actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
+  }
+
+  .status,
+  .alert {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+  }
+
+  .status {
+    background: var(--jade-soft);
+    color: var(--jade-strong);
+    font-weight: var(--weight-bold);
+  }
+
+  .alert {
+    background: var(--ochre-soft);
+  }
+
+  .status p,
+  .alert p,
+  .alert ul {
+    margin: 0 0 var(--space-2);
+  }
+
+  .notice {
+    color: var(--thirst);
+    font-weight: var(--weight-bold);
   }
 
   .preview {
-    border: 1px solid currentColor;
-    border-radius: 0.5rem;
-    padding: 0 1rem 1rem;
-    margin-top: 1rem;
+    margin-top: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: var(--surface-2);
   }
 
   .choice p {
-    margin: 0.25rem 0 1rem;
-    font-size: 0.9rem;
-  }
-
-  .error {
-    color: #b00020;
+    margin: var(--space-1) 0 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 </style>

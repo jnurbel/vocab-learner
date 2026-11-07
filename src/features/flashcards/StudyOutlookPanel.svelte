@@ -46,9 +46,14 @@
 
 <style>
   .outlook {
-    border: 1px solid currentColor;
-    border-radius: 0.5rem;
-    padding: 0.25rem 1rem;
-    margin: 0 0 1rem;
+    margin: 0 0 var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-left: 4px solid var(--jade);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+  }
+
+  .outlook p {
+    margin: var(--space-1) 0;
   }
 </style>

@@ -399,10 +399,12 @@
           </label>
         {/each}
       </fieldset>
-      <button type="submit" disabled={view.kind === 'starting'}>{fr.flashcards.start}</button>
-      <button type="button" disabled={view.kind === 'starting'} onclick={() => practise()}
-        >{fr.practice.start}</button
-      >
+      <div class="actions">
+        <button type="submit" disabled={view.kind === 'starting'}>{fr.flashcards.start}</button>
+        <button type="button" disabled={view.kind === 'starting'} onclick={() => practise()}
+          >{fr.practice.start}</button
+        >
+      </div>
       {#if view.kind === 'starting'}
         <p>{fr.flashcards.starting}</p>
       {/if}
@@ -484,7 +486,7 @@
               }}>{fr.flashcards.showPinyin}</button
             >
           {/if}
-          <button type="button" aria-keyshortcuts="Space" onclick={flip}
+          <button type="button" class="dark" aria-keyshortcuts="Space" onclick={flip}
             ><kbd aria-hidden="true">Espace</kbd> {fr.flashcards.flip}</button
           >
         {/if}
@@ -496,6 +498,7 @@
           {#each EVALUATIONS as { evaluation, key } (evaluation)}
             <button
               type="button"
+              class="rate rate-{evaluation}"
               aria-keyshortcuts={key}
               disabled={busy}
               onclick={() => rate(evaluation)}
@@ -503,8 +506,11 @@
             >
           {/each}
           {#if item.kind === 'new'}
-            <button type="button" disabled={busy} onclick={() => rate('known')}
-              >{fr.flashcards.evaluations.known}</button
+            <button
+              type="button"
+              class="rate rate-known"
+              disabled={busy}
+              onclick={() => rate('known')}>{fr.flashcards.evaluations.known}</button
             >
           {/if}
         </fieldset>
@@ -565,27 +571,13 @@
         >
       {/if}
     {/if}
-    <button type="button" onclick={restart}>{fr.flashcards.restart}</button>
+    <button type="button" class="restart" onclick={restart}>{fr.flashcards.restart}</button>
   {/if}
 </section>
 
 <style>
   fieldset {
-    border: 1px solid currentColor;
-    margin: 0 0 1rem;
-  }
-
-  .choice {
-    display: inline-flex;
-    gap: 0.25rem;
-    align-items: center;
-    margin-right: 1rem;
-    min-height: 44px;
-  }
-
-  button {
-    min-height: 44px;
-    min-width: 44px;
+    margin: 0 0 var(--space-4);
   }
 
   .toolbar,
@@ -593,69 +585,116 @@
   .evaluation {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: center;
   }
 
   .toolbar {
     justify-content: space-between;
+    margin-bottom: var(--space-3);
   }
 
   .progress {
+    margin: 0;
+    color: var(--jade);
+    font-size: var(--text-sm);
     font-variant-numeric: tabular-nums;
-    font-weight: bold;
+    font-weight: var(--weight-heavy);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
+  /* The card itself: raised on the section, the word large and centred. */
   .card {
-    border: 2px solid currentColor;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin: 1rem 0;
-    min-height: 8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 14rem;
+    margin: 0 0 var(--space-4);
+    padding: var(--space-6) var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-raised);
     text-align: center;
-    animation: appear 200ms ease-out;
+    animation: appear var(--duration) ease-out;
   }
 
-  .card:focus-visible {
-    outline: 3px solid Highlight;
-    outline-offset: 2px;
-  }
-
-  .term {
-    font-size: 2.5rem;
+  .card p {
     margin: 0;
   }
 
+  .term {
+    font-size: var(--text-hanzi);
+    line-height: 1.2;
+  }
+
+  .back {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+    animation: appear var(--duration) ease-out;
+  }
+
   .translation {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-heavy);
   }
 
-  kbd {
-    border: 1px solid currentColor;
-    border-radius: 0.25rem;
-    padding: 0 0.25rem;
-    font-size: 0.85em;
+  /* Rating buttons keep their text and shortcut; the tint is only a second cue. */
+  .evaluation {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    margin-top: var(--space-4);
   }
 
-  .primary {
-    font-weight: bold;
-    border: 2px solid currentColor;
+  .rate {
+    min-height: var(--target-lg);
+    color: var(--ink);
+  }
+
+  .rate-again {
+    background: var(--ochre-soft);
+  }
+
+  .rate-hard {
+    background: var(--thirst-soft);
+  }
+
+  .rate-good {
+    background: var(--jade-soft);
+  }
+
+  .rate-known {
+    background: var(--info-soft);
   }
 
   .practice-banner {
-    border-left: 4px solid currentColor;
-    padding: 0.5rem 1rem;
-    font-weight: bold;
+    padding: var(--space-3) var(--space-4);
+    border-left: 4px solid var(--jade);
+    border-radius: var(--radius-md);
+    background: var(--jade-soft);
+    color: var(--jade-strong);
+    font-weight: var(--weight-heavy);
+  }
+
+  .restart {
+    margin-top: var(--space-3);
   }
 
   .notice,
   .hint,
   .help {
-    font-size: 0.9rem;
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 
-  .error {
-    color: #b00020;
+  .help {
+    margin-top: var(--space-4);
   }
 
   .visually-hidden {
@@ -667,15 +706,9 @@
     white-space: nowrap;
   }
 
-  @keyframes appear {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .card {
+    .card,
+    .back {
       animation: none;
     }
   }

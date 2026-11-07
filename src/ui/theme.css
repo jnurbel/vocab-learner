@@ -1,0 +1,174 @@
+/*
+ * "Encre & Jade" theme tokens (docs/ui/README.md).
+ * Colours are custom properties, light by default and a derived dark theme below.
+ * Every text/background pair used by the app reaches WCAG AA (checked by theme.test.ts):
+ * keep each colour a plain #rrggbb value so that the test can read it.
+ */
+:root {
+  /* Paper, cards and lines. */
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --surface-2: #faf9f5;
+  --line: #e3dfd5;
+  --line-strong: #857f71;
+  --track: #edeae2;
+
+  /* Ink. */
+  --ink: #1e2a2f;
+  --ink-soft: #3b464d;
+  --muted: #5b6770;
+  --on-ink: #ffffff;
+
+  /* Accent and success. */
+  --jade: #17705a;
+  --jade-strong: #0f4f3f;
+  --jade-soft: #e3f1ec;
+  --on-jade: #ffffff;
+
+  /* Test (contrôle) and countdown. */
+  --seal: #8e2f1c;
+  --seal-soft: #fceee9;
+
+  /* Mistakes: never the colour alone. */
+  --ochre: #8a3d0b;
+  --ochre-soft: #fbe7d8;
+
+  /* Thirst, reminders. */
+  --thirst: #7a4a00;
+  --thirst-soft: #fff3dc;
+
+  /* Neutral information (new words, already known). */
+  --info: #2e3a6b;
+  --info-soft: #eef0f7;
+
+  --focus: #17705a;
+
+  /* Typography. */
+  --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-hanzi: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.75rem;
+  --text-hanzi: 2.75rem;
+  --weight-regular: 400;
+  --weight-bold: 600;
+  --weight-heavy: 800;
+
+  /* Spacing scale. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+
+  /* Radii: 10–14 px for controls, 16–24 px for cards. */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-card: 20px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgb(30 42 47 / 6%), 0 4px 16px rgb(30 42 47 / 5%);
+  --shadow-raised: 0 2px 4px rgb(30 42 47 / 8%), 0 12px 32px rgb(30 42 47 / 10%);
+
+  /* Touch targets and layout. */
+  --target: 44px;
+  --target-lg: 52px;
+  --sidebar-width: 240px;
+  --content-width: 60rem;
+  --bottom-bar-height: 64px;
+  --duration: 200ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11181b;
+    --surface: #1a2327;
+    --surface-2: #212c31;
+    --line: #2f3b41;
+    --line-strong: #7f8c92;
+    --track: #2a3539;
+
+    --ink: #ebe8e1;
+    --ink-soft: #cdd2d4;
+    --muted: #a5afb4;
+    --on-ink: #11181b;
+
+    --jade: #5cc4a2;
+    --jade-strong: #8fdcc2;
+    --jade-soft: #173a31;
+    --on-jade: #0b1a15;
+
+    --seal: #f2a491;
+    --seal-soft: #3d221b;
+
+    --ochre: #f2b27a;
+    --ochre-soft: #3a2616;
+
+    --thirst: #f0c46a;
+    --thirst-soft: #342a13;
+
+    --info: #bcc5f2;
+    --info-soft: #252c47;
+
+    --focus: #5cc4a2;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
+    --shadow-raised: 0 2px 4px rgb(0 0 0 / 35%), 0 12px 32px rgb(0 0 0 / 30%);
+  }
+}
+
+/*
+ * Plus Jakarta Sans, self-hosted (SIL OFL 1.1, see THIRD_PARTY_LICENSES), from
+ * @fontsource/plus-jakarta-sans 5.3.0: latin subset only, weights 400, 600 and 800.
+ */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/plus-jakarta-sans-latin-400-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/plus-jakarta-sans-latin-600-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./fonts/plus-jakarta-sans-latin-800-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Hanzi use the system fonts: a full Chinese web font weighs several megabytes. */
+:lang(zh-CN) {
+  font-family: var(--font-hanzi);
+}
+
+/*
+ * Toned pinyin vowels (ǎ, ǐ, ǚ…) are outside the latin subset: a syllable would mix two fonts.
+ * Pinyin is set in the system font as a whole, so that each syllable stays even.
+ */
+.pinyin {
+  font-family: system-ui, sans-serif;
+}

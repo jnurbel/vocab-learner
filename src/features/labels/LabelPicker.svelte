@@ -24,14 +24,18 @@
 
 <fieldset>
   <legend>{legend}</legend>
-  {#each labels as label (label.id)}
-    <label class="choice">
-      <input type="checkbox" value={label.id} bind:group={chosenLabelIds} />
-      {label.name}
-    </label>
+  {#if labels.length > 0}
+    <div class="choices">
+      {#each labels as label (label.id)}
+        <label class="choice">
+          <input type="checkbox" value={label.id} bind:group={chosenLabelIds} />
+          {label.name}
+        </label>
+      {/each}
+    </div>
   {:else}
-    <p>{fr.labelPicker.noLabels}</p>
-  {/each}
+    <p class="empty">{fr.labelPicker.noLabels}</p>
+  {/if}
   <label for="{idPrefix}-label-name">{fr.labelPicker.nameInput}</label>
   <input id="{idPrefix}-label-name" type="text" maxlength="200" bind:value={labelName} />
   {#if error !== undefined}
@@ -45,13 +49,25 @@
     width: 100%;
   }
 
-  .choice {
-    display: inline-flex;
-    gap: 0.25rem;
-    margin-right: 1rem;
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  /* Labels to set show as chips, as in docs/ui/mockups/Import.dc.html; the row spaces them. */
+  .choices .choice {
+    margin: 0;
+  }
+
+  .empty {
+    color: var(--muted);
   }
 
   .error {
-    color: #b00020;
+    margin: var(--space-2) 0 0;
+    color: var(--ochre);
+    font-weight: var(--weight-bold);
   }
 </style>

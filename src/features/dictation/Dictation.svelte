@@ -429,7 +429,7 @@
       {/if}
       <fieldset>
         <legend>{fr.dictation.optionsLegend}</legend>
-        <p>
+        <p class="option">
           <label for="dictation-count">{fr.dictation.wordCount}</label>
           <input
             id="dictation-count"
@@ -445,7 +445,7 @@
         <label class="choice"
           ><input type="checkbox" bind:checked={readTwice} /> {fr.dictation.readTwice}</label
         >
-        <p>
+        <p class="option">
           <label for="dictation-delay">{fr.dictation.delay}</label>
           <select id="dictation-delay" bind:value={delay}>
             {#each DICTATION_DELAYS as option (option)}
@@ -556,7 +556,7 @@
 
       <div class="actions">
         {#if feedback !== undefined}
-          <button type="button" bind:this={continueButton} onclick={next}
+          <button type="button" class="dark" bind:this={continueButton} onclick={next}
             >{fr.dictation.continue}</button
           >
         {/if}
@@ -611,12 +611,18 @@
 
       <div class="actions">
         {#if snapshot.status === 'paused'}
-          <button type="button" aria-keyshortcuts="Space" onclick={() => player?.resume()}
-            >{fr.dictation.resume}</button
+          <button
+            type="button"
+            class="dark"
+            aria-keyshortcuts="Space"
+            onclick={() => player?.resume()}>{fr.dictation.resume}</button
           >
         {:else}
-          <button type="button" aria-keyshortcuts="Space" onclick={() => player?.pause()}
-            >{fr.dictation.pause}</button
+          <button
+            type="button"
+            class="dark"
+            aria-keyshortcuts="Space"
+            onclick={() => player?.pause()}>{fr.dictation.pause}</button
           >
         {/if}
         {#if !written}
@@ -709,7 +715,7 @@
           </li>
         {/each}
       </ul>
-      <button type="button" onclick={() => start(mistakes.map(({ card }) => card))}
+      <button type="button" class="primary" onclick={() => start(mistakes.map(({ card }) => card))}
         >{fr.dictation.retryMissed}</button
       >
     {/if}
@@ -719,136 +725,120 @@
 
 <style>
   fieldset {
-    border: 1px solid currentColor;
-    margin: 0 0 1rem;
+    margin: 0 0 var(--space-4);
   }
 
-  .choice {
-    display: inline-flex;
-    gap: 0.25rem;
+  .option {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    margin-right: 1rem;
-    min-height: 44px;
+    gap: var(--space-2) var(--space-3);
   }
 
-  button,
-  input,
-  select {
-    min-height: 44px;
+  .option label {
+    margin: 0;
   }
 
-  button {
-    min-width: 44px;
+  .option input {
+    width: 6rem;
   }
 
   .actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: center;
-    margin: 1rem 0;
+    margin: var(--space-4) 0;
   }
 
-  .progress,
-  .score {
+  .progress {
+    margin: 0 0 var(--space-3);
+    color: var(--jade);
+    font-size: var(--text-sm);
     font-variant-numeric: tabular-nums;
-    font-weight: bold;
+    font-weight: var(--weight-heavy);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .field input {
-    font-size: 2rem;
-  }
-
-  .field input:focus-visible,
-  button:focus-visible {
-    outline: 3px solid Highlight;
-    outline-offset: 2px;
+  .score {
+    font-size: var(--text-2xl);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-heavy);
   }
 
   .term {
-    font-size: 2.5rem;
-    margin: 0;
+    font-size: var(--text-hanzi);
+    line-height: 1.2;
+    margin: var(--space-2) 0 0;
   }
 
   .prompt {
-    font-size: 2rem;
-  }
-
-  .feedback {
-    border: 2px solid currentColor;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin: 1rem 0;
-    animation: appear 200ms ease-out;
-  }
-
-  .feedback-right {
-    border-color: #2e7d32;
-  }
-
-  .feedback-almost,
-  .feedback-wrong {
-    border-color: #8a4b00;
-  }
-
-  .verdict {
-    font-weight: bold;
+    margin: 0;
+    padding: var(--space-5) var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-raised);
+    font-size: var(--text-2xl);
+    text-align: center;
   }
 
   .mistakes {
-    padding-left: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
   }
 
   .mistakes li {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2) var(--space-3);
     align-items: center;
-    margin-bottom: 0.5rem;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
   }
 
   .state {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-heavy);
+    text-align: center;
   }
 
+  /* The countdown before the next word, in the seal colour of the mockups. */
   progress {
     width: 100%;
-    height: 1rem;
+    height: 12px;
+    --bar-color: var(--seal);
   }
 
   .correction {
-    padding-left: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: 0;
+    list-style: none;
+  }
+
+  .correction fieldset {
+    margin: 0;
+    background: var(--surface-2);
+  }
+
+  .correction p {
+    margin: 0 0 var(--space-2);
   }
 
   .term-small {
-    font-size: 1.5rem;
+    font-size: var(--text-xl);
   }
 
   .notice,
   .help {
-    font-size: 0.9rem;
-  }
-
-  .error {
-    color: #b00020;
-  }
-
-  @keyframes appear {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .feedback {
-      animation: none;
-    }
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 </style>
