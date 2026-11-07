@@ -175,6 +175,28 @@ describe('parseBackup', () => {
       });
     });
 
+    it('keeps the way of answering the flashcards chosen by the learner', async () => {
+      const data = sampleData();
+      data.settings = { ...data.settings, answerMode: 'mixed' };
+      const backup = await createBackup(data, metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
+    it('refuses an unknown way of answering the flashcards', async () => {
+      const text = await resealed((document) => {
+        member(data(document), 'settings')['answerMode'] = '<img src=x>';
+      });
+
+      expect(await parseBackup(text, sha256)).toEqual({
+        ok: false,
+        errors: [{ path: 'data.settings.answerMode', code: 'invalid_value' }],
+      });
+    });
+
     it('refuses an unknown field, wherever it is', async () => {
       const text = await resealed((document) => {
         firstCard(document)['script'] = 'alert(1)';

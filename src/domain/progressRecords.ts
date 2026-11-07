@@ -82,6 +82,8 @@ export interface SettingsRecord {
   photoCheckEnabled?: boolean;
   speedGameEnabled?: boolean;
   newPerDay?: number;
+  /** How the flashcards are answered, see AnswerMode. */
+  answerMode?: string;
   sfxEnabled?: boolean;
   sfxVolume?: number;
   audioFreeMode?: boolean;

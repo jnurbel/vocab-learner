@@ -2,6 +2,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ReviewStateRecord, SessionRecord } from '../domain/progressRecords';
+import type { AnswerMode } from '../domain/studySettings';
 import { SINGLETON_KEY, VocabularyDatabase } from './database';
 import { StudyRepository } from './studyRepository';
 
@@ -162,6 +163,22 @@ describe('StudyRepository', () => {
     await repository.saveNewPerDay(8);
 
     expect(await db.settings.get(SINGLETON_KEY)).toEqual({ newPerDay: 8 });
+  });
+
+  it('saves the way of answering the flashcards and keeps the other settings', async () => {
+    await repository.saveNewPerDay(10);
+
+    await repository.saveAnswerMode('typeMeaning');
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({
+      newPerDay: 10,
+      answerMode: 'typeMeaning',
+    });
+  });
+
+  it('refuses to store an unknown way of answering', async () => {
+    await expect(repository.saveAnswerMode('<script>' as AnswerMode)).rejects.toThrow(RangeError);
+    expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
   });
 
   it('refuses to store a daily quota out of range', async () => {

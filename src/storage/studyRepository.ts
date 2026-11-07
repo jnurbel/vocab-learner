@@ -6,7 +6,7 @@ import type {
   SessionResultRecord,
   SettingsRecord,
 } from '../domain/progressRecords';
-import { isValidNewPerDay } from '../domain/studySettings';
+import { isAnswerMode, isValidNewPerDay, type AnswerMode } from '../domain/studySettings';
 import { SINGLETON_KEY, VocabularyDatabase } from './database';
 
 /** What a study session starts from. */
@@ -89,10 +89,22 @@ export class StudyRepository {
     if (!isValidNewPerDay(newPerDay)) {
       throw new RangeError(`Invalid daily quota of new words: ${String(newPerDay)}`);
     }
+    await this.updateSettings({ newPerDay });
+  }
+
+  /** How the flashcards are answered, remembered for the next session; the rest is kept. */
+  async saveAnswerMode(answerMode: AnswerMode): Promise<void> {
+    if (!isAnswerMode(answerMode)) {
+      throw new RangeError(`Invalid way of answering: ${String(answerMode)}`);
+    }
+    await this.updateSettings({ answerMode });
+  }
+
+  private async updateSettings(changes: Partial<SettingsRecord>): Promise<void> {
     const { settings } = this.db;
     await this.db.transaction('rw', settings, async () => {
       const current = await settings.get(SINGLETON_KEY);
-      await settings.put({ ...current, newPerDay }, SINGLETON_KEY);
+      await settings.put({ ...current, ...changes }, SINGLETON_KEY);
     });
   }
 

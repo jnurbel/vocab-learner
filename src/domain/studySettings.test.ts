@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { NEW_PER_DAY_CHOICES, newPerDayOf } from './studySettings';
+import type { SettingsRecord } from './progressRecords';
+import { ANSWER_MODES, answerModeOf, NEW_PER_DAY_CHOICES, newPerDayOf } from './studySettings';
 
 describe('newPerDayOf', () => {
   it('introduces 5 new words a day when the learner never changed it', () => {
@@ -28,5 +29,22 @@ describe('NEW_PER_DAY_CHOICES', () => {
     expect(
       NEW_PER_DAY_CHOICES.every((choice) => newPerDayOf({ newPerDay: choice }) === choice),
     ).toBe(true);
+  });
+});
+
+describe('answerModeOf', () => {
+  it('lets the learner rate themselves when they never chose another way to answer', () => {
+    expect(answerModeOf(undefined)).toBe('selfAssess');
+    expect(answerModeOf({})).toBe('selfAssess');
+  });
+
+  it.each(ANSWER_MODES)('follows the stored choice "%s"', (answerMode) => {
+    expect(answerModeOf({ answerMode })).toBe(answerMode);
+  });
+
+  it('falls back to rating oneself for a tampered stored value', () => {
+    for (const answerMode of ['typeEverything', '', 'toString', '__proto__', 3, null]) {
+      expect(answerModeOf({ answerMode } as unknown as SettingsRecord)).toBe('selfAssess');
+    }
   });
 });
