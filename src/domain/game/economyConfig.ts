@@ -31,6 +31,9 @@ export interface EconomyConfig {
   readonly dailyGoalXpOptions: readonly number[];
   /** Ordered by growing goal multiple: the last one reached applies. */
   readonly diminishingTiers: readonly DiminishingTier[];
+  /** Going from level n to n + 1 takes levelBaseXp + levelStepXp * (n - 1) points. */
+  readonly levelBaseXp: number;
+  readonly levelStepXp: number;
 }
 
 export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
@@ -54,4 +57,6 @@ export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
     Object.freeze({ fromGoalMultiple: 1, factor: 0.5 }),
     Object.freeze({ fromGoalMultiple: 2, factor: 0.25 }),
   ]),
+  levelBaseXp: 100,
+  levelStepXp: 50,
 });
