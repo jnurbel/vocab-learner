@@ -45,6 +45,8 @@
     onAnswerModeChange?: (mode: AnswerMode) => Promise<void>;
     /** Called once a session with at least one answer ends, finished or left. */
     onSessionEnd: () => void;
+    /** Opens the ListenMeaning mini-game, when the app offers it. */
+    onMiniGame?: () => void;
   }
 
   const {
@@ -58,6 +60,7 @@
     answerMode = DEFAULT_ANSWER_MODE,
     onAnswerModeChange = () => Promise.resolve(),
     onSessionEnd,
+    onMiniGame,
   }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
@@ -425,6 +428,11 @@
         <button type="button" disabled={view.kind === 'starting'} onclick={() => practise()}
           >{fr.practice.start}</button
         >
+        {#if onMiniGame !== undefined}
+          <button type="button" disabled={view.kind === 'starting'} onclick={onMiniGame}
+            >{fr.garden.miniGame}</button
+          >
+        {/if}
       </div>
       {#if view.kind === 'starting'}
         <p>{fr.flashcards.starting}</p>

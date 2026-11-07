@@ -231,6 +231,20 @@ describe('App', () => {
     );
   });
 
+  it('opens the ListenMeaning mini-game from the garden and from the flashcards', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-mini-game' });
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+
+    await user.click(within(menu).getByRole('button', { name: fr.nav.garden }));
+    await user.click(screen.getByRole('button', { name: fr.garden.miniGame }));
+    expect(screen.getByRole('region', { name: fr.listenMeaning.title })).toBeVisible();
+
+    await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
+    await user.click(await screen.findByRole('button', { name: fr.garden.miniGame }));
+    expect(screen.getByRole('region', { name: fr.listenMeaning.title })).toBeVisible();
+  });
+
   it('remembers how the learner answers the flashcards, from one visit to the next', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-answer-mode' });

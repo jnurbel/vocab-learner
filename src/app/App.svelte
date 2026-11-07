@@ -17,6 +17,11 @@
   } from '../features/dictation/dictationSession';
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import Garden from '../features/garden/Garden.svelte';
+  import ListenMeaning from '../features/miniGame/ListenMeaning.svelte';
+  import {
+    startListenMeaningSession,
+    type ListenMeaningSelection,
+  } from '../features/miniGame/listenMeaningSession';
   import {
     loadStudyOutlook,
     startFlashcardSession,
@@ -80,8 +85,10 @@
   /** Profiles come later: the pseudonym written into the backup file names. */
   const PROFILE_NAME = 'profil';
 
-  type Page = 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
-  const PAGES: readonly Page[] = [
+  type MenuPage = 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
+  /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
+  type Page = MenuPage | 'miniGame';
+  const PAGES: readonly MenuPage[] = [
     'words',
     'garden',
     'flashcards',
@@ -198,6 +205,15 @@
   /** The same store as the flashcards: every answer is a change to back up. */
   function startDictation(selection: DictationSelection) {
     return startDictationSession(selection, { store: flashcardStore, srs, clock: now, newId });
+  }
+
+  /** The same store as the flashcards: every answer is a change to back up. */
+  function startMiniGame(selection: ListenMeaningSelection) {
+    return startListenMeaningSession(selection, { store: flashcardStore, srs, clock: now, newId });
+  }
+
+  function openMiniGame() {
+    page = 'miniGame';
   }
 
   /** Typing suits a computer; on a touch screen, writing on paper is the default. */
@@ -410,9 +426,14 @@
           onWater={() => {
             page = 'flashcards';
           }}
-          onMiniGame={() => {
-            page = 'flashcards';
-          }}
+          onMiniGame={openMiniGame}
+        />
+      {:else if page === 'miniGame'}
+        <ListenMeaning
+          {cards}
+          {speaker}
+          startSession={startMiniGame}
+          onSessionEnd={() => void sessionEnded()}
         />
       {:else if page === 'flashcards'}
         {#if answerMode !== undefined}
@@ -426,6 +447,7 @@
             loadPinyin={loadPinyinGenerator}
             {answerMode}
             onAnswerModeChange={changeAnswerMode}
+            onMiniGame={openMiniGame}
             onSessionEnd={() => void sessionEnded()}
           />
         {/if}
