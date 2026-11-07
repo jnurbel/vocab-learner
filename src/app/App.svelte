@@ -5,7 +5,7 @@
   import type { Card } from '../domain/card';
   import type { Label } from '../domain/label';
   import type { LabelChanges } from '../domain/labelOperations';
-  import type { ReviewStateRecord } from '../domain/progressRecords';
+  import type { ProgressRecord, ReviewStateRecord } from '../domain/progressRecords';
   import { studyDay } from '../domain/srs/studyDay';
   import BackupPanel from '../features/backup/BackupPanel.svelte';
   import WordForm from '../features/cards/WordForm.svelte';
@@ -16,6 +16,7 @@
     type DictationSelection,
   } from '../features/dictation/dictationSession';
   import Flashcards from '../features/flashcards/Flashcards.svelte';
+  import Garden from '../features/garden/Garden.svelte';
   import {
     loadStudyOutlook,
     startFlashcardSession,
@@ -79,8 +80,15 @@
   /** Profiles come later: the pseudonym written into the backup file names. */
   const PROFILE_NAME = 'profil';
 
-  type Page = 'words' | 'flashcards' | 'dictation' | 'backup' | 'settings';
-  const PAGES: readonly Page[] = ['words', 'flashcards', 'dictation', 'backup', 'settings'];
+  type Page = 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
+  const PAGES: readonly Page[] = [
+    'words',
+    'garden',
+    'flashcards',
+    'dictation',
+    'backup',
+    'settings',
+  ];
   let page = $state<Page>('words');
 
   let repository: VocabularyRepository | undefined;
@@ -95,6 +103,8 @@
   /** The word open in the edit form, if any. */
   let editing = $state.raw<Card>();
   let reviewStates = $state.raw<ReviewStateRecord[]>([]);
+  /** The game progress (points, level, streak), read again with the words. */
+  let progress = $state.raw<ProgressRecord>();
   let lastBackupAt = $state<string>();
   let remindBackup = $state(false);
   let reminderHidden = $state(false);
@@ -121,6 +131,7 @@
       study?.reviewStates() ?? [],
     ]);
     moment = currentMoment();
+    progress = (await study?.load(clock()))?.progress;
   }
 
   onMount(() => {
@@ -388,6 +399,21 @@
         {#if newPerDay !== undefined}
           <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
         {/if}
+      {:else if page === 'garden'}
+        <Garden
+          {cards}
+          {labels}
+          {reviewStates}
+          {moment}
+          {srs}
+          {progress}
+          onWater={() => {
+            page = 'flashcards';
+          }}
+          onMiniGame={() => {
+            page = 'flashcards';
+          }}
+        />
       {:else if page === 'flashcards'}
         {#if answerMode !== undefined}
           <Flashcards
@@ -499,7 +525,7 @@
     inset: auto 0 0;
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--space-1);
     padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
     background: var(--surface);

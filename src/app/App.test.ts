@@ -209,6 +209,28 @@ describe('App', () => {
     expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
   });
 
+  it('shows the garden from the menu, with the points earned, and waters it with flashcards', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-garden' });
+    await addWord(user, '猫 | māo | chat');
+    await studyOneCard(user);
+
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.garden }));
+
+    // Discovered (5), right (10), session completed (30).
+    expect(await screen.findByText('Île niveau 1 · 45 XP')).toBeVisible();
+    const chinese = screen.getByRole('list', { name: fr.garden.plots.zh });
+    expect(within(chinese).getByText('猫')).toBeVisible();
+    expect(within(chinese).getByText(fr.stages.sprout)).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: fr.garden.water }));
+    expect(within(menu).getByRole('button', { name: fr.nav.flashcards })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
   it('remembers how the learner answers the flashcards, from one visit to the next', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-answer-mode' });
