@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { answerExerciseFor } from '../../domain/answerExercise';
   import type { Card, Language } from '../../domain/card';
   import type { Label } from '../../domain/label';
@@ -17,6 +17,7 @@
     type PracticeSummary,
   } from '../practice/practiceSession';
   import type {
+    FlashcardLaunch,
     FlashcardSelection,
     FlashcardSession,
     SelfEvaluation,
@@ -43,6 +44,8 @@
     onAnswerModeChange?: (mode: AnswerMode) => Promise<void>;
     /** Called once a session with at least one answer ends, finished or left. */
     onSessionEnd: () => void;
+    /** Starts this session at once instead of showing the setup. */
+    startWith?: FlashcardLaunch;
   }
 
   const {
@@ -56,6 +59,7 @@
     answerMode = DEFAULT_ANSWER_MODE,
     onAnswerModeChange = () => Promise.resolve(),
     onSessionEnd,
+    startWith,
   }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
@@ -138,6 +142,14 @@
     const label = fr.flashcards.answerModes[mode];
     return typeof label === 'string' ? label : label[language];
   };
+
+  onMount(() => {
+    if (startWith !== undefined) {
+      language = startWith.language;
+      labelIds = [...startWith.labelIds];
+      void (startWith.mode === 'review' ? start() : practise());
+    }
+  });
 
   async function start() {
     await open('review', () => startSession({ cards, language, labelIds: [...labelIds] }));

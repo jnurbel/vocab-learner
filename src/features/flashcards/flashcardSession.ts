@@ -54,6 +54,13 @@ export interface FlashcardSelection {
   labels?: readonly Label[];
 }
 
+/** A session asked for elsewhere (the home screen): it starts as soon as the screen opens. */
+export interface FlashcardLaunch {
+  mode: 'review' | 'practice';
+  language: Language;
+  labelIds: readonly string[];
+}
+
 export interface StageChange {
   card: Card;
   from: Stage;
