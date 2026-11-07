@@ -25,6 +25,7 @@ function fakeSpeaker() {
     speak: vi.fn<Speaker['speak']>(() => Promise.resolve()),
     cancel: vi.fn(),
     unlock: vi.fn(),
+    setRate: vi.fn(),
   } satisfies Speaker;
 }
 

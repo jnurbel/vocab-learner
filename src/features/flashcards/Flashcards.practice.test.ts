@@ -21,6 +21,7 @@ const speaker: Speaker = {
   speak: () => Promise.resolve(),
   cancel: () => undefined,
   unlock: () => undefined,
+  setRate: () => undefined,
 };
 
 const cat = card('cat', '2026-10-01T00:00:00.000Z', { term: '猫', translation: 'chat' });

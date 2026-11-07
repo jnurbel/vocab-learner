@@ -1,5 +1,6 @@
 import type { Language } from '../../domain/card';
-import { DICTATION_RATES, type DictationPlan } from '../../domain/dictation/dictationPlan';
+import type { DictationPlan } from '../../domain/dictation/dictationPlan';
+import { slowRateOf } from '../../domain/speechRate';
 import { isSpeechBlocked, type Speaker } from '../../services/tts/speaker';
 
 export interface DictationWord {
@@ -138,7 +139,7 @@ export class DictationPlayer {
     if (!this.isStarted()) {
       return;
     }
-    const rate = slow ? DICTATION_RATES.slow : this.settings.rate;
+    const rate = slow ? slowRateOf(this.settings.rate) : this.settings.rate;
     this.read(this.state.index, { times: 1, rate });
   }
 

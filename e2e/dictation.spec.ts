@@ -271,3 +271,39 @@ test('a word already rated today is not rated twice by a second dictation', asyn
   ]);
   expect(errors).toEqual([]);
 });
+
+test('the speed of the voice chosen in the settings is the rate of the dictation', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('./');
+  await addWords(page, '再 | zài | encore\n猫 | māo | chat', 2);
+  const menu = page.getByRole('navigation', { name: 'Menu' });
+
+  await menu.getByRole('button', { name: 'Réglages' }).click();
+  const speeds = page.getByRole('group', { name: 'Vitesse de la voix' });
+  await expect(speeds.getByRole('radio', { name: 'Normale' })).toBeChecked();
+  await speeds.getByRole('radio', { name: 'Lente' }).check();
+  await expect(page.getByText('Vitesse enregistrée.')).toBeVisible();
+
+  await menu.getByRole('button', { name: 'Dictée' }).click();
+  const dictation = page.getByRole('region', { name: 'Dictée' });
+  await expect(dictation.getByRole('radio', { name: 'Lente' })).toBeChecked();
+  await expect(
+    dictation.getByRole('checkbox', { name: 'Lire chaque mot deux fois' }),
+  ).toBeChecked();
+  await dictation.getByRole('radio', { name: 'Au clavier' }).check();
+  await dictation.getByRole('button', { name: 'Commencer la dictée' }).click();
+
+  // The first word, whichever it is, is read twice at the slow rate.
+  await expect.poll(() => page.evaluate(() => window.spokenTexts.length)).toBe(2);
+  const [first, second] = await page.evaluate(() => window.spokenTexts);
+  expect(['再', '猫']).toContain(first);
+  expect(second).toBe(first);
+  expect(await page.evaluate(() => window.spokenRates)).toEqual([0.5, 0.5]);
+
+  // A slow replay: half of 0.5, raised to the minimum of 0.4.
+  await dictation.getByRole('textbox', { name: 'Ta réponse' }).press('ArrowDown');
+  await expect.poll(() => page.evaluate(() => window.spokenRates.at(-1))).toBe(0.4);
+  expect(errors).toEqual([]);
+});

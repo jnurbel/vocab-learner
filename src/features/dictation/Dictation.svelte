@@ -41,6 +41,8 @@
     onSessionEnd: () => void;
     /** Keyboard on a computer; paper suits a phone better. */
     defaultMode?: AnswerMode;
+    /** The speed of the voice chosen in the settings. */
+    defaultSpeed?: DictationSpeed;
     /** Seed of the random order; a new one for each dictation. */
     newSeed?: () => string;
     timers?: PlayerTimers;
@@ -54,6 +56,7 @@
     loadPinyin,
     onSessionEnd,
     defaultMode = 'keyboard',
+    defaultSpeed = 'normal',
     newSeed = () => crypto.randomUUID(),
     timers,
   }: Props = $props();
@@ -69,9 +72,11 @@
   let labelIds = $state<string[]>([]);
   let wordCount = $state<number>(DICTATION_WORD_COUNT.default);
   let shuffle = $state(false);
-  let readTwice = $state(false);
+  // Twice by default: a word heard once on a phone speaker is easily missed.
+  let readTwice = $state(true);
   let delay = $state('5');
-  let speed = $state<DictationSpeed>('normal');
+  // svelte-ignore state_referenced_locally
+  let speed = $state<DictationSpeed>(defaultSpeed);
   // svelte-ignore state_referenced_locally
   let mode = $state<AnswerMode>(defaultMode);
 

@@ -77,8 +77,8 @@ describe('dictationPlan', () => {
   });
 
   it('reads at a normal pace by default, slower or faster on request', () => {
-    expect(dictationPlan(cards, options()).rate).toBe(0.85);
-    expect(dictationPlan(cards, options({ speed: 'slow' })).rate).toBe(0.6);
-    expect(dictationPlan(cards, options({ speed: 'fast' })).rate).toBe(1);
+    expect(dictationPlan(cards, options()).rate).toBe(0.7);
+    expect(dictationPlan(cards, options({ speed: 'slow' })).rate).toBe(0.5);
+    expect(dictationPlan(cards, options({ speed: 'fast' })).rate).toBe(0.9);
   });
 });

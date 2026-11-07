@@ -25,6 +25,7 @@ function fakeSpeaker(withVoice = true) {
     ),
     cancel: vi.fn(),
     unlock: vi.fn(),
+    setRate: vi.fn(),
   } satisfies Speaker;
 }
 

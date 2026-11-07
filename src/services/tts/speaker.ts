@@ -17,6 +17,8 @@ export interface Speaker {
    * synchronously in the handler of every click or key press that starts audio.
    */
   unlock(): void;
+  /** The rate of the readings that ask for none, i.e. the speed chosen in the settings. */
+  setRate(rate: number): void;
 }
 
 export interface SpeakOptions {
@@ -172,12 +174,13 @@ const pause = (ms: number) =>
 /** Speaker backed by the browser's speech synthesis (free, offline when the voice is local). */
 export function createWebSpeechSpeaker(
   host: SpeechHost,
-  { voicesTimeoutMs = 1_500, rate = 1, leadInMs = 300 }: SpeakerOptions = {},
+  { voicesTimeoutMs = 1_500, rate: initialRate = 1, leadInMs = 300 }: SpeakerOptions = {},
 ): Speaker & VoiceCatalog {
   const { speechSynthesis: synthesis, createUtterance } = host;
   let voices: Promise<readonly VoiceLike[]> | undefined;
   let watchingVoices = false;
   let unlocked = false;
+  let rate = initialRate;
   /** Bumped by every reading and by cancel(), so that a superseded reading stays silent. */
   let generation = 0;
   /** Kept referenced: Chrome may otherwise collect the utterance and never call `onend`. */
@@ -324,6 +327,9 @@ export function createWebSpeechSpeaker(
     cancel() {
       generation += 1;
       synthesis?.cancel();
+    },
+    setRate(chosen) {
+      rate = chosen;
     },
     unlock() {
       if (synthesis === undefined || createUtterance === undefined) {

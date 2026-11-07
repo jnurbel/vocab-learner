@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import type { SpeechSpeed } from '../../domain/speechRate';
 import { format } from '../../i18n/format';
 import fr from '../../i18n/fr.json';
 import { createWebSpeechSpeaker, SpeechBlockedError } from '../../services/tts/speaker';
@@ -14,11 +15,17 @@ const ANDROID_VOICES = [
   { name: 'Mystery', lang: 'fr-FR' },
 ];
 
-function setup(options: Parameters<typeof fakeSpeech>[0] = {}) {
+function setup(
+  options: Parameters<typeof fakeSpeech>[0] = {},
+  {
+    speed = 'normal',
+    onSpeedChange = vi.fn(() => Promise.resolve()),
+  }: { speed?: SpeechSpeed; onSpeedChange?: (speed: SpeechSpeed) => Promise<void> } = {},
+) {
   const speech = fakeSpeech(options);
   const speaker = createWebSpeechSpeaker(speech.host, { leadInMs: 0 });
-  render(VoicePanel, { speaker, voices: speaker });
-  return { speech, speaker, user: userEvent.setup() };
+  render(VoicePanel, { speaker, voices: speaker, speed, onSpeedChange });
+  return { speech, speaker, onSpeedChange, user: userEvent.setup() };
 }
 
 const list = () => screen.findByRole('list', { name: format(fr.voice.detected, { count: 4 }) });
@@ -102,5 +109,26 @@ describe('VoicePanel', () => {
 
     expect(within(await list()).getAllByRole('listitem')).toHaveLength(4);
     expect(screen.queryByText(fr.voice.noChinese)).toBeNull();
+  });
+
+  it('offers the speed of the voice, normal by default, and saves a new choice', async () => {
+    const { user, onSpeedChange } = setup({ voices: [MANDARIN] });
+    const speeds = screen.getByRole('group', { name: fr.voice.speedLegend });
+
+    expect(within(speeds).getByRole('radio', { name: fr.dictation.speeds.normal })).toBeChecked();
+    await user.click(within(speeds).getByRole('radio', { name: fr.dictation.speeds.slow }));
+
+    expect(onSpeedChange).toHaveBeenCalledWith('slow');
+    expect(await screen.findByText(fr.voice.speedSaved)).toBeVisible();
+  });
+
+  it('shows the speed already chosen, and says when a new one could not be saved', async () => {
+    const onSpeedChange = vi.fn(() => Promise.reject(new Error('Quota exceeded')));
+    const { user } = setup({ voices: [MANDARIN] }, { speed: 'fast', onSpeedChange });
+
+    expect(screen.getByRole('radio', { name: fr.dictation.speeds.fast })).toBeChecked();
+    await user.click(screen.getByRole('radio', { name: fr.dictation.speeds.slow }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(fr.settings.saveFailed);
   });
 });

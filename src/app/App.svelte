@@ -27,6 +27,7 @@
   import LabelManager from '../features/labels/LabelManager.svelte';
   import VoicePanel from '../features/settings/VoicePanel.svelte';
   import SettingsPanel from '../features/settings/SettingsPanel.svelte';
+  import { SPEECH_RATES, speechSpeedOf, type SpeechSpeed } from '../domain/speechRate';
   import { answerModeOf, newPerDayOf, type AnswerMode } from '../domain/studySettings';
   import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import type { VocabularySave } from '../features/vocabularySave';
@@ -245,6 +246,32 @@
     await recordChange();
   }
 
+  /** The speed of the voice, read at start: every reading uses it. */
+  let voiceSpeed = $state<SpeechSpeed>();
+
+  onMount(() => {
+    void loadVoiceSpeed();
+  });
+
+  async function loadVoiceSpeed() {
+    let loaded: SpeechSpeed;
+    try {
+      loaded = speechSpeedOf((await ready(study).load(clock())).settings);
+    } catch {
+      loaded = speechSpeedOf(undefined);
+    }
+    speaker.setRate(SPEECH_RATES[loaded]);
+    voiceSpeed = loaded;
+  }
+
+  /** Applies at once; a setting is worth backing up too. */
+  async function changeVoiceSpeed(chosen: SpeechSpeed) {
+    await ready(study).saveTtsRate(SPEECH_RATES[chosen]);
+    speaker.setRate(SPEECH_RATES[chosen]);
+    voiceSpeed = chosen;
+    await recordChange();
+  }
+
   /** How the flashcards are answered, read when they open. */
   let answerMode = $state<AnswerMode>();
 
@@ -396,7 +423,9 @@
         {#if newPerDay !== undefined}
           <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
         {/if}
-        <VoicePanel {speaker} {voices} />
+        {#if voiceSpeed !== undefined}
+          <VoicePanel {speaker} {voices} speed={voiceSpeed} onSpeedChange={changeVoiceSpeed} />
+        {/if}
       {:else if page === 'flashcards'}
         {#if answerMode !== undefined}
           <Flashcards
@@ -412,7 +441,7 @@
             onSessionEnd={() => void sessionEnded()}
           />
         {/if}
-      {:else if page === 'dictation'}
+      {:else if page === 'dictation' && voiceSpeed !== undefined}
         <Dictation
           {cards}
           {labels}
@@ -420,6 +449,7 @@
           startSession={startDictation}
           loadPinyin={loadPinyinGenerator}
           defaultMode={dictationMode}
+          defaultSpeed={voiceSpeed}
           onSessionEnd={() => void sessionEnded()}
         />
       {:else}

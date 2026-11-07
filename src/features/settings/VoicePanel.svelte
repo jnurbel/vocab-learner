@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Language } from '../../domain/card';
+  import { SPEECH_SPEEDS, type SpeechSpeed } from '../../domain/speechRate';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import {
@@ -17,9 +18,13 @@
     speaker: Speaker;
     /** Lists the voices of the browser. */
     voices: VoiceCatalog;
+    /** The speed of the voice chosen so far. */
+    speed: SpeechSpeed;
+    /** Saves and applies a new speed. */
+    onSpeedChange: (speed: SpeechSpeed) => Promise<void>;
   }
 
-  const { speaker, voices }: Props = $props();
+  const { speaker, voices, speed, onSpeedChange }: Props = $props();
 
   /** What the test buttons read: hello in each language. */
   const SAMPLES: Readonly<Record<Language, string>> = { zh: '你好', en: 'hello' };
@@ -27,6 +32,19 @@
   let report = $state.raw<VoiceReport>();
   let loading = $state(false);
   let testStatus = $state<keyof typeof fr.voice.testStatus>();
+  // svelte-ignore state_referenced_locally
+  let selectedSpeed = $state<SpeechSpeed>(speed);
+  let speedStatus = $state<'saved' | 'saveFailed'>();
+
+  async function saveSpeed() {
+    speedStatus = undefined;
+    try {
+      await onSpeedChange(selectedSpeed);
+      speedStatus = 'saved';
+    } catch {
+      speedStatus = 'saveFailed';
+    }
+  }
 
   onMount(() => {
     void load(() => voices.voiceReport());
@@ -67,6 +85,30 @@
 
 <section aria-labelledby="voice-title" class="voices">
   <h2 id="voice-title">{fr.voice.title}</h2>
+
+  <fieldset>
+    <legend>{fr.voice.speedLegend}</legend>
+    {#each SPEECH_SPEEDS as option (option)}
+      <label class="choice">
+        <input
+          type="radio"
+          name="voice-speed"
+          value={option}
+          bind:group={selectedSpeed}
+          onchange={saveSpeed}
+        />
+        {fr.dictation.speeds[option]}
+      </label>
+    {/each}
+    <p class="help">{fr.voice.speedHelp}</p>
+  </fieldset>
+  <p aria-live="polite">
+    {#if speedStatus === 'saved'}{fr.voice.speedSaved}{/if}
+  </p>
+  {#if speedStatus === 'saveFailed'}
+    <p role="alert" class="error">{fr.settings.saveFailed}</p>
+  {/if}
+
   <p class="help">{fr.voice.intro}</p>
 
   <div class="actions">

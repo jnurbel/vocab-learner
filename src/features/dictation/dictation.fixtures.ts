@@ -41,6 +41,9 @@ export class FakeSpeaker implements Speaker {
   /** Called in the click that starts audio, to let a phone speak. */
   readonly unlock = vi.fn();
 
+  /** The speed chosen in the settings. */
+  readonly setRate = vi.fn();
+
   hasVoice(): Promise<boolean> {
     return Promise.resolve(this.voice);
   }

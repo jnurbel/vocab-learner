@@ -134,6 +134,24 @@ describe('the Web Speech speaker', () => {
     expect(speech.spoken[0]?.rate).toBe(0.6);
   });
 
+  it('reads at the speed chosen in the settings, unless a reading asks for its own', async () => {
+    const speech = fakeSpeech({ voices: [voice('zh-CN')] });
+    const speaker = speakerOf(speech.host);
+
+    speaker.setRate(0.5);
+    void speaker.speak('你好', 'zh');
+    await vi.waitFor(() => {
+      expect(speech.spoken).toHaveLength(1);
+    });
+    speech.endCurrent();
+    void speaker.speak('你好', 'zh', { rate: 0.9 });
+    await vi.waitFor(() => {
+      expect(speech.spoken).toHaveLength(2);
+    });
+
+    expect(speech.spoken.map(({ rate }) => rate)).toEqual([0.5, 0.9]);
+  });
+
   it('resolves quietly when a word is interrupted by the next one', async () => {
     const speech = fakeSpeech({ voices: [voice('en-GB')] });
     const speaker = speakerOf(speech.host);

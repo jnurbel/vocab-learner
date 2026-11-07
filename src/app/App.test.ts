@@ -412,4 +412,31 @@ describe('App', () => {
     const section = await screen.findByRole('region', { name: fr.voice.title });
     expect(await within(section).findByText(fr.voice.chosenZh)).toBeVisible();
   });
+
+  it('applies the speed of the voice chosen in the settings everywhere, and keeps it', async () => {
+    const user = userEvent.setup();
+    const databaseName = 'app-test-voice-speed';
+    const speaker = new FakeSpeaker(true, true);
+    const { unmount } = render(App, { databaseName, speaker });
+    await vi.waitFor(() => {
+      expect(speaker.setRate).toHaveBeenCalledWith(0.7);
+    });
+
+    await user.click(screen.getByRole('button', { name: fr.nav.settings }));
+    const speeds = await screen.findByRole('group', { name: fr.voice.speedLegend });
+    expect(within(speeds).getByRole('radio', { name: fr.dictation.speeds.normal })).toBeChecked();
+    await user.click(within(speeds).getByRole('radio', { name: fr.dictation.speeds.slow }));
+
+    expect(await screen.findByText(fr.voice.speedSaved)).toBeVisible();
+    expect(speaker.setRate).toHaveBeenLastCalledWith(0.5);
+    unmount();
+
+    const next = new FakeSpeaker(true, true);
+    render(App, { databaseName, speaker: next });
+    await vi.waitFor(() => {
+      expect(next.setRate).toHaveBeenCalledWith(0.5);
+    });
+    await user.click(screen.getByRole('button', { name: fr.nav.dictation }));
+    expect(await screen.findByRole('radio', { name: fr.dictation.speeds.slow })).toBeChecked();
+  });
 });
