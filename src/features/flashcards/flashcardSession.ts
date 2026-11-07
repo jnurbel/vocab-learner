@@ -16,6 +16,10 @@ import { studyDay } from '../../domain/srs/studyDay';
 import { summarizeStudyOutlook, type StudyOutlook } from '../../domain/srs/studyOutlook';
 import { newPerDayOf } from '../../domain/studySettings';
 import type { StudyRepository } from '../../storage/studyRepository';
+import { EXAM_CONFIG } from '../../domain/exam/examConfig';
+import type { FocusPlanning } from '../../domain/exam/focusPlan';
+import type { Label } from '../../domain/label';
+import type { SettingsRecord } from '../../domain/progressRecords';
 import { SessionRewards, type RewardsSummary } from '../game/sessionRewards';
 
 /** The self-evaluation buttons: "À revoir", "Difficile", "Je savais", "Je le connais déjà". */
@@ -29,7 +33,7 @@ export const OUTCOME_OF: Readonly<Record<SelfEvaluation, Outcome>> = {
 };
 
 /** Sessions started this long ago may still hold answers of today. */
-const RECENT_SESSIONS_MS = 2 * 24 * 60 * 60 * 1000;
+export const RECENT_SESSIONS_MS = 2 * 24 * 60 * 60 * 1000;
 
 export type FlashcardStore = Pick<
   StudyRepository,
@@ -47,6 +51,15 @@ export interface FlashcardSelection {
   cards: readonly Card[];
   language: Language;
   /** Empty: every word of the language. */
+  labelIds: readonly string[];
+  /** Every label: the pinned ones come first and their tests are planned (GAME_DESIGN.md 2). */
+  labels?: readonly Label[];
+}
+
+/** A session asked for elsewhere (the home screen): it starts as soon as the screen opens. */
+export interface FlashcardLaunch {
+  mode: 'review' | 'practice';
+  language: Language;
   labelIds: readonly string[];
 }
 
@@ -109,6 +122,22 @@ async function loadStudyContext(
     newIntroducedToday: countNewWordsIntroduced(data.recentSessions, today, srs),
     language: selection.language,
     labelIds: selection.labelIds,
+    ...(selection.labels === undefined
+      ? {}
+      : { focus: focusPlanningOf(selection.labels, data.settings) }),
+  };
+}
+
+/** The labels to work on, with the tests the learner prepares in intensive mode. */
+export function focusPlanningOf(
+  labels: readonly Label[],
+  settings: SettingsRecord | undefined,
+): FocusPlanning {
+  const intensive = Object.entries(settings?.intensiveExamMode ?? {});
+  return {
+    labels,
+    exam: EXAM_CONFIG,
+    intensiveLabelIds: intensive.filter(([, chosen]) => chosen).map(([labelId]) => labelId),
   };
 }
 

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 declare global {
   interface Window {
@@ -41,7 +42,10 @@ async function installFakeSpeech(page: Page) {
       voice: unknown = null;
       onend: (() => void) | null = null;
       onerror: unknown = null;
-      constructor(readonly text: string) {}
+      readonly text: string;
+      constructor(text: string) {
+        this.text = text;
+      }
     }
     Object.defineProperty(window, 'speechSynthesis', { value: synthesis, configurable: true });
     Object.defineProperty(window, 'SpeechSynthesisUtterance', {
@@ -68,6 +72,7 @@ test('ListenMeaning: a right answer, then a wrong one, heard through the speech 
   });
   await installFakeSpeech(page);
   await page.goto('./');
+  await openWords(page);
   await page
     .getByLabel('Un mot par ligne')
     .fill('猫 | mao1 | chat\n狗 | gou3 | chien\n鸟 | niao3 | oiseau\n鱼 | yu2 | poisson');

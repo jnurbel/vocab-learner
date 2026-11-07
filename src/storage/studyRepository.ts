@@ -9,6 +9,10 @@ import type {
 import { isAnswerMode, isValidNewPerDay, type AnswerMode } from '../domain/studySettings';
 import { SINGLETON_KEY, VocabularyDatabase } from './database';
 
+/** Label ids used as object keys: plain tokens, as in backups. */
+const LABEL_KEY = /^[A-Za-z0-9_-]{1,64}$/;
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 /** What a study session starts from. */
 export interface StudyData {
   reviewStates: ReviewStateRecord[];
@@ -131,6 +135,26 @@ export class StudyRepository {
       throw new RangeError(`Invalid way of answering: ${String(answerMode)}`);
     }
     await this.updateSettings({ answerMode });
+  }
+
+  /**
+   * The intensive mode chosen for the test of a label (GAME_DESIGN.md 2.5). The label id
+   * becomes an object key: only plain identifiers are accepted, never `__proto__` and the like.
+   */
+  async saveIntensiveExamMode(labelId: string, intensive: boolean): Promise<void> {
+    if (!LABEL_KEY.test(labelId) || FORBIDDEN_KEYS.has(labelId)) {
+      throw new RangeError('Invalid label id for the intensive mode');
+    }
+    const { settings } = this.db;
+    await this.db.transaction('rw', settings, async () => {
+      const current = await settings.get(SINGLETON_KEY);
+      const modes = new Map(Object.entries(current?.intensiveExamMode ?? {}));
+      modes.set(labelId, intensive);
+      await settings.put(
+        { ...current, intensiveExamMode: Object.fromEntries(modes) },
+        SINGLETON_KEY,
+      );
+    });
   }
 
   private async updateSettings(changes: Partial<SettingsRecord>): Promise<void> {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Card, Language } from '../card';
+import { EXAM_CONFIG } from '../exam/examConfig';
+import { focusLabel } from '../exam/exam.fixtures';
 import { GAME_CONFIG } from './config';
 import { createInitialReviewState, type ReviewState } from './reviewState';
 import { summarizeStudyOutlook, type StudyOutlookInput } from './studyOutlook';
@@ -148,5 +150,40 @@ describe('summarizeStudyOutlook', () => {
     });
     expect(outlook({ cards, newPerDay: Number.NaN })).toMatchObject({ newAvailableToday: 0 });
     expect(outlook({ cards, newPerDay: -4 })).toMatchObject({ newAvailableToday: 0 });
+  });
+});
+
+describe('summarizeStudyOutlook with labels to work on', () => {
+  const focus = {
+    labels: [focusLabel('exam', '2026-11-13'), focusLabel('today', today)],
+    exam: EXAM_CONFIG,
+  };
+  const lesson = (count: number, labelId = 'exam') =>
+    Array.from({ length: count }, (_, index) =>
+      card(`${labelId}${String(index)}`, { labelIds: [labelId] }),
+    );
+
+  it('counts as due a word the memory model planned after the test, once in the 2-day window', () => {
+    const cards = [card('w', { labelIds: ['exam'] })];
+    const states = [reviewed('w', '2026-12-01')];
+
+    expect(outlook({ cards, states, focus, today: '2026-11-11' }).dueToday).toBe(1);
+    const before = outlook({ cards, states, focus });
+    expect(before.dueToday).toBe(0);
+    expect(before.nextReview).toEqual({ day: '2026-11-11', count: 1 });
+  });
+
+  it('offers today the new words the test quota allows, beyond the session cap', () => {
+    const result = outlook({ cards: lesson(500), focus, newPerDay: 3 });
+
+    expect(result.newAvailableToday).toBe(20);
+    expect(result.newWaiting).toBe(480);
+  });
+
+  it('keeps waiting the new words of a label tested today', () => {
+    const result = outlook({ cards: lesson(4, 'today'), focus });
+
+    expect(result.newAvailableToday).toBe(0);
+    expect(result.newWaiting).toBe(4);
   });
 });

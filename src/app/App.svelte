@@ -54,6 +54,12 @@
   import { appVersion } from './appVersion';
   import NavIcon from '../ui/NavIcon.svelte';
   import { srs } from './srs';
+  import { EXAM_CONFIG } from '../domain/exam/examConfig';
+  import { undoAutoUnfocus, unfocusPastExams } from '../domain/labelFocus';
+  import type { Language } from '../domain/card';
+  import Home from '../features/home/Home.svelte';
+  import { loadHomeView } from '../features/home/homeSession';
+  import type { FlashcardLaunch } from '../features/flashcards/flashcardSession';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -85,10 +91,11 @@
   /** Profiles come later: the pseudonym written into the backup file names. */
   const PROFILE_NAME = 'profil';
 
-  type MenuPage = 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
+  type MenuPage = 'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
   /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
   type Page = MenuPage | 'miniGame';
   const PAGES: readonly MenuPage[] = [
+    'home',
     'words',
     'garden',
     'flashcards',
@@ -96,7 +103,11 @@
     'backup',
     'settings',
   ];
-  let page = $state<Page>('words');
+  let page = $state<Page>('home');
+  /** A session asked for from the home screen, started as soon as the flashcards open. */
+  let flashcardLaunch = $state.raw<FlashcardLaunch>();
+  /** The home waits for the first read of the storage. */
+  let loaded = $state(false);
 
   let repository: VocabularyRepository | undefined;
   let study: StudyRepository | undefined;
@@ -139,6 +150,7 @@
     ]);
     moment = currentMoment();
     progress = (await study?.load(clock()))?.progress;
+    loaded = true;
   }
 
   onMount(() => {
@@ -154,9 +166,19 @@
       profileName: PROFILE_NAME,
     });
     directory = new DirectoryBackup({ store: meta, picker: directoryPicker, clock: now });
-    void reload(repository);
+    void unpinPastExams(repository).then(() => reload(ready(repository)));
     void refreshBackupState();
   });
+
+  /** The day after a test, its label is unpinned (GAME_DESIGN.md 2.6); the home offers the undo. */
+  async function unpinPastExams(from: VocabularyRepository) {
+    const { today } = currentMoment();
+    const unpinned = unfocusPastExams(await from.allLabels(), { today, now: clock() }, EXAM_CONFIG);
+    if (unpinned.length > 0) {
+      await from.saveLabels(unpinned);
+      await recordChange();
+    }
+  }
 
   function ready<T>(service: T | undefined): T {
     if (service === undefined) {
@@ -199,7 +221,10 @@
   };
 
   function startSession(selection: FlashcardSelection) {
-    return startFlashcardSession(selection, { store: flashcardStore, srs, clock: now, newId });
+    return startFlashcardSession(
+      { ...selection, labels },
+      { store: flashcardStore, srs, clock: now, newId },
+    );
   }
 
   /** The same store as the flashcards: every answer is a change to back up. */
@@ -237,7 +262,7 @@
   };
 
   function loadOutlook(selection: FlashcardSelection) {
-    return loadStudyOutlook(selection, { store: flashcardStore, srs, clock: now });
+    return loadStudyOutlook({ ...selection, labels }, { store: flashcardStore, srs, clock: now });
   }
 
   function startPractice(selection: FlashcardSelection) {
@@ -334,6 +359,40 @@
     await reload(store);
   }
 
+  function loadHome(language: Language) {
+    return loadHomeView({ cards, labels, language }, { store: flashcardStore, srs, clock: now });
+  }
+
+  function launchFlashcards(launch: FlashcardLaunch) {
+    flashcardLaunch = launch;
+    page = 'flashcards';
+  }
+
+  function startFromHome(language: Language) {
+    launchFlashcards({ mode: 'review', language, labelIds: [] });
+  }
+
+  function practiseFromHome(language: Language, labelIds: readonly string[]) {
+    launchFlashcards({ mode: 'practice', language, labelIds });
+  }
+
+  /** "Annuler le désépinglage": the label comes back pinned. */
+  async function undoUnpin(label: Label) {
+    const undone = undoAutoUnfocus(labels, label.id, clock());
+    if (!undone.ok) {
+      return;
+    }
+    const store = storage();
+    await store.saveLabels(undone.value.filter(({ id }) => id === label.id));
+    await recordChange();
+    await reload(store);
+  }
+
+  async function changeIntensive(label: Label, intensive: boolean) {
+    await ready(study).saveIntensiveExamMode(label.id, intensive);
+    await recordChange();
+  }
+
   function startEditing(card: Card) {
     editing = card;
   }
@@ -362,6 +421,7 @@
           type="button"
           aria-current={page === name ? 'page' : undefined}
           onclick={() => {
+            flashcardLaunch = undefined;
             page = name;
           }}><NavIcon {name} /><span class="menu-text">{fr.nav[name]}</span></button
         >
@@ -449,6 +509,21 @@
             onAnswerModeChange={changeAnswerMode}
             onMiniGame={openMiniGame}
             onSessionEnd={() => void sessionEnded()}
+            {...flashcardLaunch === undefined ? {} : { startWith: flashcardLaunch }}
+          />
+        {/if}
+      {:else if page === 'home'}
+        {#if loaded}
+          <Home
+            loadView={loadHome}
+            {speaker}
+            onStart={startFromHome}
+            onPractice={practiseFromHome}
+            onAddWords={() => {
+              page = 'words';
+            }}
+            onUndoUnpin={undoUnpin}
+            onIntensiveChange={changeIntensive}
           />
         {/if}
       {:else if page === 'dictation'}
@@ -501,7 +576,14 @@
 
         <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
 
-        <LabelManager {labels} {cards} {clock} {masteryOf} onChange={changeLabels} />
+        <LabelManager
+          {labels}
+          {cards}
+          {clock}
+          {masteryOf}
+          today={moment.today}
+          onChange={changeLabels}
+        />
       {/if}
     </div>
   </main>
@@ -547,8 +629,10 @@
     inset: auto 0 0;
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: var(--space-1);
+    /* One equal column per menu entry, whatever their number. */
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 2px;
     padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
     background: var(--surface);
     border-top: 1px solid var(--line);

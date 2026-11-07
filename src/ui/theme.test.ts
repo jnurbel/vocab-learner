@@ -43,6 +43,8 @@ const PAIRS: readonly (readonly [foreground: string, background: string, minimum
   ['surface', 'ochre', TEXT],
   // Test countdown, thirst and reminders, neutral information.
   ['seal', 'seal-soft', TEXT],
+  ['ink', 'seal-soft', TEXT],
+  ['ink-soft', 'surface-2', TEXT],
   ['thirst', 'thirst-soft', TEXT],
   ['ink', 'thirst-soft', TEXT],
   ['info', 'info-soft', TEXT],

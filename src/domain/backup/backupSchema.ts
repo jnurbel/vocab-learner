@@ -58,6 +58,8 @@ const labelSchema = z.strictObject({
   color: hexColor.optional(),
   isFocus: z.boolean(),
   examDate: day.optional(),
+  pastExamDate: day.optional(),
+  unfocusedOn: day.optional(),
   createdAt: dateTime,
   updatedAt: dateTime,
 });

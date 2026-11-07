@@ -12,6 +12,9 @@
     type LabelOperationError,
   } from '../../domain/labelOperations';
   import type { Result } from '../../domain/result';
+  import { EXAM_CONFIG } from '../../domain/exam/examConfig';
+  import { setExamDate, setLabelFocus, type ExamDateError } from '../../domain/labelFocus';
+  import { addDays, type LocalDay } from '../../domain/srs/localDay';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import ConfirmAction from '../../ui/ConfirmAction.svelte';
@@ -23,9 +26,11 @@
     onChange: (changes: LabelChanges) => Promise<void>;
     /** Mastery gauge per language; the column is hidden without it. */
     masteryOf?: (label: Label) => Partial<Record<Language, Mastery>>;
+    /** The learner's day, which bounds the test dates; the pin column is hidden without it. */
+    today?: LocalDay;
   }
 
-  const { labels, cards, clock, onChange, masteryOf }: Props = $props();
+  const { labels, cards, clock, onChange, masteryOf, today }: Props = $props();
 
   const usages = $derived(countWordsByLabel(labels, cards));
   /** Typed new names and chosen merge targets, by label id. */
@@ -88,6 +93,28 @@
     mergeTargets.delete(label.id);
   }
 
+  /** Pinning or dating a label changes no word. */
+  async function applyFocus(result: Result<Label[], ExamDateError>) {
+    if (!result.ok) {
+      status = {
+        kind: 'refused',
+        reason: fr.labelManager.examErrors[result.errors[0] ?? 'invalidDate'],
+      };
+      return;
+    }
+    await apply({ ok: true, value: { labels: result.value, cardsToUpdate: [] } });
+  }
+
+  async function toggleFocus(label: Label) {
+    await applyFocus(setLabelFocus(labels, label.id, !label.isFocus, clock()));
+  }
+
+  async function changeExamDate(label: Label, rawDate: string, day: LocalDay) {
+    await applyFocus(
+      setExamDate(labels, label.id, rawDate, { today: day, now: clock() }, EXAM_CONFIG),
+    );
+  }
+
   async function remove(label: Label) {
     await apply(deleteLabel(labels, cards, label.id, clock()));
   }
@@ -117,6 +144,9 @@
             {#if masteryOf !== undefined}
               <th scope="col">{fr.labelManager.columnMastery}</th>
             {/if}
+            {#if today !== undefined}
+              <th scope="col">{fr.labelManager.columnFocus}</th>
+            {/if}
             <th scope="col">{fr.labelManager.columnActions}</th>
           </tr>
         </thead>
@@ -138,6 +168,31 @@
                       ></meter>
                     </div>
                   {/each}
+                </td>
+              {/if}
+              {#if today !== undefined}
+                <td>
+                  <div class="focus">
+                    <button
+                      type="button"
+                      class="pin"
+                      aria-pressed={label.isFocus}
+                      aria-label={format(
+                        label.isFocus ? fr.labelManager.unpinLabel : fr.labelManager.pinLabel,
+                        { name: label.name },
+                      )}
+                      onclick={() => toggleFocus(label)}
+                      >{label.isFocus ? fr.labelManager.unpin : fr.labelManager.pin}</button
+                    >
+                    <input
+                      type="date"
+                      min={today}
+                      max={addDays(today, EXAM_CONFIG.maxExamDaysAhead)}
+                      aria-label={format(fr.labelManager.examDate, { name: label.name })}
+                      value={label.examDate ?? ''}
+                      onchange={(event) => changeExamDate(label, event.currentTarget.value, today)}
+                    />
+                  </div>
                 </td>
               {/if}
               <td>
@@ -224,6 +279,20 @@
   meter {
     width: 100%;
     height: 10px;
+  }
+
+  .focus {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 9rem;
+  }
+
+  .pin[aria-pressed='true'] {
+    border-color: var(--jade);
+    background: var(--jade-soft);
+    color: var(--jade-strong);
+    font-weight: var(--weight-heavy);
   }
 
   .actions,

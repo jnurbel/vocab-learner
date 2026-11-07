@@ -135,6 +135,19 @@ describe('VocabularyRepository', () => {
     expect(await repository.allLabels()).toEqual([lesson]);
   });
 
+  it('saves several labels at once, such as those unpinned after their test, and keeps the others', async () => {
+    const lesson = label('lesson', 'Leçon 7');
+    const animals = label('animals', 'Animaux');
+    await repository.saveLabel(lesson);
+    await repository.saveLabel(animals);
+    const unpinned: Label = { ...lesson, pastExamDate: '2026-11-04', unfocusedOn: '2026-11-05' };
+
+    await repository.saveLabels([unpinned]);
+
+    expect(await repository.allLabels()).toEqual(expect.arrayContaining([unpinned, animals]));
+    expect(await repository.allLabels()).toHaveLength(2);
+  });
+
   it('applies a label deletion or merge: removed labels go, relabelled words stay', async () => {
     const lesson = label('lesson-3', 'Leçon 3');
     const animals = label('animals', 'Animaux');

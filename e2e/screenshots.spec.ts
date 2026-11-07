@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 /**
  * Screenshots of the main screens, light and dark, on a computer and on a phone, written to
@@ -86,7 +87,10 @@ async function installSilentVoice(page: Page) {
         voice: unknown = null;
         onend: (() => void) | null = null;
         onerror: unknown = null;
-        constructor(readonly text: string) {}
+        readonly text: string;
+        constructor(text: string) {
+          this.text = text;
+        }
       },
     });
   });
@@ -101,8 +105,27 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
     test.describe(`${device}, ${scheme}`, () => {
       test.use({ viewport, colorScheme: scheme });
 
+      test('home: a pinned label with its test, another label', async ({ page }) => {
+        await page.clock.setFixedTime(new Date('2026-11-09T18:00:00+01:00'));
+        await page.goto('./');
+        await openWords(page);
+        await addWords(page);
+        const bulk = page.getByRole('region', { name: 'Saisie en lot' });
+        await bulk.getByLabel('Un mot par ligne').fill('猫 | māo | chat\n狗 | gǒu | chien');
+        await bulk.getByLabel('Nouveau label ou label existant (facultatif)').fill('Animaux');
+        await bulk.getByRole('button', { name: 'Ajouter 2 mots' }).click();
+        await expect(bulk.getByRole('status')).toHaveText('2 mot(s) ajouté(s).');
+        await page.getByLabel('Date du contrôle de Leçon 7').fill('2026-11-13');
+        await expect(page.getByRole('button', { name: 'Désépingler Leçon 7' })).toBeVisible();
+
+        await menu(page).getByRole('button', { name: 'Accueil' }).click();
+        await expect(page.getByText('Contrôle dans 4 jours · ven. 13 nov.')).toBeVisible();
+        await shoot(page, 'home', device, scheme);
+      });
+
       test('words, import preview, labels, settings and backup', async ({ page }) => {
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await page.getByLabel('Un mot par ligne').fill('冷 || froid\n天气 || temps\nrain |');
         await expect(page.getByLabel('Pinyin, ligne 1')).toHaveValue('lěng');
@@ -128,6 +151,7 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
 
       test('flashcards: setup, a turned card, a typed answer with its diff', async ({ page }) => {
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await menu(page).getByRole('button', { name: 'Flashcards' }).click();
         const flashcards = page.getByRole('region', { name: 'Flashcards' });
@@ -158,6 +182,7 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
 
       test('dictation: setup and a wrong answer with its diff', async ({ page }) => {
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await menu(page).getByRole('button', { name: 'Dictée' }).click();
         const dictation = page.getByRole('region', { name: 'Dictée' });

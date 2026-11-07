@@ -12,6 +12,7 @@ import Flashcards from './Flashcards.svelte';
 import {
   loadStudyOutlook,
   startFlashcardSession,
+  type FlashcardLaunch,
   type FlashcardSelection,
 } from './flashcardSession';
 
@@ -57,11 +58,13 @@ function setup({
   data = {},
   speaker = fakeSpeaker(),
   onSessionEnd = vi.fn(),
+  startWith,
 }: {
   cards?: Card[];
   data?: Partial<StudyData>;
   speaker?: ReturnType<typeof fakeSpeaker>;
   onSessionEnd?: () => void;
+  startWith?: FlashcardLaunch;
 } = {}) {
   const store = new FakeStore(data);
   const startSession = vi.fn((selection: FlashcardSelection) =>
@@ -80,8 +83,9 @@ function setup({
     loadPinyin: () => Promise.reject(new Error('Only a typed word needs the pinyin')),
     speaker,
     onSessionEnd,
+    ...(startWith === undefined ? {} : { startWith }),
   });
-  return { store, startSession, speaker, onSessionEnd, user: userEvent.setup() };
+  return { store, startSession, startPractice, speaker, onSessionEnd, user: userEvent.setup() };
 }
 
 const region = () => screen.getByRole('region', { name: fr.flashcards.title });
@@ -291,5 +295,28 @@ describe('Flashcards', () => {
     await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(fr.flashcards.startFailed);
+  });
+
+  it('opens straight on the session asked for from the home screen', async () => {
+    const { startSession } = setup({
+      data: { reviewStates: [reviewed('apple')] },
+      startWith: { mode: 'review', language: 'en', labelIds: [] },
+    });
+
+    expect(await screen.findByText('1 / 1')).toBeVisible();
+    expect(startSession).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'en', labelIds: [] }),
+    );
+  });
+
+  it('opens straight on a free practice of a label asked for from the home screen', async () => {
+    const { startPractice } = setup({
+      startWith: { mode: 'practice', language: 'zh', labelIds: ['animals'] },
+    });
+
+    expect(await screen.findByText(fr.practice.banner)).toBeVisible();
+    expect(startPractice).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'zh', labelIds: ['animals'] }),
+    );
   });
 });

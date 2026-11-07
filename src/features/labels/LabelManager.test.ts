@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/svelte';
+import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '../../domain/card';
@@ -190,5 +190,89 @@ describe('LabelManager', () => {
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(fr.labelManager.saveFailed);
+  });
+
+  describe('labels to work on', () => {
+    const today = '2026-11-07';
+
+    function setupFocus(labels: Label[] = [lesson, animals]) {
+      const onChange = vi.fn(() => Promise.resolve());
+      render(LabelManager, { labels, cards: [cat, dog], clock: () => now, today, onChange });
+      return { onChange, user: userEvent.setup() };
+    }
+
+    it('pins a label with a toggle button', async () => {
+      const { onChange, user } = setupFocus();
+      const pin = within(rowOf('Leçon 3')).getByRole('button', { name: 'Épingler Leçon 3' });
+      expect(pin).toHaveAttribute('aria-pressed', 'false');
+
+      await user.click(pin);
+
+      expect(onChange).toHaveBeenCalledWith({
+        labels: [{ ...lesson, isFocus: true, updatedAt: now }, animals],
+        cardsToUpdate: [],
+      });
+    });
+
+    it('unpins a pinned label', async () => {
+      const pinned = { ...lesson, isFocus: true };
+      const { onChange, user } = setupFocus([pinned, animals]);
+      const unpin = within(rowOf('Leçon 3')).getByRole('button', { name: 'Désépingler Leçon 3' });
+      expect(unpin).toHaveAttribute('aria-pressed', 'true');
+
+      await user.click(unpin);
+
+      expect(onChange).toHaveBeenCalledWith({
+        labels: [{ ...pinned, isFocus: false, updatedAt: now }, animals],
+        cardsToUpdate: [],
+      });
+    });
+
+    it('sets a test date, from today to a year ahead, which pins the label', async () => {
+      const { onChange } = setupFocus();
+      const date = within(rowOf('Leçon 3')).getByLabelText('Date du contrôle de Leçon 3');
+      expect(date).toHaveAttribute('type', 'date');
+      expect(date).toHaveAttribute('min', today);
+      expect(date).toHaveAttribute('max', '2027-11-07');
+
+      await fireEvent.change(date, { target: { value: '2026-11-13' } });
+
+      expect(onChange).toHaveBeenCalledWith({
+        labels: [{ ...lesson, isFocus: true, examDate: '2026-11-13', updatedAt: now }, animals],
+        cardsToUpdate: [],
+      });
+      expect(await screen.findByRole('status')).toHaveTextContent(fr.labelManager.saved);
+    });
+
+    it('refuses a test date in the past and saves nothing', async () => {
+      const { onChange } = setupFocus();
+      const date = within(rowOf('Leçon 3')).getByLabelText('Date du contrôle de Leçon 3');
+
+      await fireEvent.change(date, { target: { value: '2026-11-01' } });
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent(fr.labelManager.examErrors.pastDate);
+    });
+
+    it('removes the test date when the field is emptied', async () => {
+      const dated = { ...lesson, isFocus: true, examDate: '2026-11-13' };
+      const { onChange } = setupFocus([dated, animals]);
+      const date = within(rowOf('Leçon 3')).getByLabelText('Date du contrôle de Leçon 3');
+      expect(date).toHaveValue('2026-11-13');
+
+      await fireEvent.change(date, { target: { value: '' } });
+
+      expect(onChange).toHaveBeenCalledWith({
+        labels: [{ ...lesson, isFocus: true, updatedAt: now }, animals],
+        cardsToUpdate: [],
+      });
+    });
+
+    it('hides the pin and the test date when the learner day is not known', () => {
+      setup();
+
+      expect(screen.queryByRole('button', { name: /Épingler/ })).toBeNull();
+      expect(screen.queryByLabelText(/Date du contrôle/)).toBeNull();
+    });
   });
 });

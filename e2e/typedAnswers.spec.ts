@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 interface StoredResult {
   cardId: string;
@@ -55,6 +56,7 @@ function watchErrors(page: Page): string[] {
 
 async function addWords(page: Page, lines: string, count: number) {
   await page.goto('./');
+  await openWords(page);
   await page.getByLabel('Un mot par ligne').fill(lines);
   await page
     .getByRole('button', { name: `Ajouter ${String(count)} mot${count > 1 ? 's' : ''}` })

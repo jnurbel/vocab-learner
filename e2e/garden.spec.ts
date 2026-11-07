@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 test('the garden shows the words as plants, and its list view gives them in text', async ({
   page,
@@ -9,6 +10,7 @@ test('the garden shows the words as plants, and its list view gives them in text
   });
 
   await page.goto('./');
+  await openWords(page);
   await page.getByLabel('Un mot par ligne').fill('猫 | mao1 | chat\nsnow | neige');
   await page.getByRole('button', { name: 'Ajouter 2 mots' }).click();
   await expect(page.getByRole('table', { name: 'Liste des mots' }).getByRole('row')).toHaveCount(3);

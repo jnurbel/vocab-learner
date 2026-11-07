@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 test('a flashcard session earns XP, the summary shows it, and the daily goal grows', async ({
   page,
@@ -9,6 +10,7 @@ test('a flashcard session earns XP, the summary shows it, and the daily goal gro
   });
 
   await page.goto('./');
+  await openWords(page);
   await page.getByLabel('Un mot par ligne').fill('猫 | mao1 | chat\n狗 | gou3 | chien');
   await page.getByRole('button', { name: 'Ajouter 2 mots' }).click();
   await expect(page.getByRole('table', { name: 'Liste des mots' }).getByRole('row')).toHaveCount(3);

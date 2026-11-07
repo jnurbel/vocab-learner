@@ -143,7 +143,19 @@
       "sameLabel": "Choisis un autre label."
     },
     "columnMastery": "Maîtrise",
-    "mastery": "{language} : {mastered}/{total} mots maîtrisés"
+    "mastery": "{language} : {mastered}/{total} mots maîtrisés",
+    "columnFocus": "À travailler",
+    "pin": "Épingler",
+    "pinLabel": "Épingler {name}",
+    "unpin": "Désépingler",
+    "unpinLabel": "Désépingler {name}",
+    "examDate": "Date du contrôle de {name}",
+    "examErrors": {
+      "invalidDate": "Cette date de contrôle n'est pas valide.",
+      "pastDate": "La date du contrôle est déjà passée.",
+      "tooFar": "La date du contrôle est à plus d'un an.",
+      "labelNotFound": "Ce label n'existe plus."
+    }
   },
   "stages": {
     "seed": "Graine",
@@ -265,6 +277,7 @@
     "backup": "Sauvegarde",
     "dictation": "Dictée",
     "settings": "Réglages",
+    "home": "Accueil",
     "garden": "Jardin"
   },
   "thirst": {
@@ -572,5 +585,88 @@
     "notEligible": "Il faut au moins 2 mots dans cette langue pour ce mini-jeu.",
     "startFailed": "Le mini-jeu n'a pas pu démarrer.",
     "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "home": {
+    "title": "Aujourd’hui",
+    "sessionLength": "{minutes} min suffisent aujourd’hui.",
+    "languageTabs": "Langue étudiée",
+    "loading": "Chargement…",
+    "loadFailed": "L’accueil n’a pas pu se charger. Réessaie.",
+    "focusEyebrow": "Label à travailler",
+    "wordCount": {
+      "one": "{count} mot",
+      "other": "{count} mots"
+    },
+    "countdown": {
+      "one": "Contrôle dans {count} jour · {date}",
+      "other": "Contrôle dans {count} jours · {date}"
+    },
+    "countdownTomorrow": "Contrôle demain · {date}",
+    "countdownToday": "Contrôle aujourd’hui · {date}",
+    "countdownPast": "Contrôle passé · {date}",
+    "gauge": {
+      "one": "{count} mot maîtrisé sur {total}, soit {percent} %",
+      "other": "{count} mots maîtrisés sur {total}, soit {percent} %"
+    },
+    "gaugeCaption": "maîtrisé",
+    "mastered": "{mastered} / {total} mots maîtrisés.",
+    "status": {
+      "onTrackDay": "Au rythme prévu, tout sera maîtrisé {day}.",
+      "onTrackCount": "Au rythme prévu : {expected}/{total} mots maîtrisés le jour du contrôle.",
+      "allMastered": "Tout est maîtrisé : garde le rythme.",
+      "tight": "Ça va être serré : ≈ {minutes} min par jour jusqu’au contrôle.",
+      "overloaded": "{newTotal} mots nouveaux en {days} jours, c’est trop pour tout voir sérieusement. À {perDay} mots par jour, tu en découvriras {covered} sur {newTotal}.",
+      "shortNotice": "Contrôle demain : on vise la reconnaissance de tous les mots aujourd’hui. La maîtrise durable viendra après.",
+      "examDay": "C’est aujourd’hui. Échauffement de 5 min ?"
+    },
+    "thirstPill": {
+      "one": "{count} mot à arroser",
+      "other": "{count} mots à arroser"
+    },
+    "newPill": {
+      "one": "{count} nouveau mot",
+      "other": "{count} nouveaux mots"
+    },
+    "start": "Commencer la session · ~{minutes} min",
+    "startNothing": "Commencer la session",
+    "warmUp": "S’échauffer",
+    "overload": {
+      "legend": "Que faire ?",
+      "normal": "Garder le rythme normal",
+      "intensive": "Mode intensif",
+      "intensiveHelp": "Jusqu’à 30 mots nouveaux par jour, jusqu’au contrôle.",
+      "skim": "Survoler les autres",
+      "skimHelp": "Une passe rapide sur les mots du label, sans changer tes révisions : survolés, pas maîtrisés."
+    },
+    "noFocus": "Aucun label épinglé : épingle le label de ta leçon dans « Mes mots ».",
+    "nothingDue": "Rien n’a soif aujourd’hui.",
+    "freePractice": "Entraînement libre",
+    "noCards": "Ajoute tes premiers mots",
+    "noCardsHelp": "Saisis-les un par un ou en lot : ils apparaîtront ici.",
+    "addWords": "Ajouter des mots",
+    "unpinnedTitle": "Contrôles passés",
+    "unpinned": "« {name} » : contrôle passé ({date}), label désépinglé.",
+    "undoUnpin": "Annuler le désépinglage",
+    "undoUnpinLabel": "Annuler le désépinglage de {name}",
+    "progressTitle": "Progrès",
+    "dailyGoal": "Objectif du jour",
+    "dailyGoalValue": "{xp} / {goal} XP",
+    "streak": "Série",
+    "streakValue": {
+      "one": "{count} jour",
+      "other": "{count} jours"
+    },
+    "bestStreak": "record {count}",
+    "level": "Île",
+    "levelValue": "Niveau {level}",
+    "xpTotal": "{xp} XP",
+    "progressNeutral": "Ton objectif du jour, ta série et ton niveau s’afficheront ici après tes premières sessions.",
+    "resistingTitle": "Mots qui résistent",
+    "listenWord": "Écouter {term}",
+    "resistingEmpty": "Aucun mot ne résiste pour l’instant.",
+    "labelsTitle": "Mes labels",
+    "labelThirst": "{count} à arroser",
+    "labelUpToDate": "À jour",
+    "labelMastery": "{name} : {mastered}/{total} mots maîtrisés"
   }
 }
