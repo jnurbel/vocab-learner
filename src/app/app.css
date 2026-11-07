@@ -179,8 +179,36 @@ body {
   color: var(--ink);
 }
 
+/* Gauges and countdowns: a jade bar (or --bar-color) on a light track. */
 :where(progress, meter) {
-  accent-color: var(--jade);
+  appearance: none;
+  height: 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--track);
+  overflow: hidden;
+  accent-color: var(--bar-color, var(--jade));
+}
+
+:where(progress)::-webkit-progress-bar,
+:where(meter)::-webkit-meter-bar {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--track);
+}
+
+:where(progress)::-webkit-progress-value,
+:where(meter)::-webkit-meter-optimum-value,
+:where(meter)::-webkit-meter-suboptimum-value,
+:where(meter)::-webkit-meter-even-less-good-value {
+  border-radius: var(--radius-pill);
+  background: var(--bar-color, var(--jade));
+}
+
+:where(progress)::-moz-progress-bar,
+:where(meter)::-moz-meter-bar {
+  border-radius: var(--radius-pill);
+  background: var(--bar-color, var(--jade));
 }
 
 /* Tables: muted uppercase headers on a light band, lines between rows. */

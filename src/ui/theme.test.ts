@@ -40,6 +40,7 @@ const PAIRS: readonly (readonly [foreground: string, background: string, minimum
   ['ochre', 'surface', TEXT],
   ['ochre', 'ochre-soft', TEXT],
   ['ink', 'ochre-soft', TEXT],
+  ['surface', 'ochre', TEXT],
   // Test countdown, thirst and reminders, neutral information.
   ['seal', 'seal-soft', TEXT],
   ['thirst', 'thirst-soft', TEXT],
@@ -51,6 +52,7 @@ const PAIRS: readonly (readonly [foreground: string, background: string, minimum
   ['focus', 'surface', NON_TEXT],
   ['focus', 'bg', NON_TEXT],
   ['jade', 'track', NON_TEXT],
+  ['seal', 'track', NON_TEXT],
 ];
 
 /** The colours of docs/ui/README.md, the reference of the light theme. */

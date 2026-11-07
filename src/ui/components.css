@@ -1,0 +1,126 @@
+/*
+ * Patterns shared by several screens, written once instead of in each component.
+ * Built on the tokens of theme.css; component styles can still override them.
+ */
+
+/* Secondary text and error messages: errors are words first, the ochre only doubles them. */
+.help {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.error {
+  color: var(--ochre);
+  font-weight: var(--weight-bold);
+}
+
+/* Radio and checkbox options as chips; the chosen one is jade, and keeps its tick or dot. */
+.choice {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  min-height: var(--target);
+  margin: 0 var(--space-2) var(--space-2) 0;
+  padding: var(--space-1) var(--space-4) var(--space-1) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--jade);
+  background: var(--jade-soft);
+  color: var(--jade-strong);
+  font-weight: var(--weight-heavy);
+}
+
+/* The typed answer field, as in docs/ui/mockups/Dictee.dc.html. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+
+.field label {
+  margin: 0;
+  font-weight: var(--weight-heavy);
+}
+
+.field input {
+  min-height: 68px;
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid var(--jade);
+  border-radius: var(--radius-md);
+  font-size: var(--text-2xl);
+}
+
+/* The verdict, as in docs/ui/mockups/ExListenTypeWrong.dc.html: a tinted card and a mark. */
+.feedback {
+  margin: var(--space-4) 0;
+  padding: var(--space-4) var(--space-5);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  animation: appear var(--duration) ease-out;
+}
+
+.feedback-right {
+  border-color: var(--jade);
+}
+
+.feedback-almost,
+.feedback-wrong {
+  border-color: var(--ochre);
+}
+
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--ochre-soft);
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-heavy);
+}
+
+.verdict > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ochre);
+  color: var(--surface);
+}
+
+.feedback-right .verdict {
+  background: var(--jade-soft);
+  color: var(--jade-strong);
+}
+
+.feedback-right .verdict > span {
+  background: var(--jade);
+  color: var(--on-jade);
+}
+
+/* Cards and answers slide in; not when the system asks for less motion (see app.css). */
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback {
+    animation: none;
+  }
+}

@@ -107,97 +107,103 @@
   {#if usages.length === 0}
     <p>{fr.labelManager.empty}</p>
   {:else}
-    <table>
-      <caption>{fr.labelManager.caption}</caption>
-      <thead>
-        <tr>
-          <th scope="col">{fr.labelManager.columnName}</th>
-          <th scope="col">{fr.labelManager.columnCount}</th>
-          {#if masteryOf !== undefined}
-            <th scope="col">{fr.labelManager.columnMastery}</th>
-          {/if}
-          <th scope="col">{fr.labelManager.columnActions}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each usages as { label, wordCount } (label.id)}
+    <div class="table-scroll">
+      <table>
+        <caption>{fr.labelManager.caption}</caption>
+        <thead>
           <tr>
-            <th scope="row">{label.name}</th>
-            <td>{format(fr.labelManager.count, { count: wordCount })}</td>
+            <th scope="col">{fr.labelManager.columnName}</th>
+            <th scope="col">{fr.labelManager.columnCount}</th>
             {#if masteryOf !== undefined}
-              <td>
-                {#each gaugesOf(label) as gauge (gauge.language)}
-                  <div class="gauge">
-                    <span>{gauge.text}</span>
-                    <meter min="0" max={gauge.total} value={gauge.mastered} aria-label={gauge.text}
-                    ></meter>
-                  </div>
-                {/each}
-              </td>
+              <th scope="col">{fr.labelManager.columnMastery}</th>
             {/if}
-            <td>
-              <div class="actions">
-                <div class="action">
-                  <input
-                    type="text"
-                    maxlength="200"
-                    aria-label={format(fr.labelManager.renameInput, { name: label.name })}
-                    value={newNames.get(label.id) ?? ''}
-                    oninput={(event) => {
-                      newNames.set(label.id, event.currentTarget.value);
-                    }}
-                  />
-                  <button
-                    type="button"
-                    aria-label={format(fr.labelManager.renameLabel, { name: label.name })}
-                    onclick={() => rename(label)}>{fr.labelManager.rename}</button
-                  >
-                </div>
-                {#if usages.length > 1}
-                  <div class="action">
-                    <select
-                      aria-label={format(fr.labelManager.mergeSelect, { name: label.name })}
-                      value={mergeTargets.get(label.id) ?? ''}
-                      onchange={(event) => {
-                        mergeTargets.set(label.id, event.currentTarget.value);
-                      }}
-                    >
-                      <option value="">{fr.labelManager.mergeNone}</option>
-                      {#each usages as other (other.label.id)}
-                        {#if other.label.id !== label.id}
-                          <option value={other.label.id}>{other.label.name}</option>
-                        {/if}
-                      {/each}
-                    </select>
-                    <ConfirmAction
-                      text={fr.labelManager.merge}
-                      label={format(fr.labelManager.mergeLabel, { name: label.name })}
-                      disabled={(mergeTargets.get(label.id) ?? '') === ''}
-                      question={format(fr.labelManager.confirmMerge, {
-                        source: label.name,
-                        target: nameOf(mergeTargets.get(label.id) ?? ''),
-                      })}
-                      confirmText={fr.labelManager.confirmMergeButton}
-                      onConfirm={() => merge(label)}
-                    />
-                  </div>
-                {/if}
-                <ConfirmAction
-                  text={fr.labelManager.delete}
-                  label={format(fr.labelManager.deleteLabel, { name: label.name })}
-                  question={format(fr.labelManager.confirmDelete, {
-                    name: label.name,
-                    count: wordCount,
-                  })}
-                  confirmText={fr.labelManager.confirmDeleteButton}
-                  onConfirm={() => remove(label)}
-                />
-              </div>
-            </td>
+            <th scope="col">{fr.labelManager.columnActions}</th>
           </tr>
-        {/each}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {#each usages as { label, wordCount } (label.id)}
+            <tr>
+              <th scope="row">{label.name}</th>
+              <td>{format(fr.labelManager.count, { count: wordCount })}</td>
+              {#if masteryOf !== undefined}
+                <td>
+                  {#each gaugesOf(label) as gauge (gauge.language)}
+                    <div class="gauge">
+                      <span>{gauge.text}</span>
+                      <meter
+                        min="0"
+                        max={gauge.total}
+                        value={gauge.mastered}
+                        aria-label={gauge.text}
+                      ></meter>
+                    </div>
+                  {/each}
+                </td>
+              {/if}
+              <td>
+                <div class="actions">
+                  <div class="action">
+                    <input
+                      type="text"
+                      maxlength="200"
+                      aria-label={format(fr.labelManager.renameInput, { name: label.name })}
+                      value={newNames.get(label.id) ?? ''}
+                      oninput={(event) => {
+                        newNames.set(label.id, event.currentTarget.value);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      aria-label={format(fr.labelManager.renameLabel, { name: label.name })}
+                      onclick={() => rename(label)}>{fr.labelManager.rename}</button
+                    >
+                  </div>
+                  {#if usages.length > 1}
+                    <div class="action">
+                      <select
+                        aria-label={format(fr.labelManager.mergeSelect, { name: label.name })}
+                        value={mergeTargets.get(label.id) ?? ''}
+                        onchange={(event) => {
+                          mergeTargets.set(label.id, event.currentTarget.value);
+                        }}
+                      >
+                        <option value="">{fr.labelManager.mergeNone}</option>
+                        {#each usages as other (other.label.id)}
+                          {#if other.label.id !== label.id}
+                            <option value={other.label.id}>{other.label.name}</option>
+                          {/if}
+                        {/each}
+                      </select>
+                      <ConfirmAction
+                        text={fr.labelManager.merge}
+                        label={format(fr.labelManager.mergeLabel, { name: label.name })}
+                        disabled={(mergeTargets.get(label.id) ?? '') === ''}
+                        question={format(fr.labelManager.confirmMerge, {
+                          source: label.name,
+                          target: nameOf(mergeTargets.get(label.id) ?? ''),
+                        })}
+                        confirmText={fr.labelManager.confirmMergeButton}
+                        onConfirm={() => merge(label)}
+                      />
+                    </div>
+                  {/if}
+                  <ConfirmAction
+                    text={fr.labelManager.delete}
+                    label={format(fr.labelManager.deleteLabel, { name: label.name })}
+                    question={format(fr.labelManager.confirmDelete, {
+                      name: label.name,
+                      count: wordCount,
+                    })}
+                    confirmText={fr.labelManager.confirmDeleteButton}
+                    onConfirm={() => remove(label)}
+                  />
+                </div>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
   {/if}
 </section>
 
@@ -205,18 +211,31 @@
   .gauge {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--space-1);
+    min-width: 8rem;
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .gauge + .gauge {
+    margin-top: var(--space-2);
+  }
+
+  meter {
+    width: 100%;
+    height: 10px;
   }
 
   .actions,
   .action {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: center;
   }
 
-  .error {
-    color: var(--ochre);
+  .action input,
+  .action select {
+    min-width: 9rem;
   }
 </style>

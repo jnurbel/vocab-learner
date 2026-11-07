@@ -34,27 +34,30 @@
   .diff {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.15rem;
+    gap: var(--space-1);
     list-style: none;
     padding: 0;
-    margin: 0.5rem 0;
-    font-size: 2rem;
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: var(--text-hanzi);
+    line-height: 1.3;
   }
 
   .part {
     padding: 0 0.1rem;
     text-underline-offset: 0.2em;
-    text-decoration-thickness: 0.08em;
+    text-decoration-thickness: 0.07em;
   }
 
+  /* As in docs/ui/mockups/ExListenTypeWrong.dc.html: the marks carry the meaning, the colour doubles them. */
   .diff-correct {
-    color: #1b5e20;
+    color: var(--jade-strong);
     text-decoration-line: underline;
+    text-decoration-color: var(--jade);
   }
 
   .diff-wrong,
   .diff-extra {
-    color: #8a4b00;
+    color: var(--ochre);
     text-decoration-line: line-through;
   }
 
@@ -63,22 +66,7 @@
   }
 
   .diff-missing {
-    color: #5f5f5f;
-    border-bottom: 0.08em dotted currentColor;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .diff-correct {
-      color: #a5d6a7;
-    }
-
-    .diff-wrong,
-    .diff-extra {
-      color: #ffcc80;
-    }
-
-    .diff-missing {
-      color: #c7c7c7;
-    }
+    color: var(--muted);
+    border-bottom: 0.07em dotted currentColor;
   }
 </style>

@@ -258,7 +258,7 @@
 
   <div class="actions">
     {#if feedback !== undefined}
-      <button type="button" bind:this={continueButton} onclick={onContinue}
+      <button type="button" class="dark" bind:this={continueButton} onclick={onContinue}
         >{fr.dictation.continue}</button
       >
       {#if canAccept}
@@ -290,96 +290,46 @@
 </div>
 
 <style>
-  button,
-  input {
-    min-height: 44px;
-  }
-
-  button {
-    min-width: 44px;
-  }
-
   .card {
-    border: 2px solid currentColor;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-4);
+    padding: var(--space-6) var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-raised);
     text-align: center;
   }
 
-  .term {
-    font-size: 2.5rem;
+  .card p {
     margin: 0;
+  }
+
+  .term {
+    margin: 0;
+    font-size: var(--text-hanzi);
+    line-height: 1.2;
   }
 
   .translation {
-    font-size: 1.75rem;
     margin: 0;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .field input {
-    font-size: 2rem;
-  }
-
-  .field input:focus-visible,
-  button:focus-visible {
-    outline: 3px solid Highlight;
-    outline-offset: 2px;
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-heavy);
   }
 
   .actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: center;
-    margin: 1rem 0;
-  }
-
-  .feedback {
-    border: 2px solid currentColor;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin: 1rem 0;
-    animation: appear 200ms ease-out;
-  }
-
-  .feedback-right {
-    border-color: #2e7d32;
-  }
-
-  .feedback-almost,
-  .feedback-wrong {
-    border-color: #8a4b00;
-  }
-
-  .verdict {
-    font-weight: bold;
+    margin: var(--space-4) 0;
   }
 
   .help {
-    font-size: 0.9rem;
-  }
-
-  .error {
-    color: var(--ochre);
-  }
-
-  @keyframes appear {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .feedback {
-      animation: none;
-    }
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 </style>
