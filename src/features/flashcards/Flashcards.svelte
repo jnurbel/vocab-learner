@@ -1,7 +1,11 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import { answerExerciseFor } from '../../domain/answerExercise';
   import type { Card, Language } from '../../domain/card';
   import type { Label } from '../../domain/label';
+  import type { PinyinGenerator } from '../../domain/pinyinGeneration';
+  import type { Outcome } from '../../domain/srs/reviewState';
+  import { ANSWER_MODES, DEFAULT_ANSWER_MODE, type AnswerMode } from '../../domain/studySettings';
   import type { ReviewQueueItem } from '../../domain/srs/reviewQueue';
   import { format, formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
@@ -20,6 +24,7 @@
     StudyOutlookView,
   } from './flashcardSession';
   import StudyOutlookPanel from './StudyOutlookPanel.svelte';
+  import TypedAnswer from './TypedAnswer.svelte';
 
   interface Props {
     cards: readonly Card[];
@@ -30,12 +35,28 @@
     /** Explains today's queue of the selection, and what comes next. */
     loadOutlook: (selection: FlashcardSelection) => Promise<StudyOutlookView>;
     speaker: Speaker;
+    /** pinyin-pro is large: loaded only to explain a wrong answer typed in hanzi. */
+    loadPinyin: () => Promise<PinyinGenerator>;
+    /** How the learner chose to answer last time. */
+    answerMode?: AnswerMode;
+    /** Remembers a new way of answering, when a session starts with it. */
+    onAnswerModeChange?: (mode: AnswerMode) => Promise<void>;
     /** Called once a session with at least one answer ends, finished or left. */
     onSessionEnd: () => void;
   }
 
-  const { cards, labels, startSession, startPractice, loadOutlook, speaker, onSessionEnd }: Props =
-    $props();
+  const {
+    cards,
+    labels,
+    startSession,
+    startPractice,
+    loadOutlook,
+    speaker,
+    loadPinyin,
+    answerMode = DEFAULT_ANSWER_MODE,
+    onAnswerModeChange = () => Promise.resolve(),
+    onSessionEnd,
+  }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
   /** Keys 1, 2, 3 rate the card once turned over. */
@@ -52,6 +73,15 @@
 
   let language = $state<Language>('zh');
   let labelIds = $state<string[]>([]);
+  // svelte-ignore state_referenced_locally
+  let chosenMode = $state<AnswerMode>(answerMode);
+  /** The choice remembered so far, to save a new one only. */
+  // svelte-ignore state_referenced_locally
+  let rememberedMode = answerMode;
+  /** The way of answering of the session under way. */
+  let runMode = $state<AnswerMode>(DEFAULT_ANSWER_MODE);
+  /** The id of the session under way, which seeds the mixed mode. */
+  let sessionSeed = $state('');
 
   type Screen =
     | { kind: 'setup' }
@@ -102,6 +132,12 @@
 
   const lang = (code: Language) => (code === 'zh' ? 'zh-CN' : 'en');
   const showWord = $derived(voice !== 'available' || flipped);
+  /** How the current card is answered; the session id seeds the mixed mode. */
+  const exercise = $derived(answerExerciseFor(runMode, sessionSeed, position));
+  const modeLabel = (mode: AnswerMode) => {
+    const label = fr.flashcards.answerModes[mode];
+    return typeof label === 'string' ? label : label[language];
+  };
 
   async function start() {
     await open('review', () => startSession({ cards, language, labelIds: [...labelIds] }));
@@ -125,10 +161,13 @@
     error = undefined;
     mode = opened;
     view = { kind: 'starting' };
+    runMode = chosenMode;
+    await rememberMode(chosenMode);
     try {
       const started = await begin();
       voice = (await speaker.hasVoice(language)) ? 'available' : 'missing';
       session = started;
+      sessionSeed = started.id;
     } catch {
       error = 'startFailed';
       view = { kind: 'setup' };
@@ -142,6 +181,19 @@
     await showCurrent();
   }
 
+  /** Remembering the choice is a comfort: the session starts even if it fails. */
+  async function rememberMode(chosen: AnswerMode) {
+    if (chosen === rememberedMode) {
+      return;
+    }
+    try {
+      await onAnswerModeChange(chosen);
+      rememberedMode = chosen;
+    } catch {
+      // Asked again at the next session.
+    }
+  }
+
   async function showCurrent() {
     if (session === undefined) {
       return;
@@ -153,7 +205,10 @@
     pinyinShown = false;
     await tick();
     cardElement?.focus();
-    play();
+    // Typing the word: hearing it first would give the answer away.
+    if (exercise !== 'typeWord') {
+      play();
+    }
   }
 
   function play() {
@@ -163,6 +218,25 @@
     speaker.speak(item.card.term, item.card.language).catch(() => {
       voice = 'failed';
     });
+  }
+
+  async function answerTyped(outcome: Outcome, details: { hintsUsed: number; answer?: string }) {
+    if (session === undefined || exercise === 'selfAssess') {
+      return;
+    }
+    await session.answerTyped(exercise, outcome, details);
+  }
+
+  async function acceptTyped() {
+    await session?.acceptLastAnswer();
+  }
+
+  async function nextCard() {
+    if (session?.finished === true) {
+      finish(false);
+    } else {
+      await showCurrent();
+    }
   }
 
   async function flip() {
@@ -252,6 +326,7 @@
   function onKeydown(event: KeyboardEvent) {
     if (
       view.kind !== 'studying' ||
+      exercise !== 'selfAssess' ||
       event.ctrlKey ||
       event.metaKey ||
       event.altKey ||
@@ -310,6 +385,20 @@
           {/each}
         </fieldset>
       {/if}
+      <fieldset>
+        <legend>{fr.flashcards.answerModeLegend}</legend>
+        {#each ANSWER_MODES as option (option)}
+          <label class="choice">
+            <input
+              type="radio"
+              name="flashcards-answer-mode"
+              value={option}
+              bind:group={chosenMode}
+            />
+            {modeLabel(option)}
+          </label>
+        {/each}
+      </fieldset>
       <button type="submit" disabled={view.kind === 'starting'}>{fr.flashcards.start}</button>
       <button type="button" disabled={view.kind === 'starting'} onclick={() => practise()}
         >{fr.practice.start}</button
@@ -332,81 +421,96 @@
       {format(fr.flashcards.progressLabel, { position: position + 1, total })}
     </p>
 
-    {#if voice === 'missing'}
-      <p class="notice">{fr.flashcards.noVoice[item.card.language]}</p>
-    {:else if voice === 'failed'}
-      <p class="notice">{fr.flashcards.audioError}</p>
-    {/if}
+    {#if exercise !== 'selfAssess'}
+      {#key `${item.card.id}-${String(position)}`}
+        <TypedAnswer
+          card={item.card}
+          {exercise}
+          canReplay={voice === 'available'}
+          onReplay={play}
+          {loadPinyin}
+          onAnswer={answerTyped}
+          onAccept={acceptTyped}
+          onContinue={() => void nextCard()}
+        />
+      {/key}
+    {:else}
+      {#if voice === 'missing'}
+        <p class="notice">{fr.flashcards.noVoice[item.card.language]}</p>
+      {:else if voice === 'failed'}
+        <p class="notice">{fr.flashcards.audioError}</p>
+      {/if}
 
-    {#key item.card.id}
-      <div class="card" tabindex="-1" bind:this={cardElement}>
-        {#if showWord}
-          <p class="term" lang={lang(item.card.language)}>{item.card.term}</p>
+      {#key item.card.id}
+        <div class="card" tabindex="-1" bind:this={cardElement}>
+          {#if showWord}
+            <p class="term" lang={lang(item.card.language)}>{item.card.term}</p>
+          {/if}
+          {#if !flipped}
+            <p>{voice === 'available' ? fr.flashcards.listenPrompt : fr.flashcards.readPrompt}</p>
+            {#if pinyinShown && item.card.pinyin !== undefined}
+              <p lang="zh-CN"><Pinyin pinyin={item.card.pinyin} /></p>
+              <p class="hint">{fr.flashcards.hintUsed}</p>
+            {/if}
+          {:else}
+            <div class="back">
+              {#if item.card.pinyin !== undefined}
+                <p lang="zh-CN"><Pinyin pinyin={item.card.pinyin} /></p>
+              {/if}
+              <p class="translation">{item.card.translation}</p>
+              {#if item.card.example !== undefined}
+                <p>
+                  {fr.flashcards.example}
+                  <span lang={lang(item.card.language)}>{item.card.example}</span>
+                </p>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/key}
+
+      <div class="actions">
+        {#if voice === 'available'}
+          <button type="button" aria-keyshortcuts="R" onclick={play}
+            ><kbd aria-hidden="true">R</kbd> {fr.flashcards.replay}</button
+          >
         {/if}
         {#if !flipped}
-          <p>{voice === 'available' ? fr.flashcards.listenPrompt : fr.flashcards.readPrompt}</p>
-          {#if pinyinShown && item.card.pinyin !== undefined}
-            <p lang="zh-CN"><Pinyin pinyin={item.card.pinyin} /></p>
-            <p class="hint">{fr.flashcards.hintUsed}</p>
+          {#if item.card.pinyin !== undefined && !pinyinShown}
+            <button
+              type="button"
+              onclick={() => {
+                pinyinShown = true;
+              }}>{fr.flashcards.showPinyin}</button
+            >
           {/if}
-        {:else}
-          <div class="back">
-            {#if item.card.pinyin !== undefined}
-              <p lang="zh-CN"><Pinyin pinyin={item.card.pinyin} /></p>
-            {/if}
-            <p class="translation">{item.card.translation}</p>
-            {#if item.card.example !== undefined}
-              <p>
-                {fr.flashcards.example}
-                <span lang={lang(item.card.language)}>{item.card.example}</span>
-              </p>
-            {/if}
-          </div>
+          <button type="button" aria-keyshortcuts="Space" onclick={flip}
+            ><kbd aria-hidden="true">Espace</kbd> {fr.flashcards.flip}</button
+          >
         {/if}
       </div>
-    {/key}
 
-    <div class="actions">
-      {#if voice === 'available'}
-        <button type="button" aria-keyshortcuts="R" onclick={play}
-          ><kbd aria-hidden="true">R</kbd> {fr.flashcards.replay}</button
-        >
+      {#if flipped}
+        <fieldset class="evaluation">
+          <legend>{fr.flashcards.evaluationLegend}</legend>
+          {#each EVALUATIONS as { evaluation, key } (evaluation)}
+            <button
+              type="button"
+              aria-keyshortcuts={key}
+              disabled={busy}
+              onclick={() => rate(evaluation)}
+              ><kbd aria-hidden="true">{key}</kbd> {fr.flashcards.evaluations[evaluation]}</button
+            >
+          {/each}
+          {#if item.kind === 'new'}
+            <button type="button" disabled={busy} onclick={() => rate('known')}
+              >{fr.flashcards.evaluations.known}</button
+            >
+          {/if}
+        </fieldset>
       {/if}
-      {#if !flipped}
-        {#if item.card.pinyin !== undefined && !pinyinShown}
-          <button
-            type="button"
-            onclick={() => {
-              pinyinShown = true;
-            }}>{fr.flashcards.showPinyin}</button
-          >
-        {/if}
-        <button type="button" aria-keyshortcuts="Space" onclick={flip}
-          ><kbd aria-hidden="true">Espace</kbd> {fr.flashcards.flip}</button
-        >
-      {/if}
-    </div>
-
-    {#if flipped}
-      <fieldset class="evaluation">
-        <legend>{fr.flashcards.evaluationLegend}</legend>
-        {#each EVALUATIONS as { evaluation, key } (evaluation)}
-          <button
-            type="button"
-            aria-keyshortcuts={key}
-            disabled={busy}
-            onclick={() => rate(evaluation)}
-            ><kbd aria-hidden="true">{key}</kbd> {fr.flashcards.evaluations[evaluation]}</button
-          >
-        {/each}
-        {#if item.kind === 'new'}
-          <button type="button" disabled={busy} onclick={() => rate('known')}
-            >{fr.flashcards.evaluations.known}</button
-          >
-        {/if}
-      </fieldset>
+      <p class="help">{fr.flashcards.keyboardHelp}</p>
     {/if}
-    <p class="help">{fr.flashcards.keyboardHelp}</p>
   {:else if view.kind === 'summary'}
     {#if view.answered === 0 && !view.left}
       <p>{fr.flashcards.nothingDue}</p>

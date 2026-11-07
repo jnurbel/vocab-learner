@@ -101,3 +101,60 @@ describe('a free practice session', () => {
     expect(store.sessions).toEqual([]);
   });
 });
+
+describe('typed answers in free practice', () => {
+  it('keeps a typed answer for the history only, without any rating', async () => {
+    const store = new FakeStore();
+    const session = start(store, [card('a'), card('b')]);
+
+    await session.answerTyped('typeMeaning', 'almost', { answer: 'maisonn' });
+    await session.answerTyped('typeWord', 'correctWithHint', { answer: 'b', hintsUsed: 1 });
+
+    expect(store.answers).toEqual([]);
+    expect(store.practiceAnswers.map(({ result }) => result)).toEqual([
+      expect.objectContaining({ exercise: 'typeMeaning', outcome: 'almost', answer: 'maisonn' }),
+      expect.objectContaining({ exercise: 'typeEcho', outcome: 'correctWithHint', hintsUsed: 1 }),
+    ]);
+    expect(store.practiceAnswers.every(({ result }) => result.rating === undefined)).toBe(true);
+  });
+
+  it('counts a right typed answer as known, and the others as to review', async () => {
+    const store = new FakeStore();
+    const session = start(store, [card('a'), card('b')]);
+    const second = session.items[1]?.card;
+
+    await session.answerTyped('typeMeaning', 'correct', { answer: 'x' });
+    await session.answerTyped('typeWord', 'wrong', { answer: 'y' });
+
+    expect(session.summary()).toEqual({ seen: 2, known: 1, toReview: [second] });
+  });
+
+  it('accepts a wrong typed meaning as right, replacing its result and its count', async () => {
+    const store = new FakeStore();
+    const session = start(store, [card('a')]);
+    await session.answerTyped('typeMeaning', 'wrong', { answer: 'logis' });
+
+    await session.acceptLastAnswer();
+
+    expect(store.practiceAnswers).toHaveLength(1);
+    expect(store.practiceRevisions.map(({ sessionId, result }) => [sessionId, result])).toEqual([
+      ['practice-1', expect.objectContaining({ cardId: 'a', outcome: 'correct', answer: 'logis' })],
+    ]);
+    expect(store.revisions).toEqual([]);
+    expect(session.summary()).toEqual({ seen: 1, known: 1, toReview: [] });
+  });
+
+  it('refuses to accept a typed word, a self-evaluation, a right answer or nothing', async () => {
+    const store = new FakeStore();
+    const session = start(store, [card('a'), card('b'), card('c')]);
+    await expect(session.acceptLastAnswer()).rejects.toThrow('Only a typed meaning');
+
+    await session.answerTyped('typeWord', 'wrong', { answer: 'x' });
+    await expect(session.acceptLastAnswer()).rejects.toThrow('Only a typed meaning');
+    await session.answer('again');
+    await expect(session.acceptLastAnswer()).rejects.toThrow('Only a typed meaning');
+    await session.answerTyped('typeMeaning', 'correct', { answer: 'z' });
+    await expect(session.acceptLastAnswer()).rejects.toThrow('Only a wrong or almost right');
+    expect(store.practiceRevisions).toEqual([]);
+  });
+});

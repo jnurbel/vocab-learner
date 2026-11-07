@@ -27,7 +27,7 @@ async function addWord(user: User, line: string, labelName?: string) {
 
 async function studyOneCard(user: User) {
   await user.click(screen.getByRole('button', { name: fr.nav.flashcards }));
-  await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+  await user.click(await screen.findByRole('button', { name: fr.flashcards.start }));
   await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
   await user.click(screen.getByRole('button', { name: fr.flashcards.evaluations.good }));
   await screen.findByRole('heading', { name: fr.flashcards.summaryTitle });
@@ -199,7 +199,7 @@ describe('App', () => {
       'page',
     );
     expect(screen.queryByRole('region', { name: fr.bulkEntry.title })).toBeNull();
-    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+    await user.click(await screen.findByRole('button', { name: fr.flashcards.start }));
     await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
     await user.click(screen.getByRole('button', { name: fr.flashcards.evaluations.good }));
     expect(await screen.findByRole('heading', { name: fr.flashcards.summaryTitle })).toBeVisible();
@@ -207,6 +207,25 @@ describe('App', () => {
     await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
     const list = screen.getByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
+  });
+
+  it('remembers how the learner answers the flashcards, from one visit to the next', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-answer-mode' });
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
+    await user.click(
+      await screen.findByRole('radio', { name: fr.flashcards.answerModes.typeMeaning }),
+    );
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+    await screen.findByText(fr.flashcards.nothingDue);
+
+    await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
+    await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
+
+    expect(
+      await screen.findByRole('radio', { name: fr.flashcards.answerModes.typeMeaning }),
+    ).toBeChecked();
   });
 
   it('reminds to back up once something changed, and the reminder can be hidden', async () => {

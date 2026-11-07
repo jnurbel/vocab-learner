@@ -77,6 +77,7 @@ function setup({
     startPractice,
     loadOutlook: (selection: FlashcardSelection) =>
       loadStudyOutlook(selection, { store, srs, clock: () => morning }),
+    loadPinyin: () => Promise.reject(new Error('Only a typed word needs the pinyin')),
     speaker,
     onSessionEnd,
   });

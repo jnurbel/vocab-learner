@@ -2,6 +2,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ReviewStateRecord, SessionRecord } from '../domain/progressRecords';
+import type { AnswerMode } from '../domain/studySettings';
 import { SINGLETON_KEY, VocabularyDatabase } from './database';
 import { StudyRepository } from './studyRepository';
 
@@ -107,6 +108,60 @@ describe('StudyRepository', () => {
     expect(await db.progress.get(SINGLETON_KEY)).toBeUndefined();
   });
 
+  it('replaces the last answer of a word when it is revised, keeping a single result', async () => {
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+    const answer = (cardId: string, outcome: 'wrong' | 'correct', reps: number) => ({
+      sessionId: 's1',
+      state: reviewState(cardId, reps),
+      result: { cardId, outcome },
+      activeDay: '2026-11-06',
+    });
+    await repository.recordAnswer(answer('a', 'wrong', 2));
+    await repository.recordAnswer(answer('b', 'wrong', 2));
+
+    await repository.reviseAnswer(answer('a', 'correct', 4));
+
+    expect((await db.sessions.get('s1'))?.results).toEqual([
+      { cardId: 'a', outcome: 'correct' },
+      { cardId: 'b', outcome: 'wrong' },
+    ]);
+    expect(await db.reviewStates.get('a')).toEqual(reviewState('a', 4));
+  });
+
+  it('refuses to revise an answer the session does not hold, leaving the state alone', async () => {
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+
+    await expect(
+      repository.reviseAnswer({
+        sessionId: 's1',
+        state: reviewState('a', 9),
+        result: { cardId: 'a', outcome: 'correct' },
+        activeDay: '2026-11-06',
+      }),
+    ).rejects.toThrow('No answer to revise for a in session s1');
+    expect(await db.reviewStates.count()).toBe(0);
+  });
+
+  it('revises a free practice answer in its session only', async () => {
+    await db.reviewStates.put(reviewState('a', 3));
+    await repository.startSession({
+      ...session('p1', '2026-11-06T08:00:00.000Z'),
+      mode: 'practice',
+    });
+    await repository.recordPracticeAnswer({
+      sessionId: 'p1',
+      result: { cardId: 'a', outcome: 'wrong' },
+    });
+
+    await repository.revisePracticeAnswer({
+      sessionId: 'p1',
+      result: { cardId: 'a', outcome: 'correct' },
+    });
+
+    expect((await db.sessions.get('p1'))?.results).toEqual([{ cardId: 'a', outcome: 'correct' }]);
+    expect(await db.reviewStates.get('a')).toEqual(reviewState('a', 3));
+  });
+
   it('reads the review states alone, for the word list and the label gauges', async () => {
     await db.reviewStates.bulkAdd([reviewState('a'), reviewState('b')]);
 
@@ -162,6 +217,22 @@ describe('StudyRepository', () => {
     await repository.saveNewPerDay(8);
 
     expect(await db.settings.get(SINGLETON_KEY)).toEqual({ newPerDay: 8 });
+  });
+
+  it('saves the way of answering the flashcards and keeps the other settings', async () => {
+    await repository.saveNewPerDay(10);
+
+    await repository.saveAnswerMode('typeMeaning');
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({
+      newPerDay: 10,
+      answerMode: 'typeMeaning',
+    });
+  });
+
+  it('refuses to store an unknown way of answering', async () => {
+    await expect(repository.saveAnswerMode('<script>' as AnswerMode)).rejects.toThrow(RangeError);
+    expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
   });
 
   it('refuses to store a daily quota out of range', async () => {
