@@ -6,6 +6,7 @@ import type {
   SessionResultRecord,
   SettingsRecord,
 } from '../domain/progressRecords';
+import { isSpeechRate } from '../domain/speechRate';
 import { isAnswerMode, isValidNewPerDay, type AnswerMode } from '../domain/studySettings';
 import { SINGLETON_KEY, VocabularyDatabase } from './database';
 
@@ -107,6 +108,14 @@ export class StudyRepository {
       throw new RangeError(`Invalid way of answering: ${String(answerMode)}`);
     }
     await this.updateSettings({ answerMode });
+  }
+
+  /** The speed of the voice, one of SPEECH_RATES; the other settings are kept. */
+  async saveTtsRate(ttsRate: number): Promise<void> {
+    if (!isSpeechRate(ttsRate)) {
+      throw new RangeError(`Invalid speech rate: ${String(ttsRate)}`);
+    }
+    await this.updateSettings({ ttsRate });
   }
 
   private async updateSettings(changes: Partial<SettingsRecord>): Promise<void> {

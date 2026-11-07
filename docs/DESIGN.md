@@ -176,10 +176,11 @@ Rien ne meurt, aucune perte de progression.
   - **Papier** : l'enfant écrit sur une feuille, puis s'auto-corrige (✓/✗), ou corrige par photo plus tard (§7).
 - **Gestion de l'IME** : ignorer les événements `compositionstart`/`compositionend` pour ne pas valider une saisie en cours, et ne valider que sur Entrée hors composition.
 - Gros boutons : Lecture/Pause (Espace), Répéter (R), Précédent/Suivant (flèches), Stop.
-- Vitesse en 3 crans (0.6 / 0.85 / 1.0). Délai automatique 3/5/8/12 s ou manuel, avec un anneau de compte à rebours.
-- Répéter chaque mot 2× (option), ordre aléatoire, sous-ensemble de N mots.
+- Vitesse en 3 crans (0.5 / 0.7 / 0.9), initialisée avec la « Vitesse de la voix » des Réglages (Normale par défaut, aussi utilisée par les flashcards et l'entraînement). Relecture lente : 0,5 × la vitesse choisie, au moins 0,4. Délai automatique 3/5/8/12 s ou manuel, avec un anneau de compte à rebours.
+- Répéter chaque mot 2× (option, cochée par défaut), ordre aléatoire, sous-ensemble de N mots.
 - Mode enfant (seulement le numéro du mot) / mode parent (réponse visible). Pause automatique si l'onglet est caché.
-- Pièges TTS : `getVoices()` est vide au départ (attendre `voiceschanged`). Sur iOS, enchaîner les mots via `onend` (pas de `setTimeout`). Sur Windows, les voix chinoises de qualité sont en ligne ; il faut donc un écran « tester la voix » + une aide pour installer le pack de langue.
+- Pièges TTS : `getVoices()` est vide au départ (attendre `voiceschanged`). Sur iOS, enchaîner les mots via `onend` (pas de `setTimeout`). Sur Windows, les voix chinoises de qualité sont en ligne ; il faut donc un écran « tester la voix » + une aide pour installer le pack de langue (section « Voix » des Réglages).
+- Pièges TTS sur téléphone (iOS Safari, Chrome Android) : `speak()` n'est accepté que pendant un geste. Chaque bouton qui lance du son appelle `Speaker.unlock()` de façon synchrone, avant tout `await`. Un refus `not-allowed` passe en repli écrit avec un bouton « Activer le son ». On ne fait `cancel()` que si quelque chose est en cours, on laisse ~300 ms de silence avant chaque mot, on fait `resume()` avant chaque `speak()`, et un délai maximal remplace un `onend` qui n'arrive jamais. Les voix Android s'écrivent `zh_CN`, `cmn-CN`, `cmn-Hans-CN`… (`yue`, `zh-HK`, `zh-TW` sont exclues). Une liste sans voix chinoise n'est jamais gardée en cache. Après l'installation d'une voix, Chrome doit être fermé complètement.
 
 ## 6 bis. Entraînement à l'écoute (priorité oral)
 
