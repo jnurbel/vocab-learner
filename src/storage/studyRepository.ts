@@ -1,4 +1,12 @@
-import type { LocalDay } from '../domain/srs/localDay';
+import type { Label } from '../domain/label';
+import { dailyGoalOf } from '../domain/game/answerEvents';
+import { applyEvent, type GameEvent } from '../domain/game/applyEvent';
+import { ECONOMY_CONFIG, type EconomyConfig } from '../domain/game/economyConfig';
+import { MINI_GAME_CONFIG, type MiniGameConfig } from '../domain/game/miniGameConfig';
+import { PATH_CONFIG, type PathConfig } from '../domain/path/pathConfig';
+import { pathsAfterAnswer } from '../domain/path/pathsAfterAnswer';
+import { GAME_CONFIG } from '../domain/srs/config';
+import { localDay, type LocalDay } from '../domain/srs/localDay';
 import type {
   ProgressRecord,
   ReviewStateRecord,
@@ -8,7 +16,7 @@ import type {
 } from '../domain/progressRecords';
 import { isSpeechRate } from '../domain/speechRate';
 import { isAnswerMode, isValidNewPerDay, type AnswerMode } from '../domain/studySettings';
-import { SINGLETON_KEY, VocabularyDatabase } from './database';
+import { SINGLETON_KEY, toCard, VocabularyDatabase } from './database';
 
 /** Label ids used as object keys: plain tokens, as in backups. */
 const LABEL_KEY = /^[A-Za-z0-9_-]{1,64}$/;
@@ -51,11 +59,30 @@ export interface PracticeAnswerRecord {
   progress?: ProgressUpdate;
 }
 
+/** The rules the repository applies to the label paths it keeps up to date with every answer. */
+export interface PathRules {
+  path: PathConfig;
+  economy: EconomyConfig;
+  miniGames: Pick<MiniGameConfig, 'adaptive'>;
+  /** Local hour at which a new day starts, for the points of a step reached in free practice. */
+  dayStartHour: number;
+}
+
+export const DEFAULT_PATH_RULES: PathRules = Object.freeze({
+  path: PATH_CONFIG,
+  economy: ECONOMY_CONFIG,
+  miniGames: MINI_GAME_CONFIG,
+  dayStartHour: GAME_CONFIG.dayStartHour,
+});
+
 /** Stores the learning progress; the spaced repetition decides, the repository only stores. */
 export class StudyRepository {
   private readonly db: VocabularyDatabase;
 
-  constructor(databaseName: string) {
+  constructor(
+    databaseName: string,
+    private readonly rules: PathRules = DEFAULT_PATH_RULES,
+  ) {
     this.db = new VocabularyDatabase(databaseName);
   }
 
@@ -93,10 +120,10 @@ export class StudyRepository {
 
   /** Free practice never touches the review states (DESIGN.md, 0.4.0); it may earn points. */
   async recordPracticeAnswer({ sessionId, result, progress }: PracticeAnswerRecord): Promise<void> {
-    const { sessions, settings } = this.db;
-    await this.db.transaction('rw', [sessions, this.db.progress, settings], async () => {
+    await this.db.transaction('rw', this.answerTables(), async () => {
       await this.appendResult(sessionId, result);
       await this.updateProgress(progress);
+      await this.advancePaths(result, dayOfResult(result, this.rules.dayStartHour));
     });
   }
 
@@ -183,8 +210,8 @@ export class StudyRepository {
     { sessionId, state, result, activeDay, progress: update }: AnswerRecord,
     kind: 'append' | 'replaceLast',
   ): Promise<void> {
-    const { reviewStates, sessions, progress, settings } = this.db;
-    await this.db.transaction('rw', [reviewStates, sessions, progress, settings], async () => {
+    const { reviewStates, progress } = this.db;
+    await this.db.transaction('rw', this.answerTables(), async () => {
       await (kind === 'append'
         ? this.appendResult(sessionId, result)
         : this.replaceLastResult(sessionId, result));
@@ -192,6 +219,63 @@ export class StudyRepository {
       await this.updateProgress(update);
       const current = await progress.get(SINGLETON_KEY);
       await progress.put({ ...current, lastActiveDate: activeDay }, SINGLETON_KEY);
+      await this.advancePaths(result, activeDay);
+    });
+  }
+
+  /** Everything an answer writes: its result, state and points, and the label paths. */
+  private answerTables() {
+    const { reviewStates, sessions, progress, settings, cards, labels, pathProgress } = this.db;
+    return [reviewStates, sessions, progress, settings, cards, labels, pathProgress];
+  }
+
+  /**
+   * Every answer, whatever its exercise, feeds the paths of the pinned labels of its word
+   * (GAME_DESIGN.md 5.1); a step validated gives its points with the answer. Runs inside the
+   * transaction of the answer, after its review state is stored.
+   */
+  private async advancePaths(result: SessionResultRecord, today: LocalDay): Promise<void> {
+    const word = await this.db.cards.get(result.cardId);
+    if (word === undefined) {
+      return;
+    }
+    const pinned = (await this.db.labels.bulkGet(word.labelIds)).filter(
+      (label): label is Label => label?.isFocus === true,
+    );
+    if (pinned.length === 0) {
+      return;
+    }
+    const labelIds = pinned.map(({ id }) => id);
+    const cards = (await this.db.cards.where('labelIds').anyOf(labelIds).distinct().toArray()).map(
+      toCard,
+    );
+    const states = await this.db.reviewStates.bulkGet(cards.map(({ id }) => id));
+    const paths = await this.db.pathProgress.bulkGet(
+      labelIds.map((labelId): [string, string] => [labelId, word.language]),
+    );
+    const update = pathsAfterAnswer(
+      {
+        answer: result,
+        cards,
+        labels: pinned,
+        states: states.filter((state) => state !== undefined),
+        paths: paths.filter((path) => path !== undefined),
+      },
+      this.rules.path,
+    );
+    await this.db.pathProgress.bulkPut(update.paths);
+    await this.applyGameEvents(update.events, today);
+  }
+
+  /** Runs inside a transaction holding the progress and the settings. */
+  private async applyGameEvents(events: readonly GameEvent[], today: LocalDay): Promise<void> {
+    if (events.length === 0) {
+      return;
+    }
+    const { economy, miniGames } = this.rules;
+    await this.updateProgress(({ progress, settings }) => {
+      const context = { today, goal: dailyGoalOf(settings, economy), economy, miniGames };
+      return events.reduce((sofar, event) => applyEvent(sofar, event, context).progress, progress);
     });
   }
 
@@ -232,4 +316,9 @@ export class StudyRepository {
   async deleteDatabase(): Promise<void> {
     await this.db.delete();
   }
+}
+
+/** The learner's day of a free practice answer, which carries no active day of its own. */
+function dayOfResult(result: SessionResultRecord, dayStartHour: number): LocalDay {
+  return localDay(result.at === undefined ? new Date() : new Date(result.at), dayStartHour);
 }
