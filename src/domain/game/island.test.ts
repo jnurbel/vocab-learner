@@ -5,6 +5,7 @@ import {
   freshDecors,
   interpolateSize,
   ISLAND_CONFIG,
+  islandCamera,
   islandDecors,
   islandGrowthStart,
   islandOutline,
@@ -107,6 +108,46 @@ describe('the shape of the island', () => {
     const [east] = islandOutline(size);
 
     expect(east).toEqual({ x: 350, y: 160 });
+  });
+});
+
+describe('the camera', () => {
+  it('frames the first islet closely, and the whole view box at level 20', () => {
+    expect(islandCamera(islandSize(1))).toEqual({ x: 94, y: 67, width: 312, height: 186 });
+    expect(islandCamera(islandSize(20))).toEqual({ x: 0, y: 0, width: 520, height: 310 });
+  });
+
+  it('zooms out as the island grows, but less than the island grows', () => {
+    const [small, big] = [islandCamera(islandSize(5)), islandCamera(islandSize(10))];
+    const growth = islandSize(10).rx / islandSize(5).rx;
+
+    expect(big.width).toBeGreaterThan(small.width);
+    expect(big.width / small.width).toBeLessThan(growth);
+  });
+
+  it('shows every decoration, firefly and lantern of a level in the picture', () => {
+    const margin = 12;
+    for (let level = 1; level <= 20; level += 1) {
+      const scene = islandScene(level, { fireflies: 50, floatingLanterns: 50 }, ECONOMY_CONFIG);
+      const camera = islandCamera(scene.shape.size);
+      const slots = [
+        ...scene.decors.map(({ slot }) => slot),
+        ...scene.fireflySlots,
+        ...scene.lanternSlots,
+      ];
+      for (const slot of slots) {
+        const { x, y } = placeSlot(slot, scene.shape.size);
+        expect(x, `level ${String(level)}`).toBeGreaterThan(camera.x + margin);
+        expect(x, `level ${String(level)}`).toBeLessThan(camera.x + camera.width - margin);
+        expect(y, `level ${String(level)}`).toBeGreaterThan(camera.y + margin);
+        expect(y, `level ${String(level)}`).toBeLessThan(camera.y + camera.height - margin);
+      }
+    }
+  });
+
+  it('stays inside the view box, whatever the size', () => {
+    expect(islandCamera({ rx: 10, ry: 5, wobble: 0 })).toEqual(islandCamera(islandSize(1)));
+    expect(islandCamera({ rx: 900, ry: 450, wobble: 0 })).toEqual(islandCamera(islandSize(20)));
   });
 });
 

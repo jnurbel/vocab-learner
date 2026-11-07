@@ -59,6 +59,13 @@ export type IslandPalette = 'spring' | (typeof PALETTE_UNLOCKS)[keyof typeof PAL
 
 export interface IslandConfig {
   readonly viewBox: { readonly width: number; readonly height: number };
+  /**
+   * The picture shows this share of the view box around the first islet, and all of it at
+   * maxLevel: small islands stay readable on a phone, and the growth stays visible.
+   */
+  readonly cameraMinScale: number;
+  /** The decorations are drawn this much bigger than their drawing units. */
+  readonly decorScale: number;
   readonly center: Point;
   /** The island stops growing at this level; the unlocks beyond it still come. */
   readonly maxLevel: number;
@@ -90,6 +97,8 @@ const slot = (u: number, v: number): Slot => Object.freeze({ u, v });
 
 export const ISLAND_CONFIG: IslandConfig = Object.freeze({
   viewBox: Object.freeze({ width: 520, height: 310 }),
+  cameraMinScale: 0.6,
+  decorScale: 1.3,
   center: Object.freeze({ x: 250, y: 160 }),
   maxLevel: 20,
   firstRadius: 50,
@@ -149,14 +158,14 @@ export const ISLAND_CONFIG: IslandConfig = Object.freeze({
     slot(0.62, 0.82),
   ]),
   lanternSlots: Object.freeze([
-    slot(-1.16, 0.3),
+    slot(-1.1, 0.3),
     slot(-0.88, 0.94),
     slot(0.1, 1.16),
     slot(0.86, 1.04),
-    slot(-1.2, -0.42),
-    slot(1.24, 0.3),
+    slot(-1.08, -0.5),
+    slot(1.12, 0.36),
     slot(0.62, -1.12),
-    slot(1.16, -0.02),
+    slot(1.1, 0.02),
   ]),
   growthMs: 800,
 });
@@ -217,6 +226,25 @@ export function islandSize(level: number, config: IslandConfig = ISLAND_CONFIG):
     ry: rx * config.aspect,
     wobble: config.firstWobble + (config.lastWobble - config.firstWobble) * progress,
   };
+}
+
+export interface Camera {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The part of the view box shown for an island of this size, centred on the island. */
+export function islandCamera(size: IslandSize, config: IslandConfig = ISLAND_CONFIG): Camera {
+  const { viewBox, center, cameraMinScale, firstRadius, lastRadius } = config;
+  const progress = Math.min(Math.max((size.rx - firstRadius) / (lastRadius - firstRadius), 0), 1);
+  const scale = cameraMinScale + (1 - cameraMinScale) * progress;
+  const width = viewBox.width * scale;
+  const height = viewBox.height * scale;
+  const x = Math.min(Math.max(center.x - width / 2, 0), viewBox.width - width);
+  const y = Math.min(Math.max(center.y - height / 2, 0), viewBox.height - height);
+  return { x: round(x), y: round(y), width: round(width), height: round(height) };
 }
 
 /** A size between two others, for the growth animation (t from 0 to 1). */
