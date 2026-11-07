@@ -43,8 +43,8 @@ describe('a flashcard session', () => {
     const [answer] = store.answers;
     expect(answer?.sessionId).toBe('session-1');
     expect(answer?.activeDay).toBe('2026-11-06');
-    expect(answer?.state.lastRatedDay).toBe('2026-11-06');
-    expect(answer?.state.reps).toBe(4);
+    expect(answer?.state?.lastRatedDay).toBe('2026-11-06');
+    expect(answer?.state?.reps).toBe(4);
     expect(answer?.result).toEqual({
       cardId: 'due',
       outcome: 'correct',
@@ -136,7 +136,7 @@ describe('a flashcard session', () => {
     await session.answer('good');
 
     expect(store.answers[0]?.activeDay).toBe('2026-11-06');
-    expect(store.answers[0]?.state.lastRatedDay).toBe('2026-11-06');
+    expect(store.answers[0]?.state?.lastRatedDay).toBe('2026-11-06');
   });
 
   it('never starts before the last active day when the clock went back', async () => {
@@ -260,7 +260,7 @@ describe('typed answers in a flashcard session', () => {
       ['typeMeaning', 'wrong', 'again'],
     ]);
     expect(store.answers[0]?.result.answer).toBe(' maison ');
-    expect(store.answers[0]?.state.lastRatedDay).toBe('2026-11-06');
+    expect(store.answers[0]?.state?.lastRatedDay).toBe('2026-11-06');
   });
 
   it('records typing the word as the exercise typeEcho, a hint making it hard', async () => {
@@ -305,8 +305,8 @@ describe('typed answers in a flashcard session', () => {
       exercise: 'typeMeaning',
       answer: 'logis',
     });
-    expect(revision?.state.reps).toBe((before?.reps ?? 0) + 1);
-    expect(revision?.state.lapses).toBe(before?.lapses);
+    expect(revision?.state?.reps).toBe((before?.reps ?? 0) + 1);
+    expect(revision?.state?.lapses).toBe(before?.lapses);
     expect(session.current?.card.id).toBe(second);
   });
 

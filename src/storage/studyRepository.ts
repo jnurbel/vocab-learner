@@ -34,8 +34,11 @@ export type ProgressUpdate = (stored: StoredProgress) => ProgressRecord;
 
 export interface AnswerRecord {
   sessionId: string;
-  /** Stored even when the answer left the memory model untouched (already rated today). */
-  state: ReviewStateRecord;
+  /**
+   * Stored even when the answer left the memory model untouched (already rated today). Absent
+   * for an exercise the FSRS never rates (ToneEcho, SentenceShuffle): the states stay as they are.
+   */
+  state?: ReviewStateRecord;
   result: SessionResultRecord;
   /** The day of the session, which becomes the last active day. */
   activeDay: LocalDay;
@@ -188,7 +191,9 @@ export class StudyRepository {
       await (kind === 'append'
         ? this.appendResult(sessionId, result)
         : this.replaceLastResult(sessionId, result));
-      await reviewStates.put(state);
+      if (state !== undefined) {
+        await reviewStates.put(state);
+      }
       await this.updateProgress(update);
       const current = await progress.get(SINGLETON_KEY);
       await progress.put({ ...current, lastActiveDate: activeDay }, SINGLETON_KEY);
