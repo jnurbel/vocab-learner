@@ -153,20 +153,37 @@
     return typeof label === 'string' ? label : label[language];
   };
 
+  /** The words of a step session of the path, when it opened the screen; all words otherwise. */
+  let sessionCards: readonly Card[] | undefined;
+  /** The way of answering imposed by the session asked for, never remembered as a choice. */
+  let launchMode: AnswerMode | undefined;
+
   onMount(() => {
     if (startWith !== undefined) {
       language = startWith.language;
       labelIds = [...startWith.labelIds];
+      const { cardIds } = startWith;
+      if (cardIds !== undefined) {
+        sessionCards = cards.filter(({ id }) => cardIds.includes(id));
+        labelIds = [];
+      }
+      launchMode = startWith.answerMode;
       void (startWith.mode === 'review' ? start() : practise());
     }
   });
 
   async function start() {
-    await open('review', () => startSession({ cards, language, labelIds: [...labelIds] }));
+    await open('review', () =>
+      startSession({ cards: sessionCards ?? cards, language, labelIds: [...labelIds] }),
+    );
   }
 
   async function practise(
-    selection: FlashcardSelection = { cards, language, labelIds: [...labelIds] },
+    selection: FlashcardSelection = {
+      cards: sessionCards ?? cards,
+      language,
+      labelIds: [...labelIds],
+    },
   ) {
     await open('practice', () => Promise.resolve(startPractice(selection)));
   }
@@ -190,8 +207,12 @@
     error = undefined;
     mode = opened;
     view = { kind: 'starting' };
-    runMode = chosenMode;
-    await rememberMode(chosenMode);
+    if (launchMode === undefined) {
+      runMode = chosenMode;
+      await rememberMode(chosenMode);
+    } else {
+      runMode = launchMode;
+    }
     try {
       const started = await begin();
       voice = (await speaker.hasVoice(language)) ? 'available' : 'missing';
