@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accueil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#17705A}a:hover{color:#0F4F3F}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; display: flex; background: #F6F4EE; color: #1E2A2F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box">
+
+  <nav aria-label="Navigation principale" style="width: 240px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E3DFD5; padding: 28px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <div style="width: 36px; height: 36px; border-radius: 10px; background: #17705A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Noto Sans SC', sans-serif; font-weight: 700; font-size: 18px" lang="zh-CN">词</div>
+      <span style="font-weight: 800; font-size: 18px; letter-spacing: -0.01em">vocab·learner</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{nav}}" as="item" hint-placeholder-count="7">
+        <a href="#" style="{{item.style}}">{{item.label}}</a>
+      </sc-for>
+    </div>
+    <div style="margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: #F6F4EE">
+      <div style="width: 36px; height: 36px; border-radius: 50%; background: #E3F1EC; color: #17705A; display: flex; align-items: center; justify-content: center; font-weight: 800">P</div>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-weight: 700; font-size: 14px">Panda</span>
+        <span style="font-size: 12px; color: #5B6770">Changer de profil</span>
+      </div>
+    </div>
+  </nav>
+
+  <main style="flex: 1; padding: 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; min-width: 0">
+    <header style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em">Bonsoir, Panda</h1>
+        <p style="margin: 0; color: #5B6770; font-size: 15px">Ton vocabulaire à travailler t'attend : 12 minutes suffisent aujourd'hui.</p>
+      </div>
+      <div role="tablist" aria-label="Langue étudiée" style="display: flex; background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 999px; padding: 4px">
+        <button role="tab" aria-selected="true" style="border: 0; background: #1E2A2F; color: #FFFFFF; border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 44px"><span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif">中文</span> Chinois</button>
+        <button role="tab" aria-selected="false" style="border: 0; background: transparent; color: #1E2A2F; border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 600; font-size: 14px; min-height: 44px">Anglais</button>
+      </div>
+    </header>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 24px">
+      <section aria-labelledby="current-lesson" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 700; color: #17705A; text-transform: uppercase; letter-spacing: 0.06em">Label à travailler</span>
+            <h2 id="current-lesson" style="margin: 0; font-size: 24px; font-weight: 800">Leçon 7 — <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif">天气与季节</span></h2>
+            <span style="color: #5B6770; font-size: 14px">25 mots · Météo et saisons</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; background: #FCEEE9; color: #8E2F1C; border-radius: 12px; padding: 10px 14px; font-weight: 700; font-size: 14px; white-space: nowrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+            Contrôle dans 4 jours · ven. 13 nov.
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 28px">
+          <div role="img" aria-label="18 mots maîtrisés sur 25, soit 72 %" style="width: 132px; height: 132px; border-radius: 50%; background: conic-gradient(#17705A 0 72%, #E3F1EC 72% 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+            <div style="width: 104px; height: 104px; border-radius: 50%; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center">
+              <span style="font-size: 30px; font-weight: 800">72 %</span>
+              <span style="font-size: 12px; color: #5B6770">maîtrisé</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; flex: 1">
+            <div style="font-size: 15px"><strong>18 / 25 mots maîtrisés.</strong> Au rythme prévu, tout sera maîtrisé <strong>mercredi</strong>, deux jours avant le contrôle.</div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <span style="background: #E3F1EC; color: #0F4F3F; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600">6 mots à arroser</span>
+              <span style="background: #EEF0F7; color: #2E3A6B; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600">4 nouveaux mots</span>
+              <span style="background: #F6F4EE; color: #3B464D; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600">Étape 4/7 : Taper</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center">
+          <button style="border: 0; background: #17705A; color: #FFFFFF; border-radius: 14px; padding: 16px 28px; font: inherit; font-weight: 800; font-size: 17px; min-height: 52px; display: flex; align-items: center; gap: 10px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
+            Commencer la session · ~12 min
+          </button>
+          <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 14px; padding: 16px 22px; font: inherit; font-weight: 700; font-size: 15px; min-height: 52px">Dictée de la leçon</button>
+        </div>
+      </section>
+
+      <aside style="display: flex; flex-direction: column; gap: 16px">
+        <section aria-label="Objectif du jour" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font-weight: 800; font-size: 16px">Objectif du jour</span>
+            <span style="font-size: 14px; color: #5B6770"><strong style="color: #1E2A2F">80</strong> / 120 XP</span>
+          </div>
+          <div style="height: 12px; background: #EDEAE2; border-radius: 999px; overflow: hidden"><div style="width: 66%; height: 100%; background: #17705A; border-radius: 999px"></div></div>
+          <span style="font-size: 13px; color: #5B6770">Encore une étape du parcours et le jardin se repose.</span>
+        </section>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+          <section aria-label="Série" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; color: #5B6770; font-weight: 600">Série</span>
+            <span style="font-size: 28px; font-weight: 800">12 jours</span>
+            <span style="font-size: 12px; color: #5B6770">record 21 · 1 jour brume dispo</span>
+          </section>
+          <section aria-label="Niveau" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; color: #5B6770; font-weight: 600">Île</span>
+            <span style="font-size: 28px; font-weight: 800">Niveau 7</span>
+            <span style="font-size: 12px; color: #5B6770">142 mots en fleur</span>
+          </section>
+        </div>
+        <section aria-label="Mots difficiles" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-weight: 800; font-size: 16px">Mots qui résistent</span>
+          <sc-for list="{{hard}}" as="w" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+              <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif; font-size: 20px; font-weight: 500">{{w.hanzi}}</span>
+              <span style="font-size: 13px; color: #5B6770; flex: 1">{{w.fr}}</span>
+              <button aria-label="Écouter" style="border: 1px solid #E3DFD5; background: #FFFFFF; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17705A">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"></path></svg>
+              </button>
+            </div>
+          </sc-for>
+        </section>
+      </aside>
+    </div>
+
+    <section aria-labelledby="groups-title" style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <h2 id="groups-title" style="margin: 0; font-size: 18px; font-weight: 800">Mes labels</h2>
+        <a href="#" style="font-weight: 700; font-size: 14px">+ Ajouter des mots</a>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+          <article style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+              <span style="font-weight: 700; font-size: 15px">{{g.title}}</span>
+              <span style="{{g.badgeStyle}}">{{g.badge}}</span>
+            </div>
+            <div style="height: 8px; background: #EDEAE2; border-radius: 999px; overflow: hidden"><div style="{{g.barStyle}}"></div></div>
+            <span style="font-size: 13px; color: #5B6770">{{g.meta}}</span>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var base = 'display: block; padding: 11px 14px; border-radius: 10px; text-decoration: none; font-size: 15px; min-height: 44px; box-sizing: border-box; ';
+    var nav = ['Accueil', 'Parcours', 'Dictée', 'Écoute', 'Mots et labels', 'Jardin', 'Réglages'].map(function (label, i) {
+      return { label: label, style: base + (i === 0 ? 'background: #E3F1EC; color: #0F4F3F; font-weight: 700' : 'color: #3B464D; font-weight: 600') };
+    });
+    var badge = 'border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; ';
+    function group(title, pct, meta, kind) {
+      var badges = {
+        current: ['Épinglé', badge + 'background: #E3F1EC; color: #0F4F3F'],
+        thirsty: ['Soif', badge + 'background: #FFF3DC; color: #7A4A00'],
+        ok: ['À jour', badge + 'background: #F0EEE8; color: #3B464D']
+      };
+      return { title: title, meta: meta, badge: badges[kind][0], badgeStyle: badges[kind][1], barStyle: 'height: 100%; border-radius: 999px; background: #17705A; width: ' + pct + '%' };
+    }
+    return {
+      nav: nav,
+      hard: [
+        { hanzi: '预报', fr: 'prévision' },
+        { hanzi: '潮湿', fr: 'humide' },
+        { hanzi: '凉快', fr: 'frais, agréable' }
+      ],
+      groups: [
+        group('Leçon 7', 72, '25 mots · contrôle ven.', 'current'),
+        group('Leçon 6', 91, '22 mots · 3 à arroser', 'thirsty'),
+        group('Animaux', 64, '31 mots · 5 à arroser', 'thirsty'),
+        group('Verbes HSK 4', 100, '40 mots · tout en fleur', 'ok')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
