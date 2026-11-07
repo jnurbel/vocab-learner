@@ -5,7 +5,7 @@ import type { PathProgressRecord, SessionResultRecord } from '../../domain/progr
 import { GAME_CONFIG } from '../../domain/srs/config';
 import type { SrsDependencies } from '../../domain/srs/dependencies';
 import { createInitialReviewState } from '../../domain/srs/reviewState';
-import { finishPlacement, loadPath, startPlacement, type PathStore } from './pathSession';
+import { beginPlacement, finishPlacement, loadPath, type PathStore } from './pathSession';
 
 function card(id: string, language: Card['language'] = 'zh', labelIds = ['lesson']): Card {
   return {
@@ -85,15 +85,19 @@ describe('loadPath', () => {
 });
 
 describe('a placement test', () => {
-  it('draws its words and remembers when it started', async () => {
+  it('draws different words of the label', async () => {
     const loaded = await loadPath({ cards, label, language: 'zh' }, deps(store()));
 
-    const pending = startPlacement(loaded, 'listen', deps(store()));
+    expect([...loaded.placementWords('listen')].sort()).toEqual(['a', 'b', 'c']);
+  });
 
-    expect(pending).toEqual({
+  it('remembers when it started', () => {
+    const test = { step: 'listen' as const, cardIds: ['a'] };
+
+    expect(beginPlacement({ labelId: 'lesson', language: 'zh' }, test, () => now)).toEqual({
       labelId: 'lesson',
       language: 'zh',
-      test: { step: 'listen', cardIds: expect.arrayContaining(['a', 'b', 'c']) as string[] },
+      test,
       startedAt: now.toISOString(),
     });
   });

@@ -44,6 +44,8 @@ export interface LoadedPath {
   words: Card[];
   /** The words of a step session on this step (GAME_DESIGN.md 5.3). */
   stepWords: (step: PathStep) => string[];
+  /** The words of a new placement test on this step, drawn at random (5.2). */
+  placementWords: (step: PathStep) => string[];
   input: PathInput;
 }
 
@@ -63,7 +65,7 @@ export interface PlacementOutcome extends PlacementScore {
 /** Reads the stored progress now and computes the path of the label in the language. */
 export async function loadPath(
   { cards, label, language }: PathSelection,
-  { store, srs, clock, config = PATH_CONFIG }: PathDependencies,
+  { store, srs, clock, newId, config = PATH_CONFIG }: PathDependencies,
 ): Promise<LoadedPath> {
   const now = clock();
   const [data, progress] = await Promise.all([
@@ -87,22 +89,18 @@ export async function loadPath(
     view: pathStatus(input, config),
     words,
     stepWords: (step) => stepSessionWords(step, input, retrievability, config),
+    placementWords: (step) => drawPlacementTest(words, step, newId(), config).cardIds,
     input,
   };
 }
 
-/** "Passer l'étape (test)": draws the words of the test and notes when it starts. */
-export function startPlacement(
-  loaded: LoadedPath,
-  step: PathStep,
-  { clock, newId, config = PATH_CONFIG }: Pick<PathDependencies, 'clock' | 'newId' | 'config'>,
+/** "Passer l'étape (test)": the test starts now, on the words drawn for it. */
+export function beginPlacement(
+  { labelId, language }: { labelId: string; language: Language },
+  test: PlacementTest,
+  clock: () => Date,
 ): PendingPlacement {
-  return {
-    labelId: loaded.label.id,
-    language: loaded.language,
-    test: drawPlacementTest(loaded.words, step, newId(), config),
-    startedAt: clock().toISOString(),
-  };
+  return { labelId, language, test, startedAt: clock().toISOString() };
 }
 
 /** Scores the test on the answers given since it started, and stores what it validated. */

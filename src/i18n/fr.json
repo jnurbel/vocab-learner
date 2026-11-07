@@ -155,7 +155,9 @@
       "pastDate": "La date du contrôle est déjà passée.",
       "tooFar": "La date du contrôle est à plus d'un an.",
       "labelNotFound": "Ce label n'existe plus."
-    }
+    },
+    "openPath": "Parcours",
+    "openPathLabel": "Voir le parcours de {name}"
   },
   "stages": {
     "seed": "Graine",
@@ -667,7 +669,10 @@
     "labelsTitle": "Mes labels",
     "labelThirst": "{count} à arroser",
     "labelUpToDate": "À jour",
-    "labelMastery": "{name} : {mastered}/{total} mots maîtrisés"
+    "labelMastery": "{name} : {mastered}/{total} mots maîtrisés",
+    "openPath": "Voir le parcours",
+    "openPathLabel": "Voir le parcours de {name}",
+    "readyForExam": "Prêt pour le contrôle"
   },
   "voice": {
     "blocked": "Le navigateur a bloqué le son : le mot est écrit à la place. Touche « Activer le son » pour l’entendre.",
@@ -696,5 +701,131 @@
       "blocked": "Le navigateur a bloqué le son. Touche à nouveau le bouton.",
       "noVoice": "Pas de voix pour cette langue sur cet appareil."
     }
+  },
+  "path": {
+    "eyebrow": "Parcours",
+    "back": "Retour au parcours",
+    "loading": "Chargement du parcours…",
+    "loadFailed": "Le parcours n’a pas pu se charger. Réessaie.",
+    "languageTabs": "Langue du parcours",
+    "summary": "{validated} / 7 étapes",
+    "stepsLabel": "Étapes du parcours",
+    "steps": {
+      "discover": {
+        "name": "Découvrir",
+        "description": "Flashcards : le son, le mot, le sens."
+      },
+      "listen": {
+        "name": "Écouter",
+        "description": "Tu entends le mot, tu choisis son sens."
+      },
+      "recognize": {
+        "name": "Reconnaître",
+        "description": "Relie les mots et leurs sens, et les tons."
+      },
+      "type": {
+        "name": "Taper",
+        "description": "Tu lis le sens, tu tapes le mot."
+      },
+      "dictation": {
+        "name": "Dictée",
+        "description": "Tu entends le mot, tu l’écris."
+      },
+      "sentences": {
+        "name": "Phrases",
+        "description": "Le mot dans ses phrases d’exemple."
+      },
+      "finalChallenge": {
+        "name": "Défi final",
+        "description": "Simulation du contrôle, notée sur 20."
+      }
+    },
+    "stepTitle": "{number}. {name}",
+    "status": {
+      "locked": "Verrouillée",
+      "current": "À faire",
+      "validated": "Validée",
+      "skipped": "Sautée"
+    },
+    "stepStatusLabel": "{name}, {status}",
+    "wordsDone": "{done}/{total} mots",
+    "bestScore": "Meilleure note : {score}/20",
+    "noScore": "Pas encore tenté",
+    "currentEyebrow": "Étape en cours",
+    "criterion": "Valide l’étape avec {required} mots réussis sur {total}.",
+    "wordsLeft": {
+      "one": "Encore {count} mot à réussir.",
+      "other": "Encore {count} mots à réussir."
+    },
+    "continue": "Continuer l’étape",
+    "placement": "Passer l’étape (test)",
+    "placementHelp": "10 questions : 9 justes valident l’étape. Tes réponses comptent quand même.",
+    "finalChallenge": "Lancer le défi final",
+    "finalChallengeHelp": "Conseillé la veille ou l’avant-veille du contrôle.",
+    "completed": "Parcours terminé. Prêt pour le contrôle.",
+    "sentencesSkipped": "Ajoute des phrases d’exemple pour activer cette étape.",
+    "addExamples": "Ajouter des exemples",
+    "stepValidated": "Étape validée : {name}. +50 XP.",
+    "nextStep": "Prochaine étape : {name}.",
+    "placementPassed": "{correct}/{total} : étape validée.",
+    "placementNotYet": "{correct}/{total} : pas encore. Tes réponses comptent quand même.",
+    "comingSoon": "Cet exercice arrive bientôt. En attendant, avance sur les autres étapes.",
+    "nothingLeft": "Plus aucun mot à travailler aujourd’hui pour cette étape."
+  },
+  "finalChallenge": {
+    "title": "Défi final",
+    "eyebrow": "Défi final · {name} · conditions de contrôle",
+    "intro": {
+      "one": "Conditions de contrôle : {count} question, pas d’indice, pas de correction avant la fin. Environ {minutes} min.",
+      "other": "Conditions de contrôle : {count} questions, pas d’indice, pas de correction avant la fin. Environ {minutes} min."
+    },
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "startFailed": "Le défi n’a pas pu commencer. Réessaie.",
+    "saveFailed": "La réponse n’a pas été enregistrée. Réessaie.",
+    "notEnoughWords": "Il faut au moins 2 mots dans ce label pour le défi final.",
+    "progress": "{position}/{total}",
+    "sections": {
+      "listening": "Compréhension orale",
+      "dictation": "Dictée",
+      "translation": "Traduction"
+    },
+    "listeningPrompt": "Écoute et choisis le sens.",
+    "dictationPrompt": "Écoute et écris le mot.",
+    "translationPrompt": "Écris le mot qui veut dire :",
+    "answerLabel": "Ta réponse",
+    "replay": "Réécouter",
+    "replaysLeft": {
+      "one": "{count} relecture possible",
+      "other": "{count} relectures possibles"
+    },
+    "noReplayLeft": "Plus de relecture",
+    "dontKnow": "Je ne sais pas",
+    "validate": "Valider",
+    "optionsLabel": "Sens proposés",
+    "noVoice": "Pas de voix sur cet appareil : le mot est écrit.",
+    "quit": "Quitter",
+    "quitHelp": "Tes réponses sont enregistrées. Le défi n’est pas noté.",
+    "resultPassed": "Prêt pour le contrôle",
+    "resultNotYet": "Pas encore prêt, mais tout près",
+    "score": "{score}",
+    "outOf": "/ 20",
+    "scoreLabel": "Note : {score} sur 20",
+    "passMark": "Réussite à partir de {pass} / 20",
+    "sectionScore": "{correct} / {total}",
+    "banner": "Parcours terminé : {name}",
+    "best": "Meilleure note : {score}/20",
+    "missedTitle": {
+      "one": "Le mot à revoir",
+      "other": "Les {count} mots à revoir"
+    },
+    "noMistake": "Aucune erreur.",
+    "listen": "Écouter {term}",
+    "review": {
+      "one": "Revoir ce mot (≈ 2 min)",
+      "other": "Revoir ces {count} mots (≈ 2 min)"
+    },
+    "backToPath": "Retour au parcours",
+    "retry": "Recommencer le défi"
   }
 }
