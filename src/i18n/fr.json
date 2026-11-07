@@ -536,5 +536,41 @@
     },
     "thirstLevels": ["Pas soif", "A soif", "Très soif"],
     "noReview": "—"
+  },
+  "listenMeaning": {
+    "title": "Mini-jeu : écouter et choisir le sens",
+    "intro": "Tu entends un mot, rien n'est écrit. Choisis son sens.",
+    "languageLegend": "Langue",
+    "start": "Commencer le mini-jeu",
+    "starting": "Préparation…",
+    "progress": "Mini-jeu · {position} / {total}",
+    "prompt": "Écoute · que veut dire ce mot ?",
+    "optionsLabel": "Que veut dire ce mot ?",
+    "keysHelp": "Touches 1 à 4 pour choisir · Espace ou R pour réécouter · L pour écouter lentement · 0 pour « Je ne sais pas »",
+    "replay": "Réécouter",
+    "slow": "Lent",
+    "hint": {
+      "zh": "Voir le pinyin (indice)",
+      "en": "Voir l'écrit (indice)"
+    },
+    "hintUsed": "avec indice",
+    "unknown": "Je ne sais pas",
+    "noVoice": "Pas de voix : le mot est écrit, sans pinyin.",
+    "noVoiceEn": "Pas de voix : le mot est écrit.",
+    "audioError": "Le son n'a pas pu être lu : le mot est écrit.",
+    "right": "Juste.",
+    "wrong": "C'était {term}",
+    "chose": "Tu as choisi : {meaning} = {term}",
+    "unknownChosen": "Tu as répondu « Je ne sais pas ».",
+    "listenChosen": "Écouter mon choix",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "summaryTitle": "Mini-jeu terminé",
+    "score": "{correct} / {total} justes",
+    "again": "Nouvelle manche",
+    "back": "Changer de langue",
+    "notEligible": "Il faut au moins 2 mots dans cette langue pour ce mini-jeu.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
   }
 }
