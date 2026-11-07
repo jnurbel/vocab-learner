@@ -18,6 +18,12 @@ export interface DiminishingTier {
   readonly factor: number;
 }
 
+/** Decorations unlocked on reaching a level (GAME_DESIGN.md 4.5). */
+export interface LevelUnlock {
+  readonly level: number;
+  readonly ids: readonly string[];
+}
+
 /**
  * Economy part of GAME_CONFIG (GAME_DESIGN.md section 11). Inject it into domain functions
  * rather than importing it in business code, so that tests can try other values.
@@ -40,6 +46,16 @@ export interface EconomyConfig {
   readonly brumeDaysPerWeek: number;
   /** Brume days older than this are forgotten. */
   readonly brumeRetentionDays: number;
+  /** Ordered by level; cosmetic only, never a learning feature. */
+  readonly levelUnlocks: readonly LevelUnlock[];
+  readonly firefliesPerFlowers: number;
+  readonly firefliesVisualCap: number;
+  readonly floatingLanternPerLanterns: number;
+  readonly streakUnlockMilestones: readonly number[];
+}
+
+function unlock(level: number, ...ids: string[]): LevelUnlock {
+  return Object.freeze({ level, ids: Object.freeze(ids) });
 }
 
 export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
@@ -68,4 +84,28 @@ export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
   activeDayMinAnswers: 10,
   brumeDaysPerWeek: 2,
   brumeRetentionDays: 14,
+  levelUnlocks: Object.freeze([
+    unlock(2, 'pier'),
+    unlock(3, 'pathLamps'),
+    unlock(4, 'stoneBenches'),
+    unlock(5, 'paletteAutumn'),
+    unlock(6, 'pond'),
+    unlock(7, 'kite'),
+    unlock(8, 'bamboo'),
+    unlock(9, 'rowboat'),
+    unlock(10, 'pavilion', 'paletteWinter'),
+    unlock(12, 'archBridge'),
+    unlock(13, 'beehives'),
+    unlock(14, 'lighthouse'),
+    unlock(15, 'paletteNight'),
+    unlock(16, 'pebbleGarden'),
+    unlock(17, 'observatory'),
+    unlock(18, 'greatTree'),
+    unlock(19, 'waterfall'),
+    unlock(20, 'paletteDawn', 'secondIslet'),
+  ]),
+  firefliesPerFlowers: 10,
+  firefliesVisualCap: 50,
+  floatingLanternPerLanterns: 5,
+  streakUnlockMilestones: Object.freeze([7, 30]),
 });

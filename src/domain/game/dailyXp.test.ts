@@ -73,8 +73,9 @@ describe('earning experience points during a day', () => {
   it('counts the answers of each word separately', () => {
     const once = earnXp(fresh, answer, { goal, cardId: 'c1' }, ECONOMY_CONFIG).ledger;
 
-    expect(earnXp(once, answer, { goal, cardId: 'c2' }, ECONOMY_CONFIG).ledger.dailyRewardedCount)
-      .toEqual({ c1: 1, c2: 1 });
+    expect(
+      earnXp(once, answer, { goal, cardId: 'c2' }, ECONOMY_CONFIG).ledger.dailyRewardedCount,
+    ).toEqual({ c1: 1, c2: 1 });
   });
 
   it('caps a word repeated 20 times a day to 3 x 10 + 17 x 1 points before the multiplier (M13)', () => {
