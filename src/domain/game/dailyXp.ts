@@ -25,9 +25,12 @@ export interface EarnOptions {
 }
 
 /** The ledger of `today`: a new day starts from zero; an earlier day (clock back) changes nothing. */
-export function ledgerOn(ledger: DailyLedger, today: LocalDay): DailyLedger {
+export function ledgerOn(
+  ledger: DailyLedger,
+  today: LocalDay,
+): DailyLedger & { dailyXpDay: LocalDay } {
   if (ledger.dailyXpDay !== undefined && ledger.dailyXpDay >= today) {
-    return ledger;
+    return { ...ledger, dailyXpDay: ledger.dailyXpDay };
   }
   return { dailyXp: 0, dailyXpDay: today, dailyRewardedCount: {} };
 }

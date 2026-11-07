@@ -111,12 +111,12 @@ describe('the ledger of a day', () => {
   it('keeps the same day as it is', () => {
     const sameDay = { ...fresh, dailyXp: 120, dailyRewardedCount: { c1: 2 } };
 
-    expect(ledgerOn(sameDay, today)).toBe(sameDay);
+    expect(ledgerOn(sameDay, today)).toEqual(sameDay);
   });
 
   it('takes nothing away when the clock goes back to an earlier day', () => {
     const later = { ...fresh, dailyXp: 120, dailyXpDay: '2026-11-08' };
 
-    expect(ledgerOn(later, today)).toBe(later);
+    expect(ledgerOn(later, today)).toEqual(later);
   });
 });

@@ -1,3 +1,5 @@
+import type { Stage } from '../srs/reviewState';
+
 /** Experience points of each rewarded action (GAME_DESIGN.md 4.1). */
 export interface XpTable {
   readonly correct: number;
@@ -38,6 +40,8 @@ export interface EconomyConfig {
   /** Ordered by growing goal multiple: the last one reached applies. */
   readonly diminishingTiers: readonly DiminishingTier[];
   /** Going from level n to n + 1 takes levelBaseXp + levelStepXp * (n - 1) points. */
+  /** The first stage whose record earns points; the first sprout is the discovery itself. */
+  readonly rewardedStageFloor: Stage;
   readonly levelBaseXp: number;
   readonly levelStepXp: number;
   /** A day is active with this many answers, or a finished session. */
@@ -79,6 +83,7 @@ export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
     Object.freeze({ fromGoalMultiple: 1, factor: 0.5 }),
     Object.freeze({ fromGoalMultiple: 2, factor: 0.25 }),
   ]),
+  rewardedStageFloor: 'stem',
   levelBaseXp: 100,
   levelStepXp: 50,
   activeDayMinAnswers: 10,
