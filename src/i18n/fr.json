@@ -264,7 +264,8 @@
     "flashcards": "Flashcards",
     "backup": "Sauvegarde",
     "dictation": "Dictée",
-    "settings": "Réglages"
+    "settings": "Réglages",
+    "garden": "Jardin"
   },
   "thirst": {
     "1": "a soif",
@@ -482,5 +483,58 @@
       "paletteDawn": "Palette « aube »",
       "secondIslet": "Îlot voisin"
     }
+  },
+  "garden": {
+    "title": "Ton jardin de mots",
+    "levelLine": "Île niveau {level} · {xp} XP",
+    "flowers": {
+      "one": "{count} fleur",
+      "other": "{count} fleurs"
+    },
+    "thirsty": {
+      "one": "{count} plante a soif",
+      "other": "{count} plantes ont soif"
+    },
+    "water": "Arroser (réviser)",
+    "miniGame": "Mini-jeu",
+    "listView": "Vue liste",
+    "labelFilter": "Label",
+    "allLabels": "Tous les mots",
+    "plots": {
+      "zh": "Parcelle 中文",
+      "en": "Parcelle English"
+    },
+    "emptyPlot": "Aucun mot ici pour l'instant.",
+    "empty": "Ton île est encore nue. Ajoute tes premiers mots pour semer.",
+    "thirstBadge": "a soif",
+    "wilted": "{stage} · fanée",
+    "page": "Page {page} / {count}",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "legendTitle": "Les stades",
+    "stageRules": {
+      "seed": "nouveau mot",
+      "sprout": "1re bonne réponse",
+      "stem": "revu à 3 jours",
+      "bud": "revu à 7 jours",
+      "flower": "revu à 21 jours",
+      "lantern": "revu à 60 jours"
+    },
+    "legendLine": "{stage} : {rule}",
+    "legendNote": "Une plante qui a soif ne perd jamais son stade : il suffit de l'arroser. « ! » signale une plante qui a soif.",
+    "unlocksTitle": "Prochains déblocages",
+    "unlockLine": "Niveau {level} : {names}, encore {xp} XP",
+    "firefly": "Une luciole tous les 10 mots en fleur : {have} / 10",
+    "noMoreUnlocks": "Tous les déblocages de niveau sont à toi.",
+    "tableCaption": "Mots du jardin",
+    "columns": {
+      "word": "Mot",
+      "language": "Langue",
+      "stage": "Stade",
+      "thirst": "Soif",
+      "nextReview": "Prochaine révision"
+    },
+    "thirstLevels": ["Pas soif", "A soif", "Très soif"],
+    "noReview": "—"
   }
 }
