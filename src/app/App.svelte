@@ -174,6 +174,10 @@
       await recordChange();
     },
     endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
+    recordProgress: async (update) => {
+      await ready(study).recordProgress(update);
+      await recordChange();
+    },
   };
 
   function startSession(selection: FlashcardSelection) {
