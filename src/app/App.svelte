@@ -189,7 +189,10 @@
   };
 
   function startSession(selection: FlashcardSelection) {
-    return startFlashcardSession(selection, { store: flashcardStore, srs, clock: now, newId });
+    return startFlashcardSession(
+      { ...selection, labels },
+      { store: flashcardStore, srs, clock: now, newId },
+    );
   }
 
   /** The same store as the flashcards: every answer is a change to back up. */
@@ -218,7 +221,7 @@
   };
 
   function loadOutlook(selection: FlashcardSelection) {
-    return loadStudyOutlook(selection, { store: flashcardStore, srs, clock: now });
+    return loadStudyOutlook({ ...selection, labels }, { store: flashcardStore, srs, clock: now });
   }
 
   function startPractice(selection: FlashcardSelection) {

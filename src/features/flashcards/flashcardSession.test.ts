@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from '../../domain/card';
+import type { Label } from '../../domain/label';
 import type { SessionRecord } from '../../domain/progressRecords';
 import { card, FakeStore, reviewed, srs } from './flashcards.fixtures';
 import { loadStudyOutlook, startFlashcardSession, type FlashcardStore } from './flashcardSession';
@@ -356,5 +357,47 @@ describe('typed answers in a flashcard session', () => {
     await expect(session.acceptLastAnswer()).rejects.toThrow(
       'Only a typed meaning can be accepted',
     );
+  });
+});
+
+describe('flashcards with labels to work on', () => {
+  const created = '2026-10-01T00:00:00.000Z';
+  const lesson: Label = {
+    id: 'lesson',
+    name: 'Leçon 7',
+    isFocus: true,
+    examDate: '2026-11-09',
+    createdAt: created,
+    updatedAt: created,
+  };
+  const lessonWords = Array.from({ length: 12 }, (_, index) =>
+    card(`w${String(index)}`, created, { labelIds: ['lesson'] }),
+  );
+
+  it('serves the words of a pinned label with a test first, within its test quota', async () => {
+    const store = new FakeStore({ reviewStates: [reviewed('other')] });
+
+    const session = await startFlashcardSession(
+      { cards: [card('other'), ...lessonWords], language: 'zh', labelIds: [], labels: [lesson] },
+      { store, srs, clock: () => morning, newId: () => 'session-1' },
+    );
+
+    // 12 new words over the 2 days left: 6 today, before the other due word.
+    expect(session.items.map(({ card: { id } }) => id).slice(-1)).toEqual(['other']);
+    expect(session.items.filter(({ kind }) => kind === 'new')).toHaveLength(6);
+  });
+
+  it('allows more new words when the learner chose the intensive mode for the test', async () => {
+    const many = Array.from({ length: 60 }, (_, index) =>
+      card(`m${String(index)}`, created, { labelIds: ['lesson'] }),
+    );
+    const store = new FakeStore({ settings: { intensiveExamMode: { lesson: true } } });
+
+    const outlook = await loadStudyOutlook(
+      { cards: many, language: 'zh', labelIds: [], labels: [lesson] },
+      { store, srs, clock: () => morning },
+    );
+
+    expect(outlook.newAvailableToday).toBe(30);
   });
 });

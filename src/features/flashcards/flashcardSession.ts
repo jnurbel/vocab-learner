@@ -15,6 +15,10 @@ import { studyDay } from '../../domain/srs/studyDay';
 import { summarizeStudyOutlook, type StudyOutlook } from '../../domain/srs/studyOutlook';
 import { newPerDayOf } from '../../domain/studySettings';
 import type { StudyRepository } from '../../storage/studyRepository';
+import { EXAM_CONFIG } from '../../domain/exam/examConfig';
+import type { FocusPlanning } from '../../domain/exam/focusPlan';
+import type { Label } from '../../domain/label';
+import type { SettingsRecord } from '../../domain/progressRecords';
 
 /** The self-evaluation buttons: "À revoir", "Difficile", "Je savais", "Je le connais déjà". */
 export type SelfEvaluation = 'again' | 'hard' | 'good' | 'known';
@@ -46,6 +50,8 @@ export interface FlashcardSelection {
   language: Language;
   /** Empty: every word of the language. */
   labelIds: readonly string[];
+  /** Every label: the pinned ones come first and their tests are planned (GAME_DESIGN.md 2). */
+  labels?: readonly Label[];
 }
 
 export interface StageChange {
@@ -107,6 +113,22 @@ async function loadStudyContext(
     newIntroducedToday: countNewWordsIntroduced(data.recentSessions, today, srs),
     language: selection.language,
     labelIds: selection.labelIds,
+    ...(selection.labels === undefined
+      ? {}
+      : { focus: focusPlanningOf(selection.labels, data.settings) }),
+  };
+}
+
+/** The labels to work on, with the tests the learner prepares in intensive mode. */
+export function focusPlanningOf(
+  labels: readonly Label[],
+  settings: SettingsRecord | undefined,
+): FocusPlanning {
+  const intensive = Object.entries(settings?.intensiveExamMode ?? {});
+  return {
+    labels,
+    exam: EXAM_CONFIG,
+    intensiveLabelIds: intensive.filter(([, chosen]) => chosen).map(([labelId]) => labelId),
   };
 }
 
