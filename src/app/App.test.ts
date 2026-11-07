@@ -16,6 +16,11 @@ function bulkEntry(): HTMLElement {
 
 type User = ReturnType<typeof userEvent.setup>;
 
+/** The app opens on the home screen: the word entry is one menu click away. */
+async function openWords() {
+  await userEvent.setup().click(screen.getByRole('button', { name: fr.nav.words }));
+}
+
 async function addWord(user: User, line: string, labelName?: string) {
   await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
   await user.paste(line);
@@ -35,6 +40,31 @@ async function studyOneCard(user: User) {
 }
 
 describe('App', () => {
+  it('opens on the home screen, the first entry of the menu', async () => {
+    render(App, { databaseName: 'app-test-home' });
+
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    const [first] = within(menu).getAllByRole('button');
+    expect(first).toHaveAccessibleName(fr.nav.home);
+    expect(first).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('heading', { name: fr.home.noCards })).toBeVisible();
+  });
+
+  it('goes from the home screen to the word entry, then starts the session of the day', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-home-session' });
+
+    await user.click(await screen.findByRole('button', { name: fr.home.addWords }));
+    await addWord(user, '猫 | māo | chat');
+    await user.click(screen.getByRole('button', { name: fr.nav.home }));
+    await user.click(
+      await screen.findByRole('button', { name: /^Commencer la session · ~1 min$/ }),
+    );
+
+    const flashcards = await screen.findByRole('region', { name: fr.flashcards.title });
+    expect(await within(flashcards).findByText('1 / 1')).toBeVisible();
+  });
+
   it('renders the application title from the French strings', () => {
     render(App, { databaseName: 'app-test-title' });
 
@@ -44,6 +74,7 @@ describe('App', () => {
   it('stores bulk-entered words so that entering them again does not duplicate them', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-bulk-entry' });
+    await openWords();
     const input = screen.getByLabelText(fr.bulkEntry.inputLabel);
 
     await user.click(input);
@@ -64,6 +95,7 @@ describe('App', () => {
   it('lists the saved words with their new label, still there after a restart', async () => {
     const user = userEvent.setup();
     const { unmount } = render(App, { databaseName: 'app-test-word-list' });
+    await openWords();
 
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('狗 || chien\nhorse | cheval');
@@ -73,6 +105,7 @@ describe('App', () => {
     unmount();
 
     render(App, { databaseName: 'app-test-word-list' });
+    await openWords();
 
     const list = await screen.findByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /狗/ })).toHaveTextContent('Animaux');
@@ -86,6 +119,7 @@ describe('App', () => {
     const user = userEvent.setup();
     const requestPersistence = vi.fn(() => Promise.resolve());
     render(App, { databaseName: 'app-test-persistence', requestPersistence });
+    await openWords();
 
     expect(requestPersistence).not.toHaveBeenCalled();
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
@@ -99,6 +133,7 @@ describe('App', () => {
   it('stores a word entered alone and lists it with its proposed pinyin', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-word-form' });
+    await openWords();
 
     await user.type(screen.getByLabelText(fr.wordForm.term), '书');
     await vi.waitFor(() => {
@@ -114,6 +149,7 @@ describe('App', () => {
   it('edits a word from the list and deletes another once confirmed', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-edit-delete' });
+    await openWords();
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('apple | pomme\npear | poire');
     await user.click(screen.getByRole('button', { name: 'Ajouter 2 mots' }));
@@ -141,6 +177,7 @@ describe('App', () => {
   it('deletes a label from the label screen while its words stay', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-label-manager' });
+    await openWords();
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('apple | pomme');
     await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), 'Fruits');
@@ -162,6 +199,7 @@ describe('App', () => {
   it('renames a label while other labels exist, and shows the new name on its words', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-label-rename' });
+    await openWords();
     for (const [line, labelName] of [
       ['apple | pomme', 'Fruits'],
       ['cat | chat', 'Animaux'],
@@ -186,6 +224,7 @@ describe('App', () => {
   it('practises the entered words with flashcards from the menu, then back to the words', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-flashcards' });
+    await openWords();
     await user.click(screen.getByLabelText(fr.bulkEntry.inputLabel));
     await user.paste('猫 | māo | chat');
     await user.type(within(bulkEntry()).getByLabelText(fr.labelPicker.nameInput), 'Animaux');
@@ -213,6 +252,7 @@ describe('App', () => {
   it('remembers how the learner answers the flashcards, from one visit to the next', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-answer-mode' });
+    await openWords();
     const menu = screen.getByRole('navigation', { name: fr.nav.label });
     await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
     await user.click(
@@ -232,6 +272,7 @@ describe('App', () => {
   it('reminds to back up once something changed, and the reminder can be hidden', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-reminder', download: vi.fn() });
+    await openWords();
     expect(screen.queryByText(fr.backup.reminder)).toBeNull();
 
     await addWord(user, 'apple | pomme');
@@ -245,6 +286,7 @@ describe('App', () => {
     const user = userEvent.setup();
     const download = vi.fn();
     render(App, { databaseName: 'app-test-save-backup', download });
+    await openWords();
     await addWord(user, 'apple | pomme');
 
     await user.click(await screen.findByRole('button', { name: fr.backup.reminderAction }));
@@ -266,6 +308,7 @@ describe('App', () => {
     const user = userEvent.setup();
     const download = vi.fn();
     const first = render(App, { databaseName: 'app-test-backup-source', download });
+    await openWords();
     await addWord(user, '猫 | māo | chat');
     await studyOneCard(user);
     await user.click(screen.getByRole('button', { name: fr.nav.backup }));
@@ -277,6 +320,7 @@ describe('App', () => {
     first.unmount();
 
     render(App, { databaseName: 'app-test-backup-target', download: vi.fn() });
+    await openWords();
     await user.click(screen.getByRole('button', { name: fr.nav.backup }));
     await user.upload(
       screen.getByLabelText(fr.backup.chooseFile),
@@ -297,6 +341,7 @@ describe('App', () => {
     const databaseName = 'app-test-record-change';
     const meta = new BackupMetaStore(databaseName);
     render(App, { databaseName, download: vi.fn(), now });
+    await openWords();
     const changes: (string | undefined)[] = [];
     const lastChange = async () => {
       await vi.waitFor(async () => {
@@ -325,6 +370,7 @@ describe('App', () => {
   it('offers the automatic backup folder only where the browser can write into one', async () => {
     const user = userEvent.setup();
     const { unmount } = render(App, { databaseName: 'app-test-folder-unsupported' });
+    await openWords();
     await user.click(screen.getByRole('button', { name: fr.nav.backup }));
     expect(screen.queryByRole('button', { name: fr.backup.chooseFolder })).toBeNull();
     unmount();
@@ -333,6 +379,7 @@ describe('App', () => {
       Promise.reject(new DOMException('Cancelled', 'AbortError')),
     );
     render(App, { databaseName: 'app-test-folder-supported', directoryPicker });
+    await openWords();
     await user.click(screen.getByRole('button', { name: fr.nav.backup }));
     await user.click(screen.getByRole('button', { name: fr.backup.chooseFolder }));
 
@@ -345,6 +392,7 @@ describe('App', () => {
     const databaseName = 'app-test-dictation';
     const meta = new BackupMetaStore(databaseName);
     render(App, { databaseName, download: vi.fn(), speaker: new FakeSpeaker(true, true) });
+    await openWords();
     await addWord(user, '猫 | māo | chat');
     await vi.waitFor(async () => {
       expect(await meta.lastChangeAt()).toBeDefined();
@@ -373,6 +421,7 @@ describe('App', () => {
     const databaseName = 'app-test-settings';
     const meta = new BackupMetaStore(databaseName);
     const { unmount } = render(App, { databaseName });
+    await openWords();
     const menu = screen.getByRole('navigation', { name: fr.nav.label });
 
     await user.click(within(menu).getByRole('button', { name: fr.nav.settings }));
@@ -387,6 +436,7 @@ describe('App', () => {
     unmount();
 
     render(App, { databaseName });
+    await openWords();
     await user.click(screen.getByRole('button', { name: fr.nav.settings }));
     await vi.waitFor(() => {
       expect(screen.getByRole('combobox', { name: fr.settings.newPerDay })).toHaveValue('10');
@@ -419,6 +469,37 @@ describe('App', () => {
       expect(await screen.findByRole('button', { name: 'Épingler Leçon 7' })).toBeVisible();
       const [stored] = await new VocabularyRepository(databaseName).allLabels();
       expect(stored).toMatchObject({ isFocus: false, pastExamDate: '2026-11-12' });
+    });
+
+    it('undoes from the home screen the unpinning of a label after its test', async () => {
+      const databaseName = 'app-test-undo-unpin';
+      await seedLabel(databaseName, '2026-11-12');
+      await new VocabularyRepository(databaseName).saveImport({
+        cardsToCreate: [
+          {
+            id: 'cat',
+            language: 'zh',
+            term: '猫',
+            translation: 'chat',
+            labelIds: ['lesson'],
+            source: 'manual',
+            createdAt: created,
+            updatedAt: created,
+          },
+        ],
+        cardsToUpdate: [],
+      });
+      const user = userEvent.setup();
+      render(App, { databaseName, now: () => new Date('2026-11-13T10:00:00+01:00') });
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Annuler le désépinglage de Leçon 7' }),
+      );
+
+      expect(await screen.findByRole('region', { name: 'Leçon 7' })).toBeVisible();
+      const [stored] = await new VocabularyRepository(databaseName).allLabels();
+      expect(stored).toMatchObject({ isFocus: true });
+      expect(stored?.unfocusedOn).toBeUndefined();
     });
 
     it('keeps a label pinned on the day of its test', async () => {

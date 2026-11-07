@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 function collectErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -47,6 +48,7 @@ test('a learner backs up, loses the data, and finds the words and progress back'
 }) => {
   const errors = collectErrors(page);
   await page.goto('./');
+  await openWords(page);
   await page.getByLabel('Un mot par ligne').fill('猫 | mao1 | chat\napple | pomme');
   await page.getByRole('button', { name: 'Ajouter 2 mots' }).click();
   await expect(page.getByText(/Ta dernière sauvegarde date de plus de 7 jours/)).toBeVisible();
@@ -65,6 +67,7 @@ test('a learner backs up, loses the data, and finds the words and progress back'
 
   await deleteDatabase(page);
   await page.reload();
+  await openWords(page);
   await expect(page.getByText('Aucun mot pour ce filtre.')).toBeVisible();
 
   await menu.getByRole('button', { name: 'Sauvegarde' }).click();
@@ -97,6 +100,7 @@ test('a learner backs up, loses the data, and finds the words and progress back'
 test('a tampered or booby-trapped backup file is refused and changes nothing', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('./');
+  await openWords(page);
   await page.getByLabel('Un mot par ligne').fill('book | livre');
   await page.getByRole('button', { name: 'Ajouter 1 mot' }).click();
   const backup = await saveBackup(page);

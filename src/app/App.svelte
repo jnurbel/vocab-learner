@@ -49,7 +49,11 @@
   import NavIcon from '../ui/NavIcon.svelte';
   import { srs } from './srs';
   import { EXAM_CONFIG } from '../domain/exam/examConfig';
-  import { unfocusPastExams } from '../domain/labelFocus';
+  import { undoAutoUnfocus, unfocusPastExams } from '../domain/labelFocus';
+  import type { Language } from '../domain/card';
+  import Home from '../features/home/Home.svelte';
+  import { loadHomeView } from '../features/home/homeSession';
+  import type { FlashcardLaunch } from '../features/flashcards/flashcardSession';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -81,9 +85,13 @@
   /** Profiles come later: the pseudonym written into the backup file names. */
   const PROFILE_NAME = 'profil';
 
-  type Page = 'words' | 'flashcards' | 'dictation' | 'backup' | 'settings';
-  const PAGES: readonly Page[] = ['words', 'flashcards', 'dictation', 'backup', 'settings'];
-  let page = $state<Page>('words');
+  type Page = 'home' | 'words' | 'flashcards' | 'dictation' | 'backup' | 'settings';
+  const PAGES: readonly Page[] = ['home', 'words', 'flashcards', 'dictation', 'backup', 'settings'];
+  let page = $state<Page>('home');
+  /** A session asked for from the home screen, started as soon as the flashcards open. */
+  let flashcardLaunch = $state.raw<FlashcardLaunch>();
+  /** The home waits for the first read of the storage. */
+  let loaded = $state(false);
 
   let repository: VocabularyRepository | undefined;
   let study: StudyRepository | undefined;
@@ -123,6 +131,7 @@
       study?.reviewStates() ?? [],
     ]);
     moment = currentMoment();
+    loaded = true;
   }
 
   onMount(() => {
@@ -318,6 +327,40 @@
     await reload(store);
   }
 
+  function loadHome(language: Language) {
+    return loadHomeView({ cards, labels, language }, { store: flashcardStore, srs, clock: now });
+  }
+
+  function launchFlashcards(launch: FlashcardLaunch) {
+    flashcardLaunch = launch;
+    page = 'flashcards';
+  }
+
+  function startFromHome(language: Language) {
+    launchFlashcards({ mode: 'review', language, labelIds: [] });
+  }
+
+  function practiseFromHome(language: Language, labelIds: readonly string[]) {
+    launchFlashcards({ mode: 'practice', language, labelIds });
+  }
+
+  /** "Annuler le désépinglage": the label comes back pinned. */
+  async function undoUnpin(label: Label) {
+    const undone = undoAutoUnfocus(labels, label.id, clock());
+    if (!undone.ok) {
+      return;
+    }
+    const store = storage();
+    await store.saveLabels(undone.value.filter(({ id }) => id === label.id));
+    await recordChange();
+    await reload(store);
+  }
+
+  async function changeIntensive(label: Label, intensive: boolean) {
+    await ready(study).saveIntensiveExamMode(label.id, intensive);
+    await recordChange();
+  }
+
   function startEditing(card: Card) {
     editing = card;
   }
@@ -346,6 +389,7 @@
           type="button"
           aria-current={page === name ? 'page' : undefined}
           onclick={() => {
+            flashcardLaunch = undefined;
             page = name;
           }}><NavIcon {name} /><span class="menu-text">{fr.nav[name]}</span></button
         >
@@ -412,6 +456,21 @@
             {answerMode}
             onAnswerModeChange={changeAnswerMode}
             onSessionEnd={() => void sessionEnded()}
+            {...flashcardLaunch === undefined ? {} : { startWith: flashcardLaunch }}
+          />
+        {/if}
+      {:else if page === 'home'}
+        {#if loaded}
+          <Home
+            loadView={loadHome}
+            {speaker}
+            onStart={startFromHome}
+            onPractice={practiseFromHome}
+            onAddWords={() => {
+              page = 'words';
+            }}
+            onUndoUnpin={undoUnpin}
+            onIntensiveChange={changeIntensive}
           />
         {/if}
       {:else if page === 'dictation'}
@@ -517,7 +576,7 @@
     inset: auto 0 0;
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--space-1);
     padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
     background: var(--surface);

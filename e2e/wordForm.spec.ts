@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 test('a learner enters one word with the keyboard, then enters it again to add a label', async ({
   page,
@@ -14,6 +15,8 @@ test('a learner enters one word with the keyboard, then enters it again to add a
   });
 
   await page.goto('./');
+
+  await openWords(page);
   const form = page.getByRole('form', { name: 'Ajouter un mot' });
   const term = form.getByLabel('Mot (hanzi ou anglais)');
 

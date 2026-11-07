@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 /**
  * Screenshots of the main screens, light and dark, on a computer and on a phone, written to
@@ -71,6 +72,7 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
 
       test('words, import preview, labels, settings and backup', async ({ page }) => {
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await page.getByLabel('Un mot par ligne').fill('冷 || froid\n天气 || temps\nrain |');
         await expect(page.getByLabel('Pinyin, ligne 1')).toHaveValue('lěng');
@@ -96,6 +98,7 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
 
       test('flashcards: setup, a turned card, a typed answer with its diff', async ({ page }) => {
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await menu(page).getByRole('button', { name: 'Flashcards' }).click();
         const flashcards = page.getByRole('region', { name: 'Flashcards' });
@@ -126,6 +129,7 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
 
       test('dictation: setup and a wrong answer with its diff', async ({ page }) => {
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await menu(page).getByRole('button', { name: 'Dictée' }).click();
         const dictation = page.getByRole('region', { name: 'Dictée' });

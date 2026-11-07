@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 interface StoredState {
   cardId: string;
@@ -41,6 +42,8 @@ test('a learner reviews new words with flashcards, and a word is rated only once
   });
 
   await page.goto('./');
+
+  await openWords(page);
   await page.getByLabel('Un mot par ligne').fill('猫 | mao1 | chat\n狗 | gou3 | chien');
   await page.getByRole('button', { name: 'Ajouter 2 mots' }).click();
   await expect(page.getByRole('table', { name: 'Liste des mots' }).getByRole('row')).toHaveCount(3);
@@ -83,6 +86,8 @@ test('a learner reviews new words with flashcards, and a word is rated only once
   expect(new Set(states.map(({ lastRatedDay }) => lastRatedDay)).size).toBe(1);
 
   await page.reload();
+
+  await openWords(page);
   const list = page.getByRole('table', { name: 'Liste des mots' });
   await expect(list.getByRole('row', { name: new RegExp(known) })).toContainText('Pousse');
   expect(errors).toEqual([]);

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 /** How far the page reaches past the right edge of the window, in CSS pixels. */
 function horizontalOverflow(page: Page): Promise<number> {
@@ -26,6 +27,7 @@ test.describe('on a phone, 390 pixels wide', () => {
 
   test('the page never scrolls sideways and the menu is a bar at the bottom', async ({ page }) => {
     await page.goto('./');
+    await openWords(page);
     await fillWordsScreen(page);
 
     expect(await horizontalOverflow(page)).toBe(0);
@@ -48,6 +50,7 @@ test.describe('on a computer, 1280 pixels wide', () => {
 
   test('the menu runs down the left side, next to the content', async ({ page }) => {
     await page.goto('./');
+    await openWords(page);
 
     const menu = page.getByRole('navigation', { name: 'Menu' });
     await expect(menu).toBeVisible();
