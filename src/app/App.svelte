@@ -7,6 +7,7 @@
   import type { LabelChanges } from '../domain/labelOperations';
   import type { ProgressRecord, ReviewStateRecord } from '../domain/progressRecords';
   import { studyDay } from '../domain/srs/studyDay';
+  import { markIslandSeen } from '../domain/game/island';
   import BackupPanel from '../features/backup/BackupPanel.svelte';
   import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
@@ -353,6 +354,12 @@
     await writeAutomaticBackup();
   }
 
+  /** The island of the garden was seen at this level: it will not grow again from below. */
+  async function islandSeen(level: number) {
+    await ready(study).recordProgress(({ progress: stored }) => markIslandSeen(stored, level));
+    progress = markIslandSeen(progress ?? {}, level);
+  }
+
   /** After each session, into the chosen folder, if any; never prompts. */
   async function writeAutomaticBackup() {
     if (!directory?.isSupported()) {
@@ -529,6 +536,7 @@
             page = 'flashcards';
           }}
           onMiniGame={openMiniGame}
+          onIslandSeen={(level: number) => void islandSeen(level)}
         />
       {:else if page === 'miniGame'}
         <ListenMeaning
