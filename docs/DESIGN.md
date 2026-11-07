@@ -389,7 +389,7 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 
 ## 10. Jalons (SemVer)
 
-> **Recalage (2026-11-06)** : la release `v0.1.0` contient le squelette **et** le contenu prévu en 0.2.0 ci-dessous (mots, labels, saisie en lot). La **0.2.0** termine la saisie (formulaire unitaire, aperçu éditable, gestion des labels, tons colorés). À partir de la **0.3.0**, la numérotation du tableau reste valable.
+> **Recalage (2026-11-06)** : la release `v0.1.0` contient le squelette **et** le contenu prévu en 0.2.0 ci-dessous (mots, labels, saisie en lot). La **0.2.0** termine la saisie (formulaire unitaire, aperçu éditable, gestion des labels, tons colorés). À partir de la **0.3.0**, la numérotation du tableau reste valable, sauf que la **0.5.0** a été publiée avec le seul thème visuel : la suite prévue en 0.5.0 passe en **0.6.0** et les jalons suivants avant la 1.0.0 glissent d'un cran.
 
 | Version | Contenu |
 |---|---|
@@ -397,9 +397,10 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.2.0 | Mots et labels (plusieurs labels par mot), saisie manuelle et en lot, pinyin auto, dédoublonnage |
 | 0.3.0 | Flashcards + SRS (FSRS), dont flashcard audio, pinyin masqué par défaut ; **sauvegarde et restauration locales du vocabulaire et de la progression** (§9.1) |
 | 0.4.0 | Dictée vocale : réponse tapée en hanzi avec correction automatique, ou mode papier avec auto-correction ; **entraînement libre** (tous les mots, sans effet sur la planification FSRS) ; **explication de la file du jour** (mots à revoir demain, mots nouveaux en attente) ; **réglage du nombre de mots nouveaux par jour** (retour de test du 2026-11-06 : après une séance, plus aucun mot n'était proposé) |
-| 0.5.0 | **En premier : thème visuel « Encre & Jade »** d'après les maquettes ([docs/ui](ui/README.md)) : jetons CSS clair/sombre testés (AA), police d'interface auto-hébergée, mise en page (menu latéral PC / barre basse mobile), reprise des écrans existants. **Puis** labels à travailler + objectif contrôle + jauge de maîtrise, jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
-| 0.6.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
-| 0.7.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité |
+| 0.5.0 | **Thème visuel « Encre & Jade »** (publié seul, 2026-11-07) d'après les maquettes ([docs/ui](ui/README.md)) : jetons CSS clair/sombre testés (AA), police d'interface auto-hébergée, menu latéral PC / barre basse mobile, reprise des écrans existants |
+| 0.6.0 | **Labels à travailler + objectif contrôle + jauge de maîtrise** (nouvel accueil), jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
+| 0.7.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
+| 0.8.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
 | 1.1.0 | `ToneEcho`, `SentenceListen`, `BridgeMatch` |
 | 1.2.0 | Atelier de phrases, `SentenceShuffle`, vue parent |
