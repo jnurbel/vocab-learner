@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import type { Card, Language } from '../../domain/card';
   import { compareAnswer } from '../../domain/dictation/answerCompare';
   import type { DiffPart } from '../../domain/dictation/characterDiff';
@@ -18,6 +18,7 @@
   import fr from '../../i18n/fr.json';
   import type { Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
+  import VoiceHelp from '../../ui/VoiceHelp.svelte';
   import { belongsToInputMethod } from '../typing/imeKeys';
   import AnswerDiff from './AnswerDiff.svelte';
   import {
@@ -119,7 +120,14 @@
     return DICTATION_DELAYS.find((option) => String(option) === value) ?? 5;
   }
 
+  // The voices load as the screen opens, so that they are ready for the click on Start.
+  onMount(() => {
+    void speaker.hasVoice(language);
+  });
+
+  /** Called first in every handler that starts audio: a phone speaks only in a user gesture. */
   async function start(chosen?: readonly Card[]) {
+    speaker.unlock();
     error = undefined;
     const plan = dictationPlan(chosen ?? cards, {
       language,
@@ -187,6 +195,7 @@
   }
 
   function replay(slow = false) {
+    speaker.unlock();
     if (!written) {
       player?.repeat({ slow });
     }
@@ -305,7 +314,15 @@
     await finish();
   }
 
+  /** After the browser blocked the sound: this click unlocks it and reads the word again. */
+  async function enableAudio() {
+    speaker.unlock();
+    player?.enableAudio();
+    await focusAnswer();
+  }
+
   function listen(card: Card) {
+    speaker.unlock();
     speaker.speak(card.term, card.language).catch(() => undefined);
   }
 
@@ -381,11 +398,22 @@
 {/snippet}
 
 {#snippet writtenPrompt(card: Card)}
+  {@const blocked = snapshot?.audioBlocked === true && voice === 'available'}
   <p class="notice">
-    {snapshot?.audioFailed === true && voice === 'available'
-      ? fr.dictation.audioError
-      : fr.dictation.writtenPrompt[card.language]}
+    {#if blocked}
+      {fr.voice.blocked}
+    {:else if snapshot?.audioFailed === true && voice === 'available'}
+      {fr.dictation.audioError}
+    {:else}
+      {fr.dictation.writtenPrompt[card.language]}
+    {/if}
   </p>
+  {#if blocked}
+    <button type="button" class="dark" onclick={enableAudio}>{fr.voice.enable}</button>
+  {/if}
+  {#if voice === 'missing'}
+    <VoiceHelp language={card.language} />
+  {/if}
   {#if card.language === 'zh' && card.pinyin !== undefined}
     <p class="prompt" lang="zh-CN"><Pinyin pinyin={card.pinyin} /></p>
   {:else}

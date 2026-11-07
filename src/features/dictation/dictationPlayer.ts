@@ -1,6 +1,6 @@
 import type { Language } from '../../domain/card';
 import { DICTATION_RATES, type DictationPlan } from '../../domain/dictation/dictationPlan';
-import type { Speaker } from '../../services/tts/speaker';
+import { isSpeechBlocked, type Speaker } from '../../services/tts/speaker';
 
 export interface DictationWord {
   text: string;
@@ -20,6 +20,8 @@ export interface PlayerSnapshot {
   remainingMs: number | undefined;
   /** A reading failed: the screen falls back to the written variant (GAME_DESIGN.md 6.2). */
   audioFailed: boolean;
+  /** The browser refused to speak without a user gesture: a button turns the sound on. */
+  audioBlocked: boolean;
 }
 
 export interface PlayerTimers {
@@ -70,6 +72,7 @@ export class DictationPlayer {
       total: words.length,
       remainingMs: undefined,
       audioFailed: false,
+      audioBlocked: false,
     };
   }
 
@@ -139,6 +142,18 @@ export class DictationPlayer {
     this.read(this.state.index, { times: 1, rate });
   }
 
+  /**
+   * After the browser refused to speak: reads the current word again, once. To be called from
+   * the click on "Activer le son", once the speaker is unlocked by that gesture.
+   */
+  enableAudio(): void {
+    if (!this.isStarted()) {
+      return;
+    }
+    this.update({ audioFailed: false, audioBlocked: false });
+    this.read(this.state.index, { times: 1, rate: this.settings.rate });
+  }
+
   /** Ends the dictation: nothing more is read. */
   stop(): void {
     this.interrupt();
@@ -173,9 +188,9 @@ export class DictationPlayer {
       for (let reading = 0; reading < times && run === this.run; reading++) {
         await this.deps.speaker.speak(word.text, word.language, { rate });
       }
-    } catch {
+    } catch (error) {
       if (run === this.run) {
-        this.update({ audioFailed: true });
+        this.update({ audioFailed: true, audioBlocked: isSpeechBlocked(error) });
       }
     }
     if (run === this.run) {

@@ -2,8 +2,10 @@ import { expect, test, type Page } from '@playwright/test';
 
 declare global {
   interface Window {
-    /** Texts read by the fake speech synthesis, in order. */
+    /** Texts read by the fake speech synthesis, in order; the blank unlocking one is left out. */
     spokenTexts: string[];
+    /** The speech rate of each of these texts. */
+    spokenRates: number[];
   }
 }
 
@@ -22,6 +24,7 @@ async function installFakeSpeech(page: Page) {
       onerror: ((event: { error: string }) => void) | null;
     }
     window.spokenTexts = [];
+    window.spokenRates = [];
     const voices = [
       { lang: 'zh-CN', name: 'Fake Chinese', default: false, localService: true, voiceURI: 'zh' },
       { lang: 'en-GB', name: 'Fake English', default: true, localService: true, voiceURI: 'en' },
@@ -31,8 +34,14 @@ async function installFakeSpeech(page: Page) {
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
       cancel: () => undefined,
+      speaking: false,
+      pending: false,
+      resume: () => undefined,
       speak: (utterance: FakeUtterance) => {
-        window.spokenTexts.push(utterance.text);
+        if (utterance.text.trim() !== '') {
+          window.spokenTexts.push(utterance.text);
+          window.spokenRates.push(utterance.rate);
+        }
         setTimeout(() => utterance.onend?.(), 20);
       },
     };
@@ -76,11 +85,14 @@ async function addWords(page: Page, lines: string, count: number) {
   );
 }
 
-/** The word being dictated: the last text the fake voice read. */
-async function lastSpoken(page: Page, count: number): Promise<string> {
+/**
+ * The word being dictated: the last text the fake voice read, once it is one of the words not
+ * answered yet. Each word is read after a short silence, and a wrong answer reads it again.
+ */
+async function currentWord(page: Page, remaining: readonly string[]): Promise<string> {
   await expect
-    .poll(() => page.evaluate(() => window.spokenTexts.length))
-    .toBeGreaterThanOrEqual(count);
+    .poll(() => page.evaluate(() => window.spokenTexts.at(-1) ?? ''))
+    .toMatch(new RegExp(`^(?:${remaining.join('|')})$`));
   return page.evaluate(() => window.spokenTexts.at(-1) ?? '');
 }
 
@@ -138,10 +150,12 @@ test('a keyboard dictation of three words: one right, one same-sounding, one unk
   const field = dictation.getByRole('textbox', { name: 'Ta réponse' });
 
   // The order of the words is not assumed: each answer depends on the word heard.
+  const remaining = ['再', '猫', '狗'];
   for (let position = 1; position <= 3; position++) {
     await expect(dictation.getByRole('status')).toHaveText(`Mot ${String(position)} sur 3`);
     await expect(field).toBeFocused();
-    const word = await lastSpoken(page, position);
+    const word = await currentWord(page, remaining);
+    remaining.splice(remaining.indexOf(word), 1);
     if (word === '再') {
       await field.fill('在');
       await field.press('Enter');

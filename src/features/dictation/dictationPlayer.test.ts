@@ -259,6 +259,37 @@ describe('DictationPlayer', () => {
 
     expect(player.snapshot).toMatchObject({ status: 'speaking', index: 1, audioFailed: false });
   });
+
+  it('tells a reading refused by the browser apart from a failure', async () => {
+    const { speaker, player } = setup();
+    player.play();
+
+    speaker.last().block();
+    await settle();
+
+    expect(player.snapshot).toMatchObject({ audioFailed: true, audioBlocked: true });
+  });
+
+  it('turns the sound back on: reads the current word again, once', async () => {
+    const { speaker, player } = setup({ readingsPerWord: 2 });
+    player.play();
+    speaker.last().block();
+    await settle();
+
+    player.enableAudio();
+
+    expect(player.snapshot).toMatchObject({
+      status: 'speaking',
+      index: 0,
+      audioFailed: false,
+      audioBlocked: false,
+    });
+    expect(speaker.texts).toEqual(['猫', '猫']);
+    speaker.last().end();
+    await settle();
+    expect(speaker.texts).toEqual(['猫', '猫']);
+    expect(player.snapshot.status).toBe('waiting');
+  });
 });
 
 /** A document whose visibility the test changes. */

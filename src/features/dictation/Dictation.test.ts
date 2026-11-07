@@ -6,6 +6,8 @@ import type { Card } from '../../domain/card';
 import type { Label } from '../../domain/label';
 import type { PinyinGenerator } from '../../domain/pinyinGeneration';
 import fr from '../../i18n/fr.json';
+import { createWebSpeechSpeaker } from '../../services/tts/speaker';
+import { fakeSpeech, voice } from '../../services/tts/speech.fixtures';
 import type { StudyData } from '../../storage/studyRepository';
 import { card, FakeSpeaker, FakeStore, srs } from './dictation.fixtures';
 import Dictation from './Dictation.svelte';
@@ -313,6 +315,84 @@ describe('Dictation without a voice', () => {
 
     expect(await screen.findByText(fr.dictation.audioError)).toBeVisible();
     expect(within(region()).getByText('zài')).toBeVisible();
+  });
+});
+
+describe('Dictation on a phone, where speech needs a user gesture', () => {
+  /** The real speaker over a fake phone synthesis that drops speech outside a gesture. */
+  function setupOnPhone() {
+    const speech = fakeSpeech({ lateVoices: [voice('zh-CN')], requireGesture: true });
+    const speaker = createWebSpeechSpeaker(speech.host, { leadInMs: 0 });
+    const store = new FakeStore();
+    render(Dictation, {
+      cards: [zai, cat, dog],
+      labels: [],
+      speaker,
+      startSession: (selection: DictationSelection) =>
+        startDictationSession(selection, { store, srs, clock: () => morning, newId: () => 'd1' }),
+      loadPinyin: () => Promise.resolve(fakePinyin),
+      onSessionEnd: vi.fn(),
+      newSeed: () => 'seed',
+    });
+    return speech;
+  }
+
+  it('reads the first word aloud after the click on Start, despite the awaits before it', async () => {
+    const speech = setupOnPhone();
+    const start = screen.getByRole('button', { name: fr.dictation.start });
+
+    speech.gesture(() => {
+      start.click();
+    });
+    speech.deliverLateVoices();
+
+    await vi.waitFor(() => {
+      expect(speech.heard).toEqual(['再']);
+    });
+    expect(speech.dropped).toEqual([]);
+  });
+
+  it('unlocks the speech in the click itself, before anything is awaited', () => {
+    const { speaker } = setup();
+
+    screen.getByRole('button', { name: fr.dictation.start }).click();
+
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlocks the speech again in the click on Replay', async () => {
+    const { user, speaker } = setup();
+    await startDictation(user);
+    speaker.unlock.mockClear();
+
+    screen.getByRole('button', { name: fr.dictation.replay }).click();
+
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers to turn the sound on when the browser refused to speak, then reads the word', async () => {
+    const { user, speaker } = setup({ speaker: new FakeSpeaker() });
+    await startDictation(user);
+
+    speaker.last().block();
+
+    expect(await screen.findByText(fr.voice.blocked)).toBeVisible();
+    expect(within(region()).getByText('zài')).toBeVisible();
+    speaker.unlock.mockClear();
+    await user.click(screen.getByRole('button', { name: fr.voice.enable }));
+
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+    expect(speaker.texts).toEqual(['再', '再']);
+    expect(screen.queryByText(fr.voice.blocked)).toBeNull();
+    expect(answerField()).toHaveFocus();
+  });
+
+  it('explains how to install the Chinese voice when the phone has none', async () => {
+    const { user } = setup({ speaker: new FakeSpeaker(false) });
+    await startDictation(user);
+
+    expect(screen.getByText(fr.voice.missingHelpTitle)).toBeVisible();
+    expect(screen.getByText(fr.voice.missingHelpAndroid)).toBeInTheDocument();
   });
 });
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { answerExerciseFor } from '../../domain/answerExercise';
   import type { Card, Language } from '../../domain/card';
   import type { Label } from '../../domain/label';
@@ -9,8 +9,9 @@
   import type { ReviewQueueItem } from '../../domain/srs/reviewQueue';
   import { format, formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
-  import type { Speaker } from '../../services/tts/speaker';
+  import { isSpeechBlocked, type Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
+  import VoiceHelp from '../../ui/VoiceHelp.svelte';
   import {
     PracticeSession,
     type PracticeItem,
@@ -101,7 +102,7 @@
   let total = $state(0);
   let flipped = $state(false);
   let pinyinShown = $state(false);
-  let voice = $state<'available' | 'missing' | 'failed'>('available');
+  let voice = $state<'available' | 'missing' | 'failed' | 'blocked'>('available');
   let busy = $state(false);
   let cardElement = $state<HTMLElement>();
 
@@ -154,10 +155,17 @@
     await practise({ cards: words, language, labelIds: [] });
   }
 
+  // The voices load as the screen opens, so that they are ready for the click on Start.
+  onMount(() => {
+    void speaker.hasVoice(language);
+  });
+
+  /** Runs in the click on Start: a phone speaks only when unlocked during a user gesture. */
   async function open(
     opened: typeof mode,
     begin: () => Promise<FlashcardSession | PracticeSession>,
   ) {
+    speaker.unlock();
     error = undefined;
     mode = opened;
     view = { kind: 'starting' };
@@ -211,13 +219,21 @@
     }
   }
 
+  /** Called by Replay too: unlocking first keeps the reading inside the user gesture. */
   function play() {
+    speaker.unlock();
     if (item === undefined || voice !== 'available') {
       return;
     }
-    speaker.speak(item.card.term, item.card.language).catch(() => {
-      voice = 'failed';
+    speaker.speak(item.card.term, item.card.language).catch((caught: unknown) => {
+      voice = isSpeechBlocked(caught) ? 'blocked' : 'failed';
     });
+  }
+
+  /** After the browser blocked the sound: this click unlocks it and reads the word again. */
+  function enableAudio() {
+    voice = 'available';
+    play();
   }
 
   async function answerTyped(outcome: Outcome, details: { hintsUsed: number; answer?: string }) {
@@ -423,6 +439,10 @@
       {format(fr.flashcards.progressLabel, { position: position + 1, total })}
     </p>
 
+    {#if voice === 'blocked'}
+      <p class="notice">{fr.voice.blocked}</p>
+      <button type="button" class="dark" onclick={enableAudio}>{fr.voice.enable}</button>
+    {/if}
     {#if exercise !== 'selfAssess'}
       {#key `${item.card.id}-${String(position)}`}
         <TypedAnswer
@@ -439,6 +459,7 @@
     {:else}
       {#if voice === 'missing'}
         <p class="notice">{fr.flashcards.noVoice[item.card.language]}</p>
+        <VoiceHelp language={item.card.language} />
       {:else if voice === 'failed'}
         <p class="notice">{fr.flashcards.audioError}</p>
       {/if}

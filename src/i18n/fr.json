@@ -426,5 +426,12 @@
       "paper": "Clavier : Espace pour pause ou reprise, R ou flèche haut pour réécouter, flèche bas pour lent, flèches gauche et droite pour précédent et suivant."
     },
     "markLegend": "Mot {position}, ton résultat :"
+  },
+  "voice": {
+    "blocked": "Le navigateur a bloqué le son : le mot est écrit à la place. Touche « Activer le son » pour l’entendre.",
+    "enable": "Activer le son",
+    "missingHelpTitle": "Comment entendre le chinois ?",
+    "missingHelpAndroid": "Sur Android : Paramètres Android › Système › Langues › Synthèse vocale › Moteur Google › installer Chinois (Mandarin). Ensuite, recharge la page.",
+    "missingHelpIos": "Sur iPhone : Réglages › Accessibilité › Contenu énoncé › Voix › Chinois, puis télécharge une voix. Ensuite, recharge la page."
   }
 }
