@@ -17,6 +17,13 @@ export interface AcceptedAnswer {
   rated: boolean;
 }
 
+/** Only a wrong or almost right answer can be turned into a right one. */
+export function assertAcceptable({ outcome }: SessionResultRecord): void {
+  if (outcome !== 'wrong' && outcome !== 'almost') {
+    throw new Error('Only a wrong or almost right answer can be accepted');
+  }
+}
+
 /**
  * "J'avais bon": the learner gave a synonym the card lacks. The answer becomes right, and its
  * rating replaces the one given a moment ago, computed again from the state before it, so that
@@ -27,9 +34,7 @@ export function acceptAsCorrect(
   moment: Moment,
   srs: SrsDependencies,
 ): AcceptedAnswer {
-  if (result.outcome !== 'wrong' && result.outcome !== 'almost') {
-    throw new Error('Only a wrong or almost right answer can be accepted');
-  }
+  assertAcceptable(result);
   const rating = ratingFor(
     'correct',
     { exercise: 'typed', responseMs: 0, hintsUsed: result.hintsUsed ?? 0 },

@@ -197,6 +197,10 @@
       await ready(study).recordPracticeAnswer(answer);
       await recordChange();
     },
+    revisePracticeAnswer: async (answer) => {
+      await ready(study).revisePracticeAnswer(answer);
+      await recordChange();
+    },
     endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
   };
 
