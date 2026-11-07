@@ -76,7 +76,13 @@ export interface GameUpdate {
 }
 
 /** Exercises with an adaptive level of their own (GAME_DESIGN.md 6.0). */
-const MINI_GAMES: ReadonlySet<ExerciseType> = new Set(['listenMeaning']);
+const MINI_GAMES: ReadonlySet<ExerciseType> = new Set([
+  'listenMeaning',
+  'bridgeMatch',
+  'toneEcho',
+  'sentenceListen',
+  'sentenceShuffle',
+]);
 
 /**
  * The game reducer: pure, it never touches the spaced repetition. It returns the new progress

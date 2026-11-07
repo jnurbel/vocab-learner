@@ -187,6 +187,17 @@ describe('applying an answer (GAME_DESIGN.md 9.2)', () => {
     expect(progress.gameLevels).toEqual({ 'listenMeaning:zh': { level: 2, window: [true] } });
   });
 
+  it.each(['bridgeMatch', 'toneEcho', 'sentenceListen', 'sentenceShuffle'] as const)(
+    'moves the adaptive level of %s too',
+    (exercise) => {
+      const played: GameEvent = { ...answer('c1'), exercise };
+
+      const { progress } = applyEvent({}, played, context);
+
+      expect(progress.gameLevels).toEqual({ [`${exercise}:zh`]: { level: 2, window: [true] } });
+    },
+  );
+
   it('leaves the mini-game levels alone for a flashcard', () => {
     expect(applyEvent({}, answer('c1'), context).progress.gameLevels).toBeUndefined();
   });
