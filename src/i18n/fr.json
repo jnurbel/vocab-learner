@@ -647,7 +647,7 @@
     "keysHelpPattern": "Entrée pour valider · flèche haut pour réécouter, flèche bas pour écouter lentement",
     "right": "Juste.",
     "wrongHeard": "Tu as entendu {heard}, tu as choisi {chosen}. Écoute les deux.",
-    "wrongTone": "Tu as entendu {heard}, tu as choisi le {chosen}.",
+    "wrongTone": "Tu as entendu {heard}, tu as choisi : {chosen}.",
     "heardTitle": "Le son entendu",
     "chosenTitle": "Ton choix",
     "listenChosen": "Écouter mon choix",
