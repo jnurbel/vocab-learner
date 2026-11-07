@@ -48,6 +48,12 @@ export interface MiniGameConfig {
   readonly feedbackCorrectMs: number;
   /** English words heard the same: never two right answers in an audio question. */
   readonly englishHomophones: readonly (readonly string[])[];
+  /** Pairs on a BridgeMatch board, per level (GAME_DESIGN.md 6.4). */
+  readonly bridgePairsByLevel: Readonly<Record<Difficulty, number>>;
+  /** Fewer compatible words than this: no board, the game is not eligible. */
+  readonly bridgeMinPairs: number;
+  /** Boards in a BridgeMatch round. */
+  readonly bridgeBoardsPerRound: number;
 }
 
 export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
@@ -107,4 +113,7 @@ export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
       ['sun', 'son'],
     ].map((group) => Object.freeze(group)),
   ),
+  bridgePairsByLevel: Object.freeze({ 1: 4, 2: 5, 3: 6 }),
+  bridgeMinPairs: 3,
+  bridgeBoardsPerRound: 2,
 });
