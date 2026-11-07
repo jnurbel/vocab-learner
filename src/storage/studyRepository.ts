@@ -18,6 +18,15 @@ export interface StudyData {
   settings?: SettingsRecord;
 }
 
+/** What the game needs to update the progress: the stored progress and the settings. */
+export interface StoredProgress {
+  progress: ProgressRecord;
+  settings: SettingsRecord | undefined;
+}
+
+/** A pure update of the progress, applied inside the write of the answer. */
+export type ProgressUpdate = (stored: StoredProgress) => ProgressRecord;
+
 export interface AnswerRecord {
   sessionId: string;
   /** Stored even when the answer left the memory model untouched (already rated today). */
@@ -25,12 +34,16 @@ export interface AnswerRecord {
   result: SessionResultRecord;
   /** The day of the session, which becomes the last active day. */
   activeDay: LocalDay;
+  /** The game's points, level and streak, written together with the answer. */
+  progress?: ProgressUpdate;
 }
 
 /** A free practice answer: kept for the history, it changes no review state. */
 export interface PracticeAnswerRecord {
   sessionId: string;
   result: SessionResultRecord;
+  /** Free practice earns points too; it never changes the last active day. */
+  progress?: ProgressUpdate;
 }
 
 /** Stores the learning progress; the spaced repetition decides, the repository only stores. */
@@ -73,9 +86,20 @@ export class StudyRepository {
     await this.storeAnswer(answer, 'append');
   }
 
-  /** Free practice never touches the review states nor the progress (DESIGN.md, 0.4.0). */
-  async recordPracticeAnswer({ sessionId, result }: PracticeAnswerRecord): Promise<void> {
-    await this.db.transaction('rw', this.db.sessions, () => this.appendResult(sessionId, result));
+  /** Free practice never touches the review states (DESIGN.md, 0.4.0); it may earn points. */
+  async recordPracticeAnswer({ sessionId, result, progress }: PracticeAnswerRecord): Promise<void> {
+    const { sessions, settings } = this.db;
+    await this.db.transaction('rw', [sessions, this.db.progress, settings], async () => {
+      await this.appendResult(sessionId, result);
+      await this.updateProgress(progress);
+    });
+  }
+
+  /** The game's progress alone, such as the points of a finished session. */
+  async recordProgress(update: ProgressUpdate): Promise<void> {
+    await this.db.transaction('rw', [this.db.progress, this.db.settings], () =>
+      this.updateProgress(update),
+    );
   }
 
   /**
@@ -123,18 +147,31 @@ export class StudyRepository {
 
   /** The result, the review state and the active day are written together, or not at all. */
   private async storeAnswer(
-    { sessionId, state, result, activeDay }: AnswerRecord,
+    { sessionId, state, result, activeDay, progress: update }: AnswerRecord,
     kind: 'append' | 'replaceLast',
   ): Promise<void> {
-    const { reviewStates, sessions, progress } = this.db;
-    await this.db.transaction('rw', [reviewStates, sessions, progress], async () => {
+    const { reviewStates, sessions, progress, settings } = this.db;
+    await this.db.transaction('rw', [reviewStates, sessions, progress, settings], async () => {
       await (kind === 'append'
         ? this.appendResult(sessionId, result)
         : this.replaceLastResult(sessionId, result));
       await reviewStates.put(state);
+      await this.updateProgress(update);
       const current = await progress.get(SINGLETON_KEY);
       await progress.put({ ...current, lastActiveDate: activeDay }, SINGLETON_KEY);
     });
+  }
+
+  /** Runs inside a transaction holding the progress and the settings. */
+  private async updateProgress(update: ProgressUpdate | undefined): Promise<void> {
+    if (update === undefined) {
+      return;
+    }
+    const [stored, settings] = await Promise.all([
+      this.db.progress.get(SINGLETON_KEY),
+      this.db.settings.get(SINGLETON_KEY),
+    ]);
+    await this.db.progress.put(update({ progress: stored ?? {}, settings }), SINGLETON_KEY);
   }
 
   private async appendResult(sessionId: string, result: SessionResultRecord): Promise<void> {
