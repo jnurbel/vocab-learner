@@ -12,12 +12,25 @@ export interface XpTable {
   readonly finalChallengePassed: number;
 }
 
+/** From this many times the daily goal on, the gains are multiplied by `factor`. */
+export interface DiminishingTier {
+  readonly fromGoalMultiple: number;
+  readonly factor: number;
+}
+
 /**
  * Economy part of GAME_CONFIG (GAME_DESIGN.md section 11). Inject it into domain functions
  * rather than importing it in business code, so that tests can try other values.
  */
 export interface EconomyConfig {
   readonly xp: XpTable;
+  /** A word earns its normal points for this many answers a day, then `repeatedAnswerXp`. */
+  readonly maxRewardedAnswersPerCardPerDay: number;
+  readonly repeatedAnswerXp: number;
+  readonly dailyGoalXpDefault: number;
+  readonly dailyGoalXpOptions: readonly number[];
+  /** Ordered by growing goal multiple: the last one reached applies. */
+  readonly diminishingTiers: readonly DiminishingTier[];
 }
 
 export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
@@ -33,4 +46,12 @@ export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
     pathStepValidated: 50,
     finalChallengePassed: 100,
   }),
+  maxRewardedAnswersPerCardPerDay: 3,
+  repeatedAnswerXp: 1,
+  dailyGoalXpDefault: 300,
+  dailyGoalXpOptions: Object.freeze([150, 300, 450]),
+  diminishingTiers: Object.freeze([
+    Object.freeze({ fromGoalMultiple: 1, factor: 0.5 }),
+    Object.freeze({ fromGoalMultiple: 2, factor: 0.25 }),
+  ]),
 });
