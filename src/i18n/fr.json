@@ -166,6 +166,22 @@
     "retry": "Recommencer avec les mots à revoir",
     "empty": "Aucun mot à travailler dans cette sélection : ajoute des mots ou choisis d'autres labels."
   },
+  "typed": {
+    "prompt": {
+      "typeMeaning": "Écris le sens en français.",
+      "typeWord": {
+        "zh": "Écris le caractère chinois.",
+        "en": "Écris le mot anglais."
+      }
+    },
+    "answerLabel": "Ta réponse",
+    "answerHelp": "Entrée pour valider.",
+    "recognized": "Sens reconnu : {sense}",
+    "accept": "J'avais bon",
+    "acceptHelp": "Ta réponse est un synonyme absent de la fiche ? Elle comptera comme juste.",
+    "accepted": "Compté juste.",
+    "keyboardHelp": "Clavier : Entrée valide ta réponse, puis passe à la carte suivante."
+  },
   "outlook": {
     "today": {
       "one": "Aujourd'hui : {due} à revoir, {count} nouveau",
