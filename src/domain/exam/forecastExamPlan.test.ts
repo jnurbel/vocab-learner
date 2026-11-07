@@ -131,9 +131,7 @@ describe('forecastExamPlan', () => {
   it('gives the day when every word should be mastered', () => {
     const result = forecast({ examDate: '2026-11-27', cards: words('l', 5) });
 
-    expect(result.fullyMasteredOn).toBeDefined();
-    expect(result.fullyMasteredOn! > today).toBe(true);
-    expect(result.fullyMasteredOn! < '2026-11-27').toBe(true);
+    expect(result.fullyMasteredOn).toMatch(/^2026-11-(0[7-9]|1\d|2[0-6])$/);
   });
 
   it('counts the new words already introduced today', () => {
