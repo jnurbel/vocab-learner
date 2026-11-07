@@ -46,6 +46,7 @@
   import { StudyRepository } from '../storage/studyRepository';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
   import { appVersion } from './appVersion';
+  import NavIcon from '../ui/NavIcon.svelte';
   import { srs } from './srs';
 
   interface Props {
@@ -317,167 +318,348 @@
   }
 </script>
 
-<main>
-  <h1>{fr.app.title}</h1>
-  <p>{fr.app.tagline}</p>
+<div class="shell">
+  <div class="sidebar">
+    <header class="brand">
+      <span class="logo" lang="zh-CN" aria-hidden="true">词</span>
+      <h1>{fr.app.title}</h1>
+    </header>
 
-  {#if remindBackup && !reminderHidden && page !== 'backup'}
-    <aside class="banner" aria-label={fr.backup.title}>
-      <p>{fr.backup.reminder}</p>
-      <button
-        type="button"
-        onclick={() => {
-          page = 'backup';
-        }}>{fr.backup.reminderAction}</button
-      >
-      <button
-        type="button"
-        onclick={() => {
-          reminderHidden = true;
-        }}>{fr.backup.reminderDismiss}</button
-      >
-    </aside>
-  {/if}
-  {#if autoBackupStatus === 'permissionNeeded' && page !== 'backup'}
-    <aside class="banner" aria-label={fr.backup.folderTitle}>
-      <p>{fr.backup.permissionNeeded}</p>
-      <button type="button" onclick={reauthorizeFolder}>{fr.backup.reauthorize}</button>
-    </aside>
-  {/if}
+    <nav aria-label={fr.nav.label} class="menu">
+      {#each PAGES as name (name)}
+        <button
+          type="button"
+          aria-current={page === name ? 'page' : undefined}
+          onclick={() => {
+            page = name;
+          }}><NavIcon {name} /><span class="menu-text">{fr.nav[name]}</span></button
+        >
+      {/each}
+    </nav>
+  </div>
 
-  <nav aria-label={fr.nav.label}>
-    {#each PAGES as name (name)}
-      <button
-        type="button"
-        aria-current={page === name ? 'page' : undefined}
-        onclick={() => {
-          page = name;
-        }}>{fr.nav[name]}</button
-      >
-    {/each}
-  </nav>
+  <main>
+    <p class="tagline">{fr.app.tagline}</p>
 
-  {#if page === 'backup' && backupService !== undefined}
-    <BackupPanel
-      service={backupService}
-      {download}
-      {lastBackupAt}
-      onBackedUp={backedUp}
-      onRestored={restored}
-      folder={directory?.isSupported() === true ? directory : undefined}
-      {autoBackupStatus}
-      onReauthorized={writeAutomaticBackup}
-    />
-  {:else if page === 'settings'}
-    {#if newPerDay !== undefined}
-      <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
+    {#if remindBackup && !reminderHidden && page !== 'backup'}
+      <aside class="banner" aria-label={fr.backup.title}>
+        <p>{fr.backup.reminder}</p>
+        <button
+          type="button"
+          class="primary"
+          onclick={() => {
+            page = 'backup';
+          }}>{fr.backup.reminderAction}</button
+        >
+        <button
+          type="button"
+          onclick={() => {
+            reminderHidden = true;
+          }}>{fr.backup.reminderDismiss}</button
+        >
+      </aside>
     {/if}
-  {:else if page === 'flashcards'}
-    {#if answerMode !== undefined}
-      <Flashcards
-        {cards}
-        {labels}
-        {startSession}
-        {startPractice}
-        {loadOutlook}
-        {speaker}
-        loadPinyin={loadPinyinGenerator}
-        {answerMode}
-        onAnswerModeChange={changeAnswerMode}
-        onSessionEnd={() => void sessionEnded()}
-      />
+    {#if autoBackupStatus === 'permissionNeeded' && page !== 'backup'}
+      <aside class="banner" aria-label={fr.backup.folderTitle}>
+        <p>{fr.backup.permissionNeeded}</p>
+        <button type="button" class="primary" onclick={reauthorizeFolder}
+          >{fr.backup.reauthorize}</button
+        >
+      </aside>
     {/if}
-  {:else if page === 'dictation'}
-    <Dictation
-      {cards}
-      {labels}
-      {speaker}
-      startSession={startDictation}
-      loadPinyin={loadPinyinGenerator}
-      defaultMode={dictationMode}
-      onSessionEnd={() => void sessionEnded()}
-    />
-  {:else}
-    <WordForm
-      idPrefix="word-entry"
-      existingCards={cards}
-      existingLabels={labels}
-      loadPinyin={loadPinyinGenerator}
-      {newId}
-      {clock}
-      onSave={save}
-    />
 
-    <BulkEntry
-      existingCards={cards}
-      existingLabels={labels}
-      loadPinyin={loadPinyinGenerator}
-      {newId}
-      {clock}
-      onSave={save}
-    />
-
-    {#if editing !== undefined}
-      {#key editing.id}
+    <div class="content">
+      {#if page === 'backup' && backupService !== undefined}
+        <BackupPanel
+          service={backupService}
+          {download}
+          {lastBackupAt}
+          onBackedUp={backedUp}
+          onRestored={restored}
+          folder={directory?.isSupported() === true ? directory : undefined}
+          {autoBackupStatus}
+          onReauthorized={writeAutomaticBackup}
+        />
+      {:else if page === 'settings'}
+        {#if newPerDay !== undefined}
+          <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
+        {/if}
+      {:else if page === 'flashcards'}
+        {#if answerMode !== undefined}
+          <Flashcards
+            {cards}
+            {labels}
+            {startSession}
+            {startPractice}
+            {loadOutlook}
+            {speaker}
+            loadPinyin={loadPinyinGenerator}
+            {answerMode}
+            onAnswerModeChange={changeAnswerMode}
+            onSessionEnd={() => void sessionEnded()}
+          />
+        {/if}
+      {:else if page === 'dictation'}
+        <Dictation
+          {cards}
+          {labels}
+          {speaker}
+          startSession={startDictation}
+          loadPinyin={loadPinyinGenerator}
+          defaultMode={dictationMode}
+          onSessionEnd={() => void sessionEnded()}
+        />
+      {:else}
         <WordForm
-          idPrefix="word-edit"
-          card={editing}
+          idPrefix="word-entry"
           existingCards={cards}
           existingLabels={labels}
           loadPinyin={loadPinyinGenerator}
           {newId}
           {clock}
           onSave={save}
-          onClose={() => {
-            editing = undefined;
-          }}
         />
-      {/key}
-    {/if}
 
-    <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
+        <BulkEntry
+          existingCards={cards}
+          existingLabels={labels}
+          loadPinyin={loadPinyinGenerator}
+          {newId}
+          {clock}
+          onSave={save}
+        />
 
-    <LabelManager {labels} {cards} {clock} {masteryOf} onChange={changeLabels} />
-  {/if}
-</main>
+        {#if editing !== undefined}
+          {#key editing.id}
+            <WordForm
+              idPrefix="word-edit"
+              card={editing}
+              existingCards={cards}
+              existingLabels={labels}
+              loadPinyin={loadPinyinGenerator}
+              {newId}
+              {clock}
+              onSave={save}
+              onClose={() => {
+                editing = undefined;
+              }}
+            />
+          {/key}
+        {/if}
+
+        <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
+
+        <LabelManager {labels} {cards} {clock} {masteryOf} onChange={changeLabels} />
+      {/if}
+    </div>
+  </main>
+</div>
 
 <style>
+  /* Phone first: a top bar with the name, the menu as a bar at the bottom of the screen. */
+  .shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--jade);
+    color: var(--on-jade);
+    font-weight: var(--weight-heavy);
+    font-size: var(--text-lg);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-heavy);
+    letter-spacing: -0.01em;
+  }
+
+  .menu {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+
+  .menu button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: var(--target-lg);
+    padding: var(--space-1) 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+  }
+
+  .menu-text {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .menu button:hover {
+    color: var(--ink);
+  }
+
+  .menu button[aria-current='page'] {
+    color: var(--jade-strong);
+    background: var(--jade-soft);
+    font-weight: var(--weight-heavy);
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: var(--space-2) var(--space-4)
+      calc(var(--bottom-bar-height) + var(--space-6) + env(safe-area-inset-bottom));
+  }
+
+  .tagline {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  /* Each screen is made of cards on the paper background. */
+  .content > :global(section),
+  .content > :global(form) {
+    min-width: 0;
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
   .banner {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: center;
-    border: 1px solid currentColor;
-    border-radius: 0.5rem;
-    padding: 0.5rem 1rem;
-    margin-bottom: 1rem;
+    padding: var(--space-3) var(--space-4);
+    background: var(--thirst-soft);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--thirst);
+    border-radius: var(--radius-md);
   }
 
   .banner p {
     flex: 1 1 100%;
     margin: 0;
+    font-weight: var(--weight-bold);
   }
 
-  nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
+  /* Computer: a menu down the left side, as in docs/ui/mockups/Main.dc.html. */
+  @media (min-width: 900px) {
+    .shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      /* The sidebar colour runs down the whole page, however long the screen. */
+      background: linear-gradient(
+        to right,
+        var(--surface) calc(var(--sidebar-width) - 1px),
+        var(--line) calc(var(--sidebar-width) - 1px) var(--sidebar-width),
+        transparent var(--sidebar-width)
+      );
+    }
 
-  nav button,
-  .banner button {
-    min-height: 44px;
-  }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+      height: 100vh;
+      height: 100dvh;
+      padding: var(--space-6) var(--space-5);
+      box-sizing: border-box;
+      overflow-y: auto;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+    }
 
-  nav button[aria-current='page'] {
-    font-weight: bold;
-    text-decoration: underline;
-  }
+    .brand {
+      padding: 0;
+    }
 
-  main {
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+    .menu {
+      position: static;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      padding: 0;
+      border: 0;
+    }
+
+    .menu button {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: var(--space-3);
+      min-height: var(--target);
+      padding: var(--space-2) var(--space-3);
+      color: var(--ink-soft);
+      font-size: var(--text-md);
+      text-align: left;
+    }
+
+    main {
+      gap: var(--space-5);
+      width: 100%;
+      box-sizing: border-box;
+      padding: var(--space-6) var(--space-7);
+    }
+
+    .tagline {
+      font-size: var(--text-md);
+    }
+
+    .content {
+      gap: var(--space-5);
+    }
+
+    .content > :global(section),
+    .content > :global(form) {
+      padding: var(--space-5) var(--space-6);
+    }
   }
 </style>

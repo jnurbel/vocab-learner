@@ -1,11 +1,250 @@
+/*
+ * Base styles of the "Encre & Jade" theme, built on the tokens of src/ui/theme.css.
+ * Wrapped in :where() so that they weigh nothing: any component style overrides them.
+ */
 :root {
   color-scheme: light dark;
   font-family: var(--font-ui);
+  font-size: 100%;
   line-height: 1.5;
   background: var(--bg);
   color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  /* Long words wrap instead of widening the page, without shrinking table columns. */
+  overflow-wrap: break-word;
+}
+
+:where(*, *::before, *::after) {
+  box-sizing: border-box;
+}
+
+:where(h2, h3, h4) {
+  margin: 0 0 var(--space-3);
+  font-weight: var(--weight-heavy);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+:where(h2) {
+  font-size: var(--text-xl);
+}
+
+:where(h3) {
+  margin-top: var(--space-5);
+  font-size: var(--text-lg);
+}
+
+:where(h4) {
+  font-size: var(--text-md);
+}
+
+:where(p, ul, ol) {
+  margin: 0 0 var(--space-3);
+}
+
+:where(strong, b, th, legend, label) {
+  font-weight: var(--weight-bold);
+}
+
+:where(a) {
+  color: var(--jade);
+}
+
+:where(a:hover) {
+  color: var(--jade-strong);
+}
+
+/* One focus ring everywhere, visible on paper and on cards. */
+:where(:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Buttons: outlined by default, jade for the main action, ink for "continue". */
+:where(button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--target);
+  min-height: var(--target);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: var(--weight-bold);
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--duration) ease,
+    border-color var(--duration) ease,
+    color var(--duration) ease;
+}
+
+:where(button:hover:not(:disabled)) {
+  background: var(--surface-2);
+  border-color: var(--ink);
+}
+
+:where(button[type='submit'], button.primary) {
+  border-color: var(--jade);
+  background: var(--jade);
+  color: var(--on-jade);
+  font-weight: var(--weight-heavy);
+}
+
+:where(button[type='submit'], button.primary):where(:hover:not(:disabled)) {
+  border-color: var(--jade-strong);
+  background: var(--jade-strong);
+  color: var(--on-jade);
+}
+
+:where(button.dark) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+:where(button.dark:hover:not(:disabled)) {
+  border-color: var(--ink-soft);
+  background: var(--ink-soft);
+}
+
+:where(button:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Fields. */
+:where(input:not([type='checkbox'], [type='radio']), select, textarea) {
+  min-height: var(--target);
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+:where(input:not([type='checkbox'], [type='radio']), select, textarea):where(:focus) {
+  border-color: var(--jade);
+  box-shadow: 0 0 0 1px var(--jade);
+}
+
+:where(input[aria-invalid='true'], textarea[aria-invalid='true']) {
+  border-color: var(--ochre);
+  border-width: 2px;
+}
+
+:where(input[readonly]) {
+  background: var(--surface-2);
+}
+
+:where(input[type='file']) {
+  padding: var(--space-2);
+}
+
+:where(input[type='checkbox'], input[type='radio']) {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--jade);
+}
+
+:where(label) {
+  display: inline-block;
+  margin-bottom: var(--space-1);
+}
+
+:where(fieldset) {
+  min-width: 0;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+:where(legend) {
+  padding: 0 var(--space-2);
+  color: var(--ink);
+}
+
+:where(progress, meter) {
+  accent-color: var(--jade);
+}
+
+/* Tables: muted uppercase headers on a light band, lines between rows. */
+:where(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+:where(caption) {
+  margin-bottom: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+:where(thead th) {
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-heavy);
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+:where(tbody th, td) {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* Keyboard shortcuts shown in buttons. */
+:where(kbd) {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 var(--space-1);
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font: inherit;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+/* Wide tables scroll inside their card, never the page. */
+:where(.table-scroll) {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+:where(.table-scroll) :where(caption) {
+  padding: var(--space-2) var(--space-3) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(*, *::before, *::after) {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
