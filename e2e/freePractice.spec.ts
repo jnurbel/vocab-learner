@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 interface StoredState {
   cardId: string;
@@ -62,6 +63,7 @@ test('after a finished session, free practice is offered and leaves the reviews 
 }) => {
   const errors = watchErrors(page);
   await page.goto('./');
+  await openWords(page);
   await addWords(page, ['猫 | mao1 | chat', '狗 | gou3 | chien']);
 
   const menu = page.getByRole('navigation', { name: 'Menu' });
@@ -117,6 +119,7 @@ test('after a finished session, free practice is offered and leaves the reviews 
 test('a higher daily quota of new words gives a longer next session', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('./');
+  await openWords(page);
   const words = '一二三四五六七八九十百千'.split('').map((term, index) => {
     return `${term} | yi1 | mot ${String(index + 1)}`;
   });

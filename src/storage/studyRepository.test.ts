@@ -80,6 +80,44 @@ describe('StudyRepository', () => {
     expect(await db.progress.get(SINGLETON_KEY)).toEqual({ xp: 40, lastActiveDate: '2026-11-06' });
   });
 
+  it('applies the game to the stored progress and settings in the same write as the answer', async () => {
+    await db.progress.put({ xp: 40, lastActiveDate: '2026-11-05' }, SINGLETON_KEY);
+    await db.settings.put({ dailyGoalXp: 150 }, SINGLETON_KEY);
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+
+    await repository.recordAnswer({
+      sessionId: 's1',
+      state: reviewState('a', 2),
+      result: { cardId: 'a', outcome: 'correct' },
+      activeDay: '2026-11-06',
+      progress: ({ progress, settings }) => ({
+        ...progress,
+        xp: (progress.xp ?? 0) + 10,
+        dailyXp: settings?.dailyGoalXp ?? 0,
+      }),
+    });
+
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({
+      xp: 50,
+      dailyXp: 150,
+      lastActiveDate: '2026-11-06',
+    });
+  });
+
+  it('starts the game from an empty progress in a new profile', async () => {
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+
+    await repository.recordAnswer({
+      sessionId: 's1',
+      state: reviewState('a'),
+      result: { cardId: 'a', outcome: 'correct' },
+      activeDay: '2026-11-06',
+      progress: ({ progress }) => ({ ...progress, xp: 10 }),
+    });
+
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({ xp: 10, lastActiveDate: '2026-11-06' });
+  });
+
   it('keeps every answer of a session, in order', async () => {
     await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
     for (const cardId of ['a', 'b']) {
@@ -101,6 +139,7 @@ describe('StudyRepository', () => {
         state: reviewState('a'),
         result: { cardId: 'a', outcome: 'wrong' },
         activeDay: '2026-11-06',
+        progress: () => ({ xp: 999 }),
       }),
     ).rejects.toThrow('Unknown session: missing');
 
@@ -195,6 +234,34 @@ describe('StudyRepository', () => {
     expect(await db.progress.get(SINGLETON_KEY)).toEqual({ lastActiveDate: '2026-11-05' });
   });
 
+  it('gives the points of a free practice answer without making the day an active one', async () => {
+    await db.progress.put({ xp: 5, lastActiveDate: '2026-11-05' }, SINGLETON_KEY);
+    await repository.startSession({
+      ...session('p1', '2026-11-06T08:00:00.000Z'),
+      mode: 'practice',
+    });
+
+    await repository.recordPracticeAnswer({
+      sessionId: 'p1',
+      result: { cardId: 'a', outcome: 'correct' },
+      progress: ({ progress }) => ({ ...progress, xp: (progress.xp ?? 0) + 10 }),
+    });
+
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({ xp: 15, lastActiveDate: '2026-11-05' });
+  });
+
+  it('stores the progress of a finished session alone', async () => {
+    await db.progress.put({ xp: 5 }, SINGLETON_KEY);
+    await db.settings.put({ dailyGoalXp: 450 }, SINGLETON_KEY);
+
+    await repository.recordProgress(({ progress, settings }) => ({
+      ...progress,
+      dailyXp: settings?.dailyGoalXp ?? 0,
+    }));
+
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({ xp: 5, dailyXp: 450 });
+  });
+
   it('refuses a free practice answer for an unknown session', async () => {
     await expect(
       repository.recordPracticeAnswer({
@@ -234,6 +301,27 @@ describe('StudyRepository', () => {
     await expect(repository.saveAnswerMode('<script>' as AnswerMode)).rejects.toThrow(RangeError);
     expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
   });
+
+  it('remembers the intensive mode chosen for a test, label by label, keeping the rest', async () => {
+    await repository.saveNewPerDay(10);
+
+    await repository.saveIntensiveExamMode('lesson-7', true);
+    await repository.saveIntensiveExamMode('lesson-8', true);
+    await repository.saveIntensiveExamMode('lesson-8', false);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({
+      newPerDay: 10,
+      intensiveExamMode: { 'lesson-7': true, 'lesson-8': false },
+    });
+  });
+
+  it.each(['__proto__', 'constructor', '<b>x</b>', ''])(
+    'refuses to store the intensive mode under the key %j',
+    async (labelId) => {
+      await expect(repository.saveIntensiveExamMode(labelId, true)).rejects.toThrow(RangeError);
+      expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
+    },
+  );
 
   it('saves the speed of the voice and keeps the other settings', async () => {
     await repository.saveNewPerDay(10);

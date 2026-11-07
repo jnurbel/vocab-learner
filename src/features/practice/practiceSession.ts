@@ -1,8 +1,11 @@
 import type { Card } from '../../domain/card';
 import { cleanAnswer } from '../../domain/dictation/answerText';
+import { answerEvents } from '../../domain/game/answerEvents';
 import type { ExerciseType, SessionResultRecord } from '../../domain/progressRecords';
 import { assertAcceptable } from '../../domain/srs/acceptAnswer';
 import type { Outcome } from '../../domain/srs/reviewState';
+import { GAME_CONFIG } from '../../domain/srs/config';
+import { localDay, type LocalDay } from '../../domain/srs/localDay';
 import { buildPracticeQueue, PRACTICE_MODE } from '../../domain/srs/practiceQueue';
 import type { StudyRepository } from '../../storage/studyRepository';
 import {
@@ -14,6 +17,7 @@ import {
   type TypedAnswerOptions,
   type TypedExercise,
 } from '../flashcards/flashcardSession';
+import { SessionRewards, type RewardsSummary } from '../game/sessionRewards';
 
 export type PracticeStore = Pick<
   StudyRepository,
@@ -24,6 +28,8 @@ export interface PracticeSessionDependencies {
   store: PracticeStore;
   clock: () => Date;
   newId: () => string;
+  /** The learner's day of an answer, for its points; the device's local day by default. */
+  dayOf?: (now: Date) => LocalDay;
 }
 
 export interface PracticeItem {
@@ -79,6 +85,8 @@ export class PracticeSession {
   private readonly results: SessionResultRecord[] = [];
   /** Set when the last answer was a typed meaning, which "J'avais bon" may accept. */
   private lastTyped: TypedExercise | undefined;
+  /** Free practice earns points, but never counts for the streak (DESIGN.md 5 bis). */
+  private readonly gameRewards = new SessionRewards();
 
   constructor(
     readonly id: string,
@@ -139,6 +147,11 @@ export class PracticeSession {
     await this.end();
   }
 
+  /** What the practice brought to the game; nothing before the first saved answer. */
+  rewards(): RewardsSummary | undefined {
+    return this.gameRewards.summary();
+  }
+
   summary(): PracticeSummary {
     return {
       seen: this.results.length,
@@ -170,8 +183,25 @@ export class PracticeSession {
       ...(answer === undefined ? {} : { answer: cleanAnswer(answer) }),
       at: now.toISOString(),
     };
+    const { dayOf = (at: Date) => localDay(at, GAME_CONFIG.dayStartHour) } = this.deps;
+    const events = answerEvents(
+      {
+        cardId: item.card.id,
+        language: item.card.language,
+        exercise,
+        outcome,
+        rated: false,
+        sessionKind: 'free',
+      },
+      GAME_CONFIG,
+    );
     await this.ensureStarted(now);
-    await this.deps.store.recordPracticeAnswer({ sessionId: this.id, result });
+    await this.deps.store.recordPracticeAnswer({
+      sessionId: this.id,
+      result,
+      progress: this.gameRewards.update(events, dayOf(now)),
+    });
+    this.gameRewards.confirm();
     this.results.push(result);
     this.index += 1;
     if (this.finished) {

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 declare global {
   interface Window {
@@ -137,6 +138,7 @@ test('a keyboard dictation of three words: one right, one same-sounding, one unk
 }) => {
   const errors = collectErrors(page);
   await page.goto('./');
+  await openWords(page);
   await addWords(page, '再 | zài | encore\n猫 | māo | chat\n狗 | gǒu | chien', 3);
 
   await page
@@ -196,6 +198,7 @@ test('a keyboard dictation of three words: one right, one same-sounding, one unk
 test('a dictation on paper, then the learner marks each word', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('./');
+  await openWords(page);
   await addWords(page, '再 | zài | encore\n猫 | māo | chat', 2);
 
   await page
@@ -234,6 +237,7 @@ test('a dictation on paper, then the learner marks each word', async ({ page }) 
 test('a word already rated today is not rated twice by a second dictation', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('./');
+  await openWords(page);
   await page.getByLabel('Un mot par ligne').fill('猫 | māo | chat');
   await page.getByRole('button', { name: 'Ajouter 1 mot' }).click();
   await expect(page.getByRole('table', { name: 'Liste des mots' }).getByRole('row')).toHaveCount(2);
@@ -277,6 +281,7 @@ test('the speed of the voice chosen in the settings is the rate of the dictation
 }) => {
   const errors = collectErrors(page);
   await page.goto('./');
+  await openWords(page);
   await addWords(page, '再 | zài | encore\n猫 | māo | chat', 2);
   const menu = page.getByRole('navigation', { name: 'Menu' });
 

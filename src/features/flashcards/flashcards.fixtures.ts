@@ -1,9 +1,14 @@
 import type { Card } from '../../domain/card';
-import type { SessionRecord } from '../../domain/progressRecords';
+import type { ProgressRecord, SessionRecord } from '../../domain/progressRecords';
 import { GAME_CONFIG } from '../../domain/srs/config';
 import { createFsrsMemoryModel } from '../../domain/srs/fsrsMemoryModel';
 import type { ReviewState } from '../../domain/srs/reviewState';
-import type { AnswerRecord, PracticeAnswerRecord, StudyData } from '../../storage/studyRepository';
+import type {
+  AnswerRecord,
+  PracticeAnswerRecord,
+  ProgressUpdate,
+  StudyData,
+} from '../../storage/studyRepository';
 import type { PracticeStore } from '../practice/practiceSession';
 import type { FlashcardStore } from './flashcardSession';
 
@@ -60,12 +65,37 @@ export class FakeStore implements FlashcardStore, PracticeStore {
   revisions: AnswerRecord[] = [];
   practiceRevisions: PracticeAnswerRecord[] = [];
   loadedSince: string | undefined;
+  /** The stored game progress, updated as the repository does. */
+  progress: ProgressRecord | undefined;
+  /** Makes the next answer fail to save, as a full disk would. */
+  failNextAnswer = false;
 
-  constructor(private readonly data: Partial<StudyData> = {}) {}
+  constructor(
+    private readonly data: Partial<StudyData> = {},
+    progress?: ProgressRecord,
+  ) {
+    this.progress = progress;
+  }
 
   load(since: string): Promise<StudyData> {
     this.loadedSince = since;
-    return Promise.resolve({ reviewStates: [], recentSessions: [], ...this.data });
+    return Promise.resolve({
+      reviewStates: [],
+      recentSessions: [],
+      ...(this.progress === undefined ? {} : { progress: this.progress }),
+      ...this.data,
+    });
+  }
+
+  recordProgress(update: ProgressUpdate): Promise<void> {
+    this.applyProgress(update);
+    return Promise.resolve();
+  }
+
+  private applyProgress(update: ProgressUpdate | undefined): void {
+    if (update !== undefined) {
+      this.progress = update({ progress: this.progress ?? {}, settings: this.data.settings });
+    }
   }
 
   startSession(session: SessionRecord): Promise<void> {
@@ -74,7 +104,12 @@ export class FakeStore implements FlashcardStore, PracticeStore {
   }
 
   recordAnswer(answer: AnswerRecord): Promise<void> {
+    if (this.failNextAnswer) {
+      this.failNextAnswer = false;
+      return Promise.reject(new Error('Disk full'));
+    }
     this.answers.push(answer);
+    this.applyProgress(answer.progress);
     return Promise.resolve();
   }
 
@@ -90,6 +125,7 @@ export class FakeStore implements FlashcardStore, PracticeStore {
 
   recordPracticeAnswer(answer: PracticeAnswerRecord): Promise<void> {
     this.practiceAnswers.push(answer);
+    this.applyProgress(answer.progress);
     return Promise.resolve();
   }
 

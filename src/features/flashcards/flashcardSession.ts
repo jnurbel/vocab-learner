@@ -1,6 +1,7 @@
 import type { Card, Language } from '../../domain/card';
 import type { AnswerExercise } from '../../domain/answerExercise';
 import { cleanAnswer } from '../../domain/dictation/answerText';
+import { answerEvents } from '../../domain/game/answerEvents';
 import type { ExerciseType, SessionResultRecord } from '../../domain/progressRecords';
 import { acceptAsCorrect, type GivenAnswer } from '../../domain/srs/acceptAnswer';
 import { applyAnswer } from '../../domain/srs/applyAnswer';
@@ -15,6 +16,11 @@ import { studyDay } from '../../domain/srs/studyDay';
 import { summarizeStudyOutlook, type StudyOutlook } from '../../domain/srs/studyOutlook';
 import { newPerDayOf } from '../../domain/studySettings';
 import type { StudyRepository } from '../../storage/studyRepository';
+import { EXAM_CONFIG } from '../../domain/exam/examConfig';
+import type { FocusPlanning } from '../../domain/exam/focusPlan';
+import type { Label } from '../../domain/label';
+import type { SettingsRecord } from '../../domain/progressRecords';
+import { SessionRewards, type RewardsSummary } from '../game/sessionRewards';
 
 /** The self-evaluation buttons: "À revoir", "Difficile", "Je savais", "Je le connais déjà". */
 export type SelfEvaluation = 'again' | 'hard' | 'good' | 'known';
@@ -27,11 +33,11 @@ export const OUTCOME_OF: Readonly<Record<SelfEvaluation, Outcome>> = {
 };
 
 /** Sessions started this long ago may still hold answers of today. */
-const RECENT_SESSIONS_MS = 2 * 24 * 60 * 60 * 1000;
+export const RECENT_SESSIONS_MS = 2 * 24 * 60 * 60 * 1000;
 
 export type FlashcardStore = Pick<
   StudyRepository,
-  'load' | 'startSession' | 'recordAnswer' | 'reviseAnswer' | 'endSession'
+  'load' | 'startSession' | 'recordAnswer' | 'reviseAnswer' | 'endSession' | 'recordProgress'
 >;
 
 export interface FlashcardSessionDependencies {
@@ -45,6 +51,15 @@ export interface FlashcardSelection {
   cards: readonly Card[];
   language: Language;
   /** Empty: every word of the language. */
+  labelIds: readonly string[];
+  /** Every label: the pinned ones come first and their tests are planned (GAME_DESIGN.md 2). */
+  labels?: readonly Label[];
+}
+
+/** A session asked for elsewhere (the home screen): it starts as soon as the screen opens. */
+export interface FlashcardLaunch {
+  mode: 'review' | 'practice';
+  language: Language;
   labelIds: readonly string[];
 }
 
@@ -107,6 +122,22 @@ async function loadStudyContext(
     newIntroducedToday: countNewWordsIntroduced(data.recentSessions, today, srs),
     language: selection.language,
     labelIds: selection.labelIds,
+    ...(selection.labels === undefined
+      ? {}
+      : { focus: focusPlanningOf(selection.labels, data.settings) }),
+  };
+}
+
+/** The labels to work on, with the tests the learner prepares in intensive mode. */
+export function focusPlanningOf(
+  labels: readonly Label[],
+  settings: SettingsRecord | undefined,
+): FocusPlanning {
+  const intensive = Object.entries(settings?.intensiveExamMode ?? {});
+  return {
+    labels,
+    exam: EXAM_CONFIG,
+    intensiveLabelIds: intensive.filter(([, chosen]) => chosen).map(([labelId]) => labelId),
   };
 }
 
@@ -165,6 +196,8 @@ export class FlashcardSession {
   private readonly answeredKinds: ReviewQueueItem['kind'][] = [];
   /** The last answer, with the state before it, kept to be accepted by "J'avais bon". */
   private last: LastAnswer | undefined;
+  private readonly gameRewards = new SessionRewards();
+  private correctAnswers = 0;
 
   constructor(
     readonly id: string,
@@ -243,6 +276,11 @@ export class FlashcardSession {
     await this.end();
   }
 
+  /** What the session brought to the game; nothing before the first saved answer. */
+  rewards(): RewardsSummary | undefined {
+    return this.gameRewards.summary();
+  }
+
   summary(): SessionSummary {
     return {
       reviewed: this.answeredKinds.filter((kind) => kind === 'review').length,
@@ -264,7 +302,20 @@ export class FlashcardSession {
     const now = clock();
     const { outcome, exercise, hintsUsed, knownAlready } = answer;
     const rating = untimedRating(outcome, hintsUsed, knownAlready, srs.config);
-    const { state } = applyAnswer(item.state, rating, { now, today: this.today }, srs);
+    const { state, rated } = applyAnswer(item.state, rating, { now, today: this.today }, srs);
+    const events = answerEvents(
+      {
+        cardId: item.card.id,
+        language: item.card.language,
+        exercise,
+        outcome,
+        rated,
+        sessionKind: 'daily',
+        before: item.state,
+        after: state,
+      },
+      srs.config,
+    );
     const result: SessionResultRecord = {
       cardId: item.card.id,
       outcome,
@@ -275,7 +326,14 @@ export class FlashcardSession {
       at: now.toISOString(),
     };
     await this.ensureStarted(now);
-    await store.recordAnswer({ sessionId: this.id, state, result, activeDay: this.today });
+    await store.recordAnswer({
+      sessionId: this.id,
+      state,
+      result,
+      activeDay: this.today,
+      progress: this.gameRewards.update(events, this.today),
+    });
+    this.gameRewards.confirm();
 
     this.last = {
       item,
@@ -283,11 +341,34 @@ export class FlashcardSession {
       ...(answer.typed === undefined ? {} : { typed: answer.typed }),
     };
     this.answeredKinds.push(item.kind);
+    if (outcome === 'correct') {
+      this.correctAnswers += 1;
+    }
     this.noteStageChange(item, state);
     this.index += 1;
     if (this.finished) {
+      await this.complete();
       await this.end();
     }
+  }
+
+  /** The summary is reached: the session earns its points and makes the day active. */
+  private async complete(): Promise<void> {
+    await this.deps.store.recordProgress(
+      this.gameRewards.update(
+        [
+          {
+            type: 'SessionCompleted',
+            language: this.selection.language,
+            kind: 'daily',
+            answers: this.answeredKinds.length,
+            correct: this.correctAnswers,
+          },
+        ],
+        this.today,
+      ),
+    );
+    this.gameRewards.confirm();
   }
 
   /** The stage change of a word, compared with the state it had when the session started. */

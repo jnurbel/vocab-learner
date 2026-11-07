@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 test('the home page loads without errors or CSP violations', async ({ page }) => {
   const errors: string[] = [];
@@ -12,6 +13,8 @@ test('the home page loads without errors or CSP violations', async ({ page }) =>
   });
 
   await page.goto('./');
+
+  await openWords(page);
 
   await expect(page).toHaveTitle('vocab-learner');
   await expect(page.getByRole('heading', { level: 1, name: 'vocab-learner' })).toBeVisible();
@@ -29,6 +32,8 @@ test('the first load does not download the pinyin library, fetched only when a p
   });
 
   await page.goto('./');
+
+  await openWords(page);
   await expect(page.getByRole('heading', { level: 1, name: 'vocab-learner' })).toBeVisible();
   expect(scripts.some((url) => url.includes('pinyinProGenerator'))).toBe(false);
 

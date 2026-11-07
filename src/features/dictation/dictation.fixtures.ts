@@ -1,10 +1,10 @@
 import { vi } from 'vitest';
 import type { Card, Language } from '../../domain/card';
-import type { SessionRecord } from '../../domain/progressRecords';
+import type { ProgressRecord, SessionRecord } from '../../domain/progressRecords';
 import { GAME_CONFIG } from '../../domain/srs/config';
 import { createFsrsMemoryModel } from '../../domain/srs/fsrsMemoryModel';
 import type { ReviewState } from '../../domain/srs/reviewState';
-import type { AnswerRecord, StudyData } from '../../storage/studyRepository';
+import type { AnswerRecord, ProgressUpdate, StudyData } from '../../storage/studyRepository';
 import { SpeechBlockedError, type SpeakOptions, type Speaker } from '../../services/tts/speaker';
 import type { DictationStore } from './dictationSession';
 
@@ -134,8 +134,15 @@ export function reviewed(cardId: string, overrides: Partial<ReviewState> = {}): 
 export class FakeStore implements DictationStore {
   sessions: SessionRecord[] = [];
   answers: AnswerRecord[] = [];
+  /** The stored game progress, updated as the repository does. */
+  progress: ProgressRecord | undefined;
 
   constructor(private readonly data: Partial<StudyData> = {}) {}
+
+  recordProgress(update: ProgressUpdate): Promise<void> {
+    this.progress = update({ progress: this.progress ?? {}, settings: this.data.settings });
+    return Promise.resolve();
+  }
 
   load(): Promise<StudyData> {
     return Promise.resolve({ reviewStates: [], recentSessions: [], ...this.data });
@@ -148,7 +155,7 @@ export class FakeStore implements DictationStore {
 
   recordAnswer(answer: AnswerRecord): Promise<void> {
     this.answers.push(answer);
-    return Promise.resolve();
+    return answer.progress === undefined ? Promise.resolve() : this.recordProgress(answer.progress);
   }
 
   endSession(sessionId: string, endedAt: string): Promise<void> {
