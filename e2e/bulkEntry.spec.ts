@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 test('a learner pastes a lesson, labels it, saves it and finds it again after a reload', async ({
   page,
@@ -14,6 +15,8 @@ test('a learner pastes a lesson, labels it, saves it and finds it again after a 
   });
 
   await page.goto('./');
+
+  await openWords(page);
 
   await page
     .getByLabel('Un mot par ligne')
@@ -41,6 +44,8 @@ test('a learner pastes a lesson, labels it, saves it and finds it again after a 
   await expect(bulkEntry.getByRole('status')).toHaveText('2 mot(s) ajouté(s).');
 
   await page.reload();
+
+  await openWords(page);
 
   const list = page.getByRole('table', { name: 'Liste des mots' });
   await expect(list.getByRole('row', { name: /你好/ })).toContainText('Leçon 1');

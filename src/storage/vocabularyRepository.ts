@@ -53,6 +53,11 @@ export class VocabularyRepository {
     await this.db.labels.put(label);
   }
 
+  /** Stores labels changed together (pinned, unpinned after a test) in one go; others stay. */
+  async saveLabels(labels: readonly Label[]): Promise<void> {
+    await this.db.labels.bulkPut([...labels]);
+  }
+
   async allLabels(): Promise<Label[]> {
     return this.db.labels.toArray();
   }

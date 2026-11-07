@@ -52,6 +52,20 @@ describe('parseBackup', () => {
     expect(parsed).toEqual({ ok: true, value: backup });
   });
 
+  it('keeps a pinned label with its test date, and an unpinned one with its past test', async () => {
+    const backupData = sampleData();
+    backupData.labels = [
+      ...backupData.labels,
+      { ...label('lesson', 'Leçon 7'), isFocus: true, examDate: '2026-11-13' },
+      { ...label('old', 'Leçon 6'), pastExamDate: '2026-11-06', unfocusedOn: '2026-11-07' },
+    ];
+    const backup = await createBackup(backupData, metadata, sha256);
+
+    const parsed = await parseBackup(serializeBackup(backup), sha256);
+
+    expect(parsed).toEqual({ ok: true, value: backup });
+  });
+
   it.each([
     ['not JSON at all', 'hello'],
     ['an empty file', ''],
@@ -254,8 +268,13 @@ describe('parseBackup', () => {
       ['a fractional review count', ['reviewStates', 0, 'reps'], 1.5],
       ['an unknown stage', ['reviewStates', 0, 'peakStage'], 'tree'],
       ['an invalid day', ['reviewStates', 0, 'lastSuccessDay'], '2026-13-45'],
+      ['a test date that is not a day', ['labels', 0, 'examDate'], '13/11/2026'],
+      ['a past test date with markup', ['labels', 0, 'pastExamDate'], '<b>2026</b>'],
+      ['an unpinning day that is not a day', ['labels', 0, 'unfocusedOn'], 'yesterday'],
       ['an unknown session outcome', ['sessions', 0, 'results', 0, 'outcome'], 'perfect'],
       ['a negative xp', ['progress', 'xp'], -5],
+      ['a negative count of answers today', ['progress', 'dailyAnswers'], -1],
+      ['a streak day that is not a day', ['progress', 'lastStreakDay'], '<script>'],
       ['a volume above 100 %', ['settings', 'sfxVolume'], 1.5],
       ['an unknown path step status', ['pathProgress', 0, 'steps', 'listen'], 'flying'],
       ['a final challenge score above 20', ['pathProgress', 0, 'finalChallengeBest'], 21],

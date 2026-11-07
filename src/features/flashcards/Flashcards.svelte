@@ -18,6 +18,7 @@
     type PracticeSummary,
   } from '../practice/practiceSession';
   import type {
+    FlashcardLaunch,
     FlashcardSelection,
     FlashcardSession,
     SelfEvaluation,
@@ -25,6 +26,8 @@
     StudyOutlookView,
   } from './flashcardSession';
   import StudyOutlookPanel from './StudyOutlookPanel.svelte';
+  import RewardsPanel from '../game/RewardsPanel.svelte';
+  import type { RewardsSummary } from '../game/sessionRewards';
   import TypedAnswer from './TypedAnswer.svelte';
 
   interface Props {
@@ -44,6 +47,10 @@
     onAnswerModeChange?: (mode: AnswerMode) => Promise<void>;
     /** Called once a session with at least one answer ends, finished or left. */
     onSessionEnd: () => void;
+    /** Opens the ListenMeaning mini-game, when the app offers it. */
+    onMiniGame?: () => void;
+    /** Starts this session at once instead of showing the setup. */
+    startWith?: FlashcardLaunch;
   }
 
   const {
@@ -57,6 +64,8 @@
     answerMode = DEFAULT_ANSWER_MODE,
     onAnswerModeChange = () => Promise.resolve(),
     onSessionEnd,
+    onMiniGame,
+    startWith,
   }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
@@ -107,6 +116,10 @@
   let cardElement = $state<HTMLElement>();
 
   let outlook = $state.raw<StudyOutlookView>();
+  /** What the session that just ended brought to the game. */
+  let rewards = $state.raw<RewardsSummary>();
+  /** Words still thirsty after a review session, offered as a bonus. */
+  let thirstyLeft = $state(0);
   /** Only the latest request is shown, should an earlier one answer late. */
   let outlookRequest = 0;
   const outlookShown = $derived(
@@ -139,6 +152,14 @@
     const label = fr.flashcards.answerModes[mode];
     return typeof label === 'string' ? label : label[language];
   };
+
+  onMount(() => {
+    if (startWith !== undefined) {
+      language = startWith.language;
+      labelIds = [...startWith.labelIds];
+      void (startWith.mode === 'review' ? start() : practise());
+    }
+  });
 
   async function start() {
     await open('review', () => startSession({ cards, language, labelIds: [...labelIds] }));
@@ -297,6 +318,8 @@
     speaker.cancel();
     const ended = summaryScreen(session, left);
     view = ended;
+    rewards = session.rewards();
+    void loadThirstyLeft(session instanceof PracticeSession || ended.answered === 0);
     if (ended.answered > 0) {
       onSessionEnd();
     }
@@ -312,6 +335,19 @@
     }
     const summary = ended.summary();
     return { kind: 'summary', summary, left, answered: summary.reviewed + summary.introduced };
+  }
+
+  /** The bonus offer of the summary: the words of the selection still due today. */
+  async function loadThirstyLeft(skip: boolean) {
+    thirstyLeft = 0;
+    if (skip) {
+      return;
+    }
+    try {
+      thirstyLeft = (await loadOutlook({ cards, language, labelIds: [...labelIds] })).dueToday;
+    } catch {
+      // The offer is a comfort: without it, the summary still shows.
+    }
   }
 
   async function quit() {
@@ -420,6 +456,11 @@
         <button type="button" disabled={view.kind === 'starting'} onclick={() => practise()}
           >{fr.practice.start}</button
         >
+        {#if onMiniGame !== undefined}
+          <button type="button" disabled={view.kind === 'starting'} onclick={onMiniGame}
+            >{fr.garden.miniGame}</button
+          >
+        {/if}
       </div>
       {#if view.kind === 'starting'}
         <p>{fr.flashcards.starting}</p>
@@ -553,6 +594,9 @@
         <li>{format(fr.flashcards.reviewed, { count: view.summary.reviewed })}</li>
         <li>{format(fr.flashcards.introduced, { count: view.summary.introduced })}</li>
       </ul>
+      {#if rewards !== undefined}
+        <RewardsPanel {rewards} {thirstyLeft} onContinue={() => void start()} />
+      {/if}
       {#if view.summary.stageChanges.length > 0}
         <h4 id="flashcards-stage-changes">{fr.flashcards.stageChangesTitle}</h4>
         <ul aria-labelledby="flashcards-stage-changes">
@@ -585,6 +629,9 @@
         <li>{format(fr.practice.known, { count: view.summary.known })}</li>
         <li>{format(fr.practice.toReview, { count: view.summary.toReview.length })}</li>
       </ul>
+      {#if rewards !== undefined}
+        <RewardsPanel {rewards} />
+      {/if}
       {#if view.summary.toReview.length > 0}
         {@const toReview = view.summary.toReview}
         <button type="button" class="primary" onclick={() => practiseAgain(toReview)}

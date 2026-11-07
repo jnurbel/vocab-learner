@@ -71,6 +71,10 @@ export interface ProgressRecord {
   rushRecords?: Record<string, number>;
   stamps?: number;
   dailyRewardedCount?: Record<string, number>;
+  /** Answers of today that count for the streak (free practice does not). */
+  dailyAnswers?: number;
+  /** The last active day counted in the streak; lastActiveDate is the last day with an answer. */
+  lastStreakDay?: string;
 }
 
 export interface SettingsRecord {

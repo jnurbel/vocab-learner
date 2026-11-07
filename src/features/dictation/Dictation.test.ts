@@ -424,6 +424,17 @@ describe('Dictation, end', () => {
     }
   }
 
+  it('shows the points the dictation brought, with the daily goal', async () => {
+    const { user } = setup();
+    await startDictation(user);
+
+    await answerAll(user, ['再', '描', '狗']);
+
+    expect(await screen.findByRole('heading', { name: fr.dictation.summaryTitle })).toBeVisible();
+    expect(await screen.findByText(/^[+][0-9]+ XP$/)).toBeVisible();
+    expect(screen.getByText(/^Objectif du jour : [0-9]+ [/] 300 XP$/)).toBeVisible();
+  });
+
   it('shows the score and the mistakes with their audio, then retries the missed words', async () => {
     const { user, speaker, onSessionEnd, startSession, store } = setup();
     await startDictation(user);

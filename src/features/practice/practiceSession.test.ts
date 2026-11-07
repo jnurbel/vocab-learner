@@ -37,7 +37,7 @@ describe('a free practice session', () => {
       mode: 'practice',
       startedAt: '2026-11-06T08:00:00.000Z',
     });
-    expect(store.practiceAnswers).toEqual([
+    expect(store.practiceAnswers.map(({ sessionId, result }) => ({ sessionId, result }))).toEqual([
       {
         sessionId: 'practice-1',
         result: {

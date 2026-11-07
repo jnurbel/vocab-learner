@@ -1,6 +1,7 @@
 <script lang="ts" module>
   /** The menu entries that have an icon. */
-  export type NavIconName = 'words' | 'flashcards' | 'dictation' | 'backup' | 'settings';
+  export type NavIconName =
+    'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
 </script>
 
 <script lang="ts">
@@ -25,9 +26,18 @@
   aria-hidden="true"
   focusable="false"
 >
-  {#if name === 'words'}
+  {#if name === 'home'}
+    <path d="M3 11l9-7 9 7" />
+    <path d="M5 10v10h14V10" />
+    <path d="M10 20v-5h4v5" />
+  {:else if name === 'words'}
     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z" />
     <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" />
+  {:else if name === 'garden'}
+    <path d="M12 21v-9" />
+    <path d="M12 12c0-4 3-7 7-7 0 4-3 7-7 7z" />
+    <path d="M12 15c0-3-2.5-5.5-6-5.5 0 3 2.5 5.5 6 5.5z" />
+    <path d="M5 21h14" />
   {:else if name === 'flashcards'}
     <rect x="3" y="7" width="13" height="14" rx="2" />
     <path d="M8 3h11a2 2 0 0 1 2 2v12" />

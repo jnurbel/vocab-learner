@@ -43,6 +43,14 @@
 
   --focus: #17705a;
 
+  /* Garden plants: decorative, each stage is also written in words. */
+  --plant-seed: #8a6a4a;
+  --plant-sprout: #5fae6a;
+  --plant-bud: #d77b97;
+  --plant-flower: #c9405f;
+  --plant-heart: #f6d27a;
+  --plant-lantern: #e8a11a;
+
   /* Typography. */
   --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-hanzi: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
@@ -117,6 +125,13 @@
     --info-soft: #252c47;
 
     --focus: #5cc4a2;
+
+    --plant-seed: #b08a64;
+    --plant-sprout: #7bc47f;
+    --plant-bud: #e59bb0;
+    --plant-flower: #e0607e;
+    --plant-heart: #f6d27a;
+    --plant-lantern: #f0b23a;
 
     --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
     --shadow-raised: 0 2px 4px rgb(0 0 0 / 35%), 0 12px 32px rgb(0 0 0 / 30%);

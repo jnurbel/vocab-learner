@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 async function addWords(page: Page, lines: string, labelName: string, count: number) {
   const bulkEntry = page.getByRole('region', { name: 'Saisie en lot' });
@@ -20,6 +21,8 @@ test('a learner renames, merges and deletes labels, and never loses a word', asy
   });
 
   await page.goto('./');
+
+  await openWords(page);
   await addWords(page, 'cat | chat\ndog | chien', 'Animaux', 2);
   await addWords(page, 'lion | lion\ntiger | tigre', 'Fauves', 2);
   const manager = page.getByRole('region', { name: 'Mes labels' });
@@ -41,6 +44,8 @@ test('a learner renames, merges and deletes labels, and never loses a word', asy
   await expect(manager.getByText("Aucun label pour l'instant.")).toBeVisible();
 
   await page.reload();
+
+  await openWords(page);
   const list = page.getByRole('table', { name: 'Liste des mots' });
   await expect(list.getByRole('row')).toHaveCount(5);
   expect(errors).toEqual([]);

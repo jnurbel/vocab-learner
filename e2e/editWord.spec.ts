@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openWords } from './navigation.ts';
 
 test('a learner fixes a word from the list, cannot turn it into a duplicate, and deletes another', async ({
   page,
@@ -14,6 +15,8 @@ test('a learner fixes a word from the list, cannot turn it into a duplicate, and
   });
 
   await page.goto('./');
+
+  await openWords(page);
   await page
     .getByLabel('Un mot par ligne')
     .fill('猫 | mao1 | chat\n狗 | gou3 | chien\nbook | livre');
@@ -52,6 +55,8 @@ test('a learner fixes a word from the list, cannot turn it into a duplicate, and
   await expect(list.getByRole('row', { name: /book/ })).toHaveCount(0);
 
   await page.reload();
+
+  await openWords(page);
   await expect(list.getByRole('row')).toHaveCount(3);
   expect(errors).toEqual([]);
 });

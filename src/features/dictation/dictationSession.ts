@@ -1,5 +1,6 @@
 import type { Card, Language } from '../../domain/card';
 import { cleanAnswer } from '../../domain/dictation/answerText';
+import { answerEvents } from '../../domain/game/answerEvents';
 import type { SessionResultRecord } from '../../domain/progressRecords';
 import { applyAnswer, type AnswerApplied } from '../../domain/srs/applyAnswer';
 import type { SrsDependencies } from '../../domain/srs/dependencies';
@@ -12,10 +13,11 @@ import {
 } from '../../domain/srs/reviewState';
 import { studyDay } from '../../domain/srs/studyDay';
 import type { StudyRepository } from '../../storage/studyRepository';
+import { SessionRewards, type RewardsSummary } from '../game/sessionRewards';
 
 export type DictationStore = Pick<
   StudyRepository,
-  'load' | 'startSession' | 'recordAnswer' | 'endSession'
+  'load' | 'startSession' | 'recordAnswer' | 'endSession' | 'recordProgress'
 >;
 
 export interface DictationSessionDependencies {
@@ -56,6 +58,9 @@ export async function startDictationSession(
 /** The answers of one dictation; each is stored as soon as it is given. */
 export class DictationSession {
   private started = false;
+  private readonly gameRewards = new SessionRewards();
+  private answered = 0;
+  private correct = 0;
 
   constructor(
     readonly id: string,
@@ -88,21 +93,54 @@ export class DictationSession {
       ...(answer === undefined ? {} : { answer: cleanAnswer(answer) }),
       at: now.toISOString(),
     };
+    const events = answerEvents(
+      {
+        cardId: card.id,
+        language: card.language,
+        exercise: 'listenType',
+        outcome,
+        rated: applied.rated,
+        sessionKind: 'dictation',
+        before: current,
+        after: applied.state,
+      },
+      srs.config,
+    );
     await this.ensureStarted(now);
     await store.recordAnswer({
       sessionId: this.id,
       state: applied.state,
       result,
       activeDay: this.today,
+      progress: this.gameRewards.update(events, this.today),
     });
+    this.gameRewards.confirm();
+    this.answered += 1;
+    this.correct += outcome === 'correct' ? 1 : 0;
     this.states.set(card.id, applied.state);
     return applied;
   }
 
+  /** The dictation is over: with at least one word, it earns the points of a finished session. */
   async end(): Promise<void> {
-    if (this.started) {
-      await this.deps.store.endSession(this.id, this.deps.clock().toISOString());
+    if (!this.started) {
+      return;
     }
+    const completed = {
+      type: 'SessionCompleted' as const,
+      language: this.selection.language,
+      kind: 'dictation' as const,
+      answers: this.answered,
+      correct: this.correct,
+    };
+    await this.deps.store.recordProgress(this.gameRewards.update([completed], this.today));
+    this.gameRewards.confirm();
+    await this.deps.store.endSession(this.id, this.deps.clock().toISOString());
+  }
+
+  /** What the dictation brought to the game; nothing before the first saved word. */
+  rewards(): RewardsSummary | undefined {
+    return this.gameRewards.summary();
   }
 
   /** The session is stored with its first answer, so that opening and leaving stores nothing. */
