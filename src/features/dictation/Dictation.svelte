@@ -18,6 +18,7 @@
   import fr from '../../i18n/fr.json';
   import type { Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
+  import { belongsToInputMethod } from '../typing/imeKeys';
   import AnswerDiff from './AnswerDiff.svelte';
   import {
     DictationPlayer,
@@ -320,10 +321,7 @@
   });
 
   function onFieldKeydown(event: KeyboardEvent) {
-    // Keys typed while the input method composes belong to it: Enter picks a candidate.
-    // Safari sends that Enter after compositionend, with the legacy key code 229.
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    if (composing || event.isComposing || event.keyCode === 229) {
+    if (belongsToInputMethod(event, composing)) {
       return;
     }
     if (event.key === 'Enter') {
