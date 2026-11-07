@@ -212,6 +212,16 @@
     "title": "Flashcards",
     "languageLegend": "Langue",
     "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
+    "answerModeLegend": "Je réponds",
+    "answerModes": {
+      "selfAssess": "S'auto-évaluer",
+      "typeMeaning": "Écrire le sens",
+      "typeWord": {
+        "zh": "Écrire le caractère",
+        "en": "Écrire le mot"
+      },
+      "mixed": "Mélangé"
+    },
     "start": "Commencer",
     "starting": "Préparation des cartes…",
     "startFailed": "La session n'a pas pu démarrer. Réessaie.",

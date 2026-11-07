@@ -48,6 +48,7 @@ function setup({
     startSession,
     startPractice,
     loadOutlook,
+    loadPinyin: () => Promise.reject(new Error('Only a typed word needs the pinyin')),
     speaker,
     onSessionEnd,
   });

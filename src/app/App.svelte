@@ -26,7 +26,7 @@
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
   import SettingsPanel from '../features/settings/SettingsPanel.svelte';
-  import { newPerDayOf } from '../domain/studySettings';
+  import { answerModeOf, newPerDayOf, type AnswerMode } from '../domain/studySettings';
   import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
@@ -232,6 +232,26 @@
     await recordChange();
   }
 
+  /** How the flashcards are answered, read when they open. */
+  let answerMode = $state<AnswerMode>();
+
+  $effect(() => {
+    if (page === 'flashcards') {
+      void loadAnswerMode();
+    }
+  });
+
+  async function loadAnswerMode() {
+    answerMode = answerModeOf((await ready(study).load(clock())).settings);
+  }
+
+  /** A setting is worth backing up too. */
+  async function changeAnswerMode(chosen: AnswerMode) {
+    await ready(study).saveAnswerMode(chosen);
+    answerMode = chosen;
+    await recordChange();
+  }
+
   async function sessionEnded() {
     await reload(storage());
     await writeAutomaticBackup();
@@ -353,15 +373,20 @@
       <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
     {/if}
   {:else if page === 'flashcards'}
-    <Flashcards
-      {cards}
-      {labels}
-      {startSession}
-      {startPractice}
-      {loadOutlook}
-      {speaker}
-      onSessionEnd={() => void sessionEnded()}
-    />
+    {#if answerMode !== undefined}
+      <Flashcards
+        {cards}
+        {labels}
+        {startSession}
+        {startPractice}
+        {loadOutlook}
+        {speaker}
+        loadPinyin={loadPinyinGenerator}
+        {answerMode}
+        onAnswerModeChange={changeAnswerMode}
+        onSessionEnd={() => void sessionEnded()}
+      />
+    {/if}
   {:else if page === 'dictation'}
     <Dictation
       {cards}
