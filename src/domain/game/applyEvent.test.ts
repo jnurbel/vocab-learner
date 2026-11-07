@@ -281,6 +281,41 @@ describe('applying a session completed', () => {
   });
 });
 
+describe('applying a path step validated', () => {
+  const validated: GameEvent = {
+    type: 'PathStepValidated',
+    labelId: 'lesson',
+    language: 'zh',
+    step: 'listen',
+    via: 'progress',
+  };
+
+  it('awards 50 points, never reduced by the daily goal', () => {
+    const farBeyond: ProgressRecord = { xp: 900, dailyXp: 900, dailyXpDay: today };
+
+    const { progress, effects } = applyEvent(farBeyond, validated, context);
+
+    expect(progress.xp).toBe(950);
+    expect(effects).toContainEqual({
+      type: 'XpAwarded',
+      amount: 50,
+      base: 50,
+      multiplier: 1,
+      reason: 'pathStepValidated',
+    });
+  });
+
+  it('awards the same points for a step validated by a placement test', () => {
+    const placed: GameEvent = { ...validated, via: 'placementTest' };
+
+    expect(applyEvent({}, placed, context).progress.xp).toBe(50);
+  });
+
+  it('never makes the day active: the answers behind it already count', () => {
+    expect(applyEvent({}, validated, context).progress.streakDays ?? 0).toBe(0);
+  });
+});
+
 describe('the streak across days', () => {
   it('covers a missed day with a brume day, and tells it', () => {
     const monday: ProgressRecord = {
