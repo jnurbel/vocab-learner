@@ -31,7 +31,7 @@ export const OUTCOME_OF: Readonly<Record<SelfEvaluation, Outcome>> = {
 };
 
 /** Sessions started this long ago may still hold answers of today. */
-const RECENT_SESSIONS_MS = 2 * 24 * 60 * 60 * 1000;
+export const RECENT_SESSIONS_MS = 2 * 24 * 60 * 60 * 1000;
 
 export type FlashcardStore = Pick<
   StudyRepository,
