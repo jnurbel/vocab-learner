@@ -241,3 +241,120 @@ describe('the study outlook', () => {
     });
   });
 });
+
+describe('typed answers in a flashcard session', () => {
+  it('rates a typed meaning like a typed exercise, never timed, and keeps what was typed', async () => {
+    const store = new FakeStore({ reviewStates: [reviewed('a'), reviewed('b'), reviewed('c')] });
+    const session = await start(store, [card('a'), card('b'), card('c')]);
+
+    await session.answerTyped('typeMeaning', 'correct', { answer: ' maison\u200B ' });
+    await session.answerTyped('typeMeaning', 'almost', { answer: 'maisonn' });
+    await session.answerTyped('typeMeaning', 'wrong', { answer: 'chat' });
+
+    expect(
+      store.answers.map(({ result }) => [result.exercise, result.outcome, result.rating]),
+    ).toEqual([
+      ['typeMeaning', 'correct', 'good'],
+      ['typeMeaning', 'almost', 'hard'],
+      ['typeMeaning', 'wrong', 'again'],
+    ]);
+    expect(store.answers[0]?.result.answer).toBe(' maison ');
+    expect(store.answers[0]?.state.lastRatedDay).toBe('2026-11-06');
+  });
+
+  it('records typing the word as the exercise typeEcho, a hint making it hard', async () => {
+    const store = new FakeStore({ reviewStates: [reviewed('a')] });
+    const session = await start(store, [card('a')]);
+
+    await session.answerTyped('typeWord', 'correctWithHint', { answer: 'a', hintsUsed: 1 });
+
+    expect(store.answers[0]?.result).toMatchObject({
+      exercise: 'typeEcho',
+      outcome: 'correctWithHint',
+      rating: 'hard',
+      hintsUsed: 1,
+    });
+  });
+
+  it('still counts a new word answered by typing as discovered, for the daily quota', async () => {
+    const store = new FakeStore();
+    const session = await start(store, [card('new')]);
+
+    await session.answerTyped('typeWord', 'correct', { answer: 'new' });
+
+    expect(store.answers[0]?.result).toMatchObject({ exercise: 'discovery', rating: 'good' });
+  });
+
+  it('accepts a wrong meaning as right, replacing its "again" by a single "good" of the day', async () => {
+    const store = new FakeStore({ reviewStates: [reviewed('a'), reviewed('b')] });
+    const session = await start(store, [card('a'), card('b')]);
+    const [first, second] = session.items.map(({ card: { id } }) => id);
+    const before = session.current?.state;
+    await session.answerTyped('typeMeaning', 'wrong', { answer: 'logis' });
+
+    await session.acceptLastAnswer();
+
+    expect(store.answers).toHaveLength(1);
+    expect(store.revisions).toHaveLength(1);
+    const [revision] = store.revisions;
+    expect(revision?.result).toMatchObject({
+      cardId: first,
+      outcome: 'correct',
+      rating: 'good',
+      exercise: 'typeMeaning',
+      answer: 'logis',
+    });
+    expect(revision?.state.reps).toBe((before?.reps ?? 0) + 1);
+    expect(revision?.state.lapses).toBe(before?.lapses);
+    expect(session.current?.card.id).toBe(second);
+  });
+
+  it('updates the stage changes of the session when an answer is accepted', async () => {
+    const store = new FakeStore({ reviewStates: [reviewed('a')] });
+    const session = await start(store, [card('a')]);
+    await session.answerTyped('typeMeaning', 'wrong', { answer: 'logis' });
+    const afterMistake = session.summary().stageChanges;
+
+    await session.acceptLastAnswer();
+
+    expect(afterMistake.map(({ to }) => to)).not.toEqual(
+      session.summary().stageChanges.map(({ to }) => to),
+    );
+    expect(session.summary().stageChanges.every(({ card: { id } }) => id === 'a')).toBe(true);
+  });
+
+  it('accepts an answer once only', async () => {
+    const store = new FakeStore({ reviewStates: [reviewed('a')] });
+    const session = await start(store, [card('a')]);
+    await session.answerTyped('typeMeaning', 'almost', { answer: 'logi' });
+    await session.acceptLastAnswer();
+
+    await expect(session.acceptLastAnswer()).rejects.toThrow(
+      'Only a wrong or almost right answer can be accepted',
+    );
+    expect(store.revisions).toHaveLength(1);
+  });
+
+  it('refuses to accept a typed word, whose correction is exact, or a self-evaluation', async () => {
+    const store = new FakeStore({ reviewStates: [reviewed('a'), reviewed('b')] });
+    const session = await start(store, [card('a'), card('b')]);
+
+    await session.answerTyped('typeWord', 'wrong', { answer: '再' });
+    await expect(session.acceptLastAnswer()).rejects.toThrow(
+      'Only a typed meaning can be accepted',
+    );
+    await session.answer('again');
+    await expect(session.acceptLastAnswer()).rejects.toThrow(
+      'Only a typed meaning can be accepted',
+    );
+    expect(store.revisions).toHaveLength(0);
+  });
+
+  it('refuses to accept anything before the first answer', async () => {
+    const session = await start(new FakeStore({ reviewStates: [reviewed('a')] }), [card('a')]);
+
+    await expect(session.acceptLastAnswer()).rejects.toThrow(
+      'Only a typed meaning can be accepted',
+    );
+  });
+});

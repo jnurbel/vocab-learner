@@ -168,6 +168,10 @@
       await ready(study).recordAnswer(answer);
       await recordChange();
     },
+    reviseAnswer: async (answer) => {
+      await ready(study).reviseAnswer(answer);
+      await recordChange();
+    },
     endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
   };
 

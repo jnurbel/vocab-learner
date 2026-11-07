@@ -56,6 +56,9 @@ export class FakeStore implements FlashcardStore, PracticeStore {
   sessions: SessionRecord[] = [];
   answers: AnswerRecord[] = [];
   practiceAnswers: PracticeAnswerRecord[] = [];
+  /** Answers corrected by "J'avais bon", which replace a stored one. */
+  revisions: AnswerRecord[] = [];
+  practiceRevisions: PracticeAnswerRecord[] = [];
   loadedSince: string | undefined;
 
   constructor(private readonly data: Partial<StudyData> = {}) {}
@@ -72,6 +75,16 @@ export class FakeStore implements FlashcardStore, PracticeStore {
 
   recordAnswer(answer: AnswerRecord): Promise<void> {
     this.answers.push(answer);
+    return Promise.resolve();
+  }
+
+  reviseAnswer(answer: AnswerRecord): Promise<void> {
+    this.revisions.push(answer);
+    return Promise.resolve();
+  }
+
+  revisePracticeAnswer(answer: PracticeAnswerRecord): Promise<void> {
+    this.practiceRevisions.push(answer);
     return Promise.resolve();
   }
 
