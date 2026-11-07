@@ -294,7 +294,7 @@
   }
 
   .error {
-    color: #b00020;
+    color: var(--ochre);
   }
 
   .actions {

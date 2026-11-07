@@ -5,10 +5,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+import { contrast, themeTokens } from './contrast';
 import Pinyin from './Pinyin.svelte';
 
 // Read from disk: Vitest does not process CSS, so a `?raw` import would be empty.
-const tonesCss = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'tones.css'), 'utf8');
+const here = dirname(fileURLToPath(import.meta.url));
+const tonesCss = readFileSync(join(here, 'tones.css'), 'utf8');
+const themes = themeTokens(readFileSync(join(here, 'theme.css'), 'utf8'));
+/** Pinyin shows on the paper, on the cards and in table headers. */
+const BACKGROUNDS = ['bg', 'surface', 'surface-2'];
 
 describe('Pinyin', () => {
   it('colours each syllable by tone while keeping the tone marks in the text', () => {
@@ -38,19 +43,6 @@ describe('Pinyin', () => {
   });
 });
 
-/** WCAG relative luminance and contrast ratio of two #rrggbb colours. */
-function contrast(first: string, second: string): number {
-  const luminance = (hex: string) => {
-    const [red, green, blue] = [1, 3, 5].map((start) => {
-      const channel = Number.parseInt(hex.slice(start, start + 2), 16) / 255;
-      return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-    });
-    return 0.2126 * (red ?? 0) + 0.7152 * (green ?? 0) + 0.0722 * (blue ?? 0);
-  };
-  const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a);
-  return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
-}
-
 function paletteOf(css: string): Map<string, string> {
   return new Map(
     [...css.matchAll(/\.(tone-[\w-]+)\s*\{\s*color:\s*(#[0-9a-f]{6})/gi)].map(([, name, color]) => [
@@ -69,12 +61,16 @@ describe('tone colours', () => {
     expect([...paletteOf(dark).keys()].sort()).toEqual(tones);
   });
 
-  it('reaches the WCAG AA contrast of 4.5:1 on the light and the dark background', () => {
-    for (const color of paletteOf(light).values()) {
-      expect(contrast(color, '#ffffff')).toBeGreaterThanOrEqual(4.5);
-    }
-    for (const color of paletteOf(dark).values()) {
-      expect(contrast(color, '#121212')).toBeGreaterThanOrEqual(4.5);
+  it('reaches the WCAG AA contrast of 4.5:1 on every light and dark background of the theme', () => {
+    for (const [palette, tokens] of [
+      [paletteOf(light), themes.light],
+      [paletteOf(dark), themes.dark],
+    ] as const) {
+      for (const color of palette.values()) {
+        for (const background of BACKGROUNDS) {
+          expect(contrast(color, tokens.get(background) ?? '')).toBeGreaterThanOrEqual(4.5);
+        }
+      }
     }
   });
 });

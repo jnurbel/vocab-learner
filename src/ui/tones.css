@@ -1,7 +1,7 @@
 /*
  * Tone colours (DESIGN §8.2): 1 red, 2 green, 3 blue, 4 purple, neutral grey.
  * They always double the tone mark, never replace it. Each colour reaches the WCAG AA
- * contrast of 4.5:1 on the page background, light or dark (checked by Pinyin.test.ts).
+ * contrast of 4.5:1 on every background of theme.css, light or dark (checked by Pinyin.test.ts).
  */
 .tone-1 {
   color: #c62828;
