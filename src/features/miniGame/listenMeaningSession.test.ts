@@ -3,6 +3,14 @@ import type { Card } from '../../domain/card';
 import { card, FakeStore, reviewed, srs } from '../flashcards/flashcards.fixtures';
 import { startListenMeaningSession } from './listenMeaningSession';
 
+/** The value, or a failed test with a clear message: no non-null assertion. */
+function defined<T>(value: T | undefined, what: string): T {
+  if (value === undefined) {
+    throw new Error(`Missing ${what}`);
+  }
+  return value;
+}
+
 const morning = new Date('2026-11-06T08:00:00Z');
 const meanings = ['chat', 'chien', 'oiseau', 'poisson', 'cheval'];
 const words = meanings.map((meaning, index) =>
@@ -44,7 +52,7 @@ describe('a ListenMeaning session', () => {
   it('stores a right answer as a listenMeaning result, rated by its response time', async () => {
     const store = new FakeStore({ reviewStates: words.map(({ id }) => reviewed(id)) });
     const session = await start(store);
-    const target = session.current!.target;
+    const target = defined(session.current, 'question').target;
 
     const result = await session.answer(target, { hintsUsed: 0 });
 
@@ -64,8 +72,11 @@ describe('a ListenMeaning session', () => {
   it('rates a wrong choice again, and "Je ne sais pas" too', async () => {
     const store = new FakeStore({ reviewStates: words.map(({ id }) => reviewed(id)) });
     const session = await start(store);
-    const first = session.current!;
-    const wrong = first.options.find((option) => option !== first.target)!;
+    const first = defined(session.current, 'question');
+    const wrong = defined(
+      first.options.find((option) => option !== first.target),
+      'wrong option',
+    );
 
     expect(await session.answer(wrong, { hintsUsed: 0 })).toMatchObject({ outcome: 'wrong' });
     expect(await session.answer('unknown', { hintsUsed: 0 })).toMatchObject({
@@ -78,12 +89,15 @@ describe('a ListenMeaning session', () => {
   it('stores the state of a word already rated today, without a second rating, and its points', async () => {
     const store = new FakeStore({ reviewStates: ratedToday });
     const session = await start(store);
-    const target = session.current!.target;
+    const target = defined(session.current, 'question').target;
 
     const result = await session.answer(target, { hintsUsed: 0 });
 
     expect(result.rated).toBe(false);
-    const before = ratedToday.find(({ cardId }) => cardId === target.id)!;
+    const before = defined(
+      ratedToday.find(({ cardId }) => cardId === target.id),
+      'state',
+    );
     const { stability, difficulty, reps, due, lastRatedDay } = before;
     // The memory is untouched; a right answer still counts a day of success.
     expect(store.answers[0]?.state).toMatchObject({
@@ -101,7 +115,7 @@ describe('a ListenMeaning session', () => {
     const store = new FakeStore({ reviewStates: words.map(({ id }) => reviewed(id)) });
     const session = await start(store);
 
-    await session.answer(session.current!.target, { hintsUsed: 0 });
+    await session.answer(defined(session.current, 'question').target, { hintsUsed: 0 });
 
     expect(store.progress?.gameLevels).toEqual({
       'listenMeaning:zh': { level: 2, window: [true] },
@@ -119,14 +133,14 @@ describe('a ListenMeaning session', () => {
   });
 
   it('has no question when the language holds a single word', async () => {
-    const session = await start(new FakeStore(), [words[0]!]);
+    const session = await start(new FakeStore(), [defined(words[0], 'word')]);
 
     expect(session.current).toBeUndefined();
     expect(session.eligible).toBe(false);
   });
 
   it('refuses an answer once the round is over', async () => {
-    const session = await start(new FakeStore(), [words[0]!]);
+    const session = await start(new FakeStore(), [defined(words[0], 'word')]);
 
     await expect(session.answer('unknown', { hintsUsed: 0 })).rejects.toThrow('The round is over');
   });

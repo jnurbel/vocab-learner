@@ -211,8 +211,11 @@ export class ListenMeaningSession {
   /** The next word that can be asked; a word without any possible distractor is skipped. */
   private nextQuestion(): void {
     this.question = undefined;
-    while (this.question === undefined && this.index < this.round.length) {
-      const target = this.round[this.index] as Card;
+    while (this.question === undefined) {
+      const target = this.round[this.index];
+      if (target === undefined) {
+        break;
+      }
       const stage = stageOf(this.stateOf(target, new Date(0)), this.deps.srs.config);
       this.question = listenMeaningQuestion(
         target,

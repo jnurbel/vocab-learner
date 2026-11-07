@@ -156,7 +156,8 @@ describe('Garden', () => {
     expect(within(chinese).getAllByRole('listitem')).toHaveLength(48);
     expect(screen.getByText('Page 1 / 3')).toBeVisible();
 
-    await user.click(screen.getAllByRole('button', { name: 'Page suivante' })[0]!);
+    // Only the Chinese plot has more than one page.
+    await user.click(screen.getByRole('button', { name: 'Page suivante' }));
 
     expect(screen.getByText('Page 2 / 3')).toBeVisible();
     expect(within(chinese).getByText('词48')).toBeVisible();

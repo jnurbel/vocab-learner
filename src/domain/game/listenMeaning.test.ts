@@ -40,6 +40,14 @@ const cards = ['chat', 'chien', 'oiseau', 'poisson', 'cheval', 'vache'].map((mea
 );
 const states = cards.map(({ id }) => reviewed(id));
 
+function nth(index: number): Card {
+  const found = cards[index];
+  if (found === undefined) {
+    throw new Error(`No word ${String(index)}`);
+  }
+  return found;
+}
+
 describe('a round of ListenMeaning', () => {
   it('asks the words of a language already introduced, in an order drawn from the seed', () => {
     const round = listenMeaningRound(
@@ -69,7 +77,7 @@ describe('a question of ListenMeaning (GAME_DESIGN.md 6.1)', () => {
 
   it('offers 4 meanings at level 2, the right one among them, each once', () => {
     const question = listenMeaningQuestion(
-      cards[0]!,
+      nth(0),
       pool,
       { level: 2, stage: 'stem', seed: 's1' },
       MINI_GAME_CONFIG,
@@ -85,19 +93,19 @@ describe('a question of ListenMeaning (GAME_DESIGN.md 6.1)', () => {
     const easy = { level: 1 as const, stage: 'stem' as const, seed: 's1' };
     const young = { level: 3 as const, stage: 'sprout' as const, seed: 's1' };
 
-    expect(listenMeaningQuestion(cards[0]!, pool, easy, MINI_GAME_CONFIG)?.options).toHaveLength(3);
-    expect(listenMeaningQuestion(cards[0]!, pool, young, MINI_GAME_CONFIG)?.difficulty).toBe(2);
+    expect(listenMeaningQuestion(nth(0), pool, easy, MINI_GAME_CONFIG)?.options).toHaveLength(3);
+    expect(listenMeaningQuestion(nth(0), pool, young, MINI_GAME_CONFIG)?.difficulty).toBe(2);
   });
 
   it('puts the right meaning at different places from one seed to another', () => {
     const places = new Set(
       Array.from({ length: 20 }, (_, seed) =>
         listenMeaningQuestion(
-          cards[0]!,
+          nth(0),
           pool,
           { level: 2, stage: 'stem', seed: String(seed) },
           MINI_GAME_CONFIG,
-        )?.options.indexOf(cards[0]!),
+        )?.options.indexOf(nth(0)),
       ),
     );
 
@@ -105,11 +113,11 @@ describe('a question of ListenMeaning (GAME_DESIGN.md 6.1)', () => {
   });
 
   it('is not eligible for the only word of a language', () => {
-    const alone = { cards: [cards[0]!], introduced: new Set<string>() };
+    const alone = { cards: [nth(0)], introduced: new Set<string>() };
 
     expect(
       listenMeaningQuestion(
-        cards[0]!,
+        nth(0),
         alone,
         { level: 2, stage: 'stem', seed: 's' },
         MINI_GAME_CONFIG,
@@ -120,14 +128,14 @@ describe('a question of ListenMeaning (GAME_DESIGN.md 6.1)', () => {
 
 describe('the answer to a question', () => {
   const question: ListenMeaningQuestion = {
-    target: cards[0]!,
-    options: [cards[1]!, cards[0]!, cards[2]!],
+    target: nth(0),
+    options: [nth(1), nth(0), nth(2)],
     difficulty: 1,
   };
   const quick = { hintsUsed: 0, responseMs: 2000 };
 
   it('rates a quick right choice good', () => {
-    expect(listenMeaningAnswer(question, cards[0]!, quick, GAME_CONFIG)).toEqual({
+    expect(listenMeaningAnswer(question, nth(0), quick, GAME_CONFIG)).toEqual({
       outcome: 'correct',
       rating: 'good',
     });
@@ -135,18 +143,18 @@ describe('the answer to a question', () => {
 
   it('rates a right choice after 8 seconds hard', () => {
     expect(
-      listenMeaningAnswer(question, cards[0]!, { hintsUsed: 0, responseMs: 8001 }, GAME_CONFIG),
+      listenMeaningAnswer(question, nth(0), { hintsUsed: 0, responseMs: 8001 }, GAME_CONFIG),
     ).toEqual({ outcome: 'correct', rating: 'hard' });
   });
 
   it('rates a right choice after the written hint hard, as correct with hint', () => {
     expect(
-      listenMeaningAnswer(question, cards[0]!, { hintsUsed: 1, responseMs: 1000 }, GAME_CONFIG),
+      listenMeaningAnswer(question, nth(0), { hintsUsed: 1, responseMs: 1000 }, GAME_CONFIG),
     ).toEqual({ outcome: 'correctWithHint', rating: 'hard' });
   });
 
   it('rates a wrong choice and "I do not know" again', () => {
-    expect(listenMeaningAnswer(question, cards[1]!, quick, GAME_CONFIG)).toEqual({
+    expect(listenMeaningAnswer(question, nth(1), quick, GAME_CONFIG)).toEqual({
       outcome: 'wrong',
       rating: 'again',
     });
@@ -154,7 +162,7 @@ describe('the answer to a question', () => {
   });
 
   it('refuses a choice that was not offered', () => {
-    expect(() => listenMeaningAnswer(question, cards[5]!, quick, GAME_CONFIG)).toThrow(
+    expect(() => listenMeaningAnswer(question, nth(5), quick, GAME_CONFIG)).toThrow(
       'Not an option of this question',
     );
   });

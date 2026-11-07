@@ -321,7 +321,7 @@
           class:wrong={feedback !== undefined && isChosen && !isTarget}
           aria-keyshortcuts={String(index + 1)}
           disabled={feedback !== undefined || busy}
-          onclick={() => choose(option)}
+          onclick={() => void choose(option)}
         >
           <kbd aria-hidden="true">{index + 1}</kbd>
           <span>{option.translation}</span>
@@ -337,8 +337,12 @@
     {#if feedback === undefined}
       <div class="actions">
         {#if !written}
-          <button type="button" aria-keyshortcuts="L" onclick={() => play(true)}
-            ><kbd aria-hidden="true">L</kbd> {fr.listenMeaning.slow}</button
+          <button
+            type="button"
+            aria-keyshortcuts="L"
+            onclick={() => {
+              play(true);
+            }}><kbd aria-hidden="true">L</kbd> {fr.listenMeaning.slow}</button
           >
         {/if}
         {#if !hintShown && (target.language === 'zh' ? target.pinyin !== undefined : !written)}
@@ -354,7 +358,7 @@
           class="unknown"
           aria-keyshortcuts="0"
           disabled={busy}
-          onclick={() => choose('unknown')}
+          onclick={() => void choose('unknown')}
           ><kbd aria-hidden="true">0</kbd> {fr.listenMeaning.unknown}</button
         >
       </div>
@@ -392,7 +396,12 @@
       </div>
       <div class="actions">
         {#if feedback.outcome === 'wrong' && !written}
-          <button type="button" onclick={() => play()}>{fr.listenMeaning.replay}</button>
+          <button
+            type="button"
+            onclick={() => {
+              play();
+            }}>{fr.listenMeaning.replay}</button
+          >
           {#if feedback.chosen !== 'unknown'}
             <button type="button" onclick={playChosen}>{fr.listenMeaning.listenChosen}</button>
           {/if}

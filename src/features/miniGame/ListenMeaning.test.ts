@@ -54,8 +54,7 @@ function spokenWord(speaker: ReturnType<typeof fakeSpeaker>): Card {
 }
 
 const options = () => screen.getByRole('group', { name: 'Que veut dire ce mot ?' });
-const optionOf = (word: Card) =>
-  within(options()).getByRole('button', { name: new RegExp(word.translation) });
+const optionOf = (word: Card) => within(options()).getByRole('button', { name: word.translation });
 
 async function begin(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Commencer le mini-jeu' }));
@@ -101,8 +100,8 @@ describe('ListenMeaning', () => {
     const target = spokenWord(speaker);
     const wrong = within(options())
       .getAllByRole('button')
-      .find((button) => button.textContent?.includes(target.translation) !== true);
-    const chosen = words.find((each) => wrong?.textContent?.includes(each.translation) === true);
+      .find((button) => !button.textContent.includes(target.translation));
+    const chosen = words.find((each) => wrong?.textContent.includes(each.translation));
     if (wrong === undefined || chosen === undefined) {
       throw new Error('No wrong option');
     }
@@ -143,7 +142,7 @@ describe('ListenMeaning', () => {
     const target = spokenWord(speaker);
     const index = within(options())
       .getAllByRole('button')
-      .findIndex((button) => button.textContent?.includes(target.translation) === true);
+      .findIndex((button) => button.textContent.includes(target.translation));
     await user.keyboard(String(index + 1));
     expect(await screen.findByRole('status')).toHaveTextContent('Juste.');
   });
@@ -194,7 +193,7 @@ describe('ListenMeaning', () => {
   });
 
   it('explains that a single word is not enough', async () => {
-    const { user } = setup({ cards: [words[0] as Card] });
+    const { user } = setup({ cards: words.slice(0, 1) });
     await begin(user);
 
     expect(
