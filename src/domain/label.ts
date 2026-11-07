@@ -8,7 +8,12 @@ export interface Label {
   name: string;
   color?: string;
   isFocus: boolean;
+  /** Local day of the next test, 'YYYY-MM-DD'. */
   examDate?: string;
+  /** The test date of a label unpinned automatically after its test, kept to undo it. */
+  pastExamDate?: string;
+  /** Local day the label was unpinned automatically: the undo is offered all that day. */
+  unfocusedOn?: string;
   createdAt: string;
   updatedAt: string;
 }
