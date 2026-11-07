@@ -200,6 +200,17 @@ describe('parseBackup', () => {
       });
     });
 
+    it('keeps the level of the island last seen in the garden', async () => {
+      const data = sampleData();
+      data.progress = { ...data.progress, islandLevelSeen: 8 };
+      const backup = await createBackup(data, metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
     it('refuses an unknown way of answering the flashcards', async () => {
       const text = await resealed((document) => {
         member(data(document), 'settings')['answerMode'] = '<img src=x>';
@@ -274,6 +285,7 @@ describe('parseBackup', () => {
       ['an unknown session outcome', ['sessions', 0, 'results', 0, 'outcome'], 'perfect'],
       ['a negative xp', ['progress', 'xp'], -5],
       ['a negative count of answers today', ['progress', 'dailyAnswers'], -1],
+      ['a fractional island level seen', ['progress', 'islandLevelSeen'], 2.5],
       ['a streak day that is not a day', ['progress', 'lastStreakDay'], '<script>'],
       ['a volume above 100 %', ['settings', 'sfxVolume'], 1.5],
       ['an unknown path step status', ['pathProgress', 0, 'steps', 'listen'], 'flying'],

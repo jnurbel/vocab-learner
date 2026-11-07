@@ -75,6 +75,8 @@ export interface ProgressRecord {
   dailyAnswers?: number;
   /** The last active day counted in the streak; lastActiveDate is the last day with an answer. */
   lastStreakDay?: string;
+  /** The level of the island last seen in the garden: it grows from there after a level up. */
+  islandLevelSeen?: number;
 }
 
 export interface SettingsRecord {
