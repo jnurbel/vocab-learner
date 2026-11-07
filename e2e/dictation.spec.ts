@@ -90,10 +90,9 @@ async function addWords(page: Page, lines: string, count: number) {
  * answered yet. Each word is read after a short silence, and a wrong answer reads it again.
  */
 async function currentWord(page: Page, remaining: readonly string[]): Promise<string> {
-  await expect
-    .poll(() => page.evaluate(() => window.spokenTexts.at(-1) ?? ''))
-    .toMatch(new RegExp(`^(?:${remaining.join('|')})$`));
-  return page.evaluate(() => window.spokenTexts.at(-1) ?? '');
+  const last = () => page.evaluate(() => window.spokenTexts.at(-1) ?? '');
+  await expect.poll(async () => remaining.includes(await last())).toBe(true);
+  return last();
 }
 
 interface StoredState {

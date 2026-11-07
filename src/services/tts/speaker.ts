@@ -40,6 +40,29 @@ export function isSpeechBlocked(error: unknown): error is SpeechBlockedError {
 export interface VoiceLike {
   readonly lang: string;
   readonly name: string;
+  /** True for a voice on the device, false for an online one; absent from some browsers. */
+  readonly localService?: boolean;
+}
+
+/** A voice as shown in the settings, to tell why a word is not read. */
+export interface VoiceInfo {
+  name: string;
+  lang: string;
+  localService: boolean | undefined;
+}
+
+export interface VoiceReport {
+  /** Every voice the browser offers, in its order. */
+  voices: readonly VoiceInfo[];
+  /** The voice used for each language; undefined when none suits it. */
+  chosen: Record<Language, VoiceInfo | undefined>;
+}
+
+/** Tells which voices the browser offers, e.g. after installing the Chinese voice on Android. */
+export interface VoiceCatalog {
+  voiceReport(): Promise<VoiceReport>;
+  /** Asks the browser for its voices again, without the cache. */
+  reloadVoices(): Promise<VoiceReport>;
 }
 
 export interface UtteranceLike {
@@ -150,9 +173,10 @@ const pause = (ms: number) =>
 export function createWebSpeechSpeaker(
   host: SpeechHost,
   { voicesTimeoutMs = 1_500, rate = 1, leadInMs = 300 }: SpeakerOptions = {},
-): Speaker {
+): Speaker & VoiceCatalog {
   const { speechSynthesis: synthesis, createUtterance } = host;
   let voices: Promise<readonly VoiceLike[]> | undefined;
+  let watchingVoices = false;
   let unlocked = false;
   /** Bumped by every reading and by cancel(), so that a superseded reading stays silent. */
   let generation = 0;
@@ -161,6 +185,13 @@ export function createWebSpeechSpeaker(
 
   /** Chrome returns no voice at first and announces them with `voiceschanged`. */
   function loadVoices(available: SynthesisLike): Promise<readonly VoiceLike[]> {
+    if (!watchingVoices) {
+      watchingVoices = true;
+      // A voice installed or removed: the list is read again at the next reading.
+      available.addEventListener('voiceschanged', () => {
+        voices = undefined;
+      });
+    }
     voices ??= new Promise<readonly VoiceLike[]>((resolve) => {
       const now = available.getVoices();
       if (now.length > 0) {
@@ -184,10 +215,36 @@ export function createWebSpeechSpeaker(
     return voices;
   }
 
+  /**
+   * The voice for the language. A list without it is never trusted for good: the browser is
+   * asked again, as a voice may have been installed since (Chrome sends no event then).
+   */
   async function voiceFor(language: Language): Promise<VoiceLike | undefined> {
-    return synthesis === undefined || createUtterance === undefined
-      ? undefined
-      : pickVoice(await loadVoices(synthesis), language);
+    if (synthesis === undefined || createUtterance === undefined) {
+      return undefined;
+    }
+    const listed = await loadVoices(synthesis);
+    const found = pickVoice(listed, language);
+    // An empty list was just asked for, and is not kept.
+    if (found !== undefined || listed.length === 0) {
+      return found;
+    }
+    voices = undefined;
+    return pickVoice(await loadVoices(synthesis), language);
+  }
+
+  async function report(): Promise<VoiceReport> {
+    const listed = synthesis === undefined ? [] : await loadVoices(synthesis);
+    const info = ({ name, lang, localService }: VoiceLike): VoiceInfo => ({
+      name,
+      lang,
+      localService,
+    });
+    const chosen = (language: Language) => {
+      const picked = pickVoice(listed, language);
+      return picked === undefined ? undefined : info(picked);
+    };
+    return { voices: listed.map(info), chosen: { zh: chosen('zh'), en: chosen('en') } };
   }
 
   function play(available: SynthesisLike, utterance: UtteranceLike, text: string): Promise<void> {
@@ -231,6 +288,11 @@ export function createWebSpeechSpeaker(
   }
 
   return {
+    voiceReport: report,
+    reloadVoices() {
+      voices = undefined;
+      return report();
+    },
     async hasVoice(language) {
       return (await voiceFor(language)) !== undefined;
     },

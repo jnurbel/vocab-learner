@@ -108,6 +108,10 @@ export function fakeSpeech({
     endCurrent: () => {
       queue.shift()?.onend?.();
     },
+    /** Some browsers update `getVoices()` without any `voiceschanged` event. */
+    deliverLateVoicesSilently: () => {
+      voices = lateVoices;
+    },
     deliverLateVoices: () => {
       voices = lateVoices;
       listeners.forEach((listener) => {

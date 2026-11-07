@@ -431,7 +431,25 @@
     "blocked": "Le navigateur a bloqué le son : le mot est écrit à la place. Touche « Activer le son » pour l’entendre.",
     "enable": "Activer le son",
     "missingHelpTitle": "Comment entendre le chinois ?",
-    "missingHelpAndroid": "Sur Android : Paramètres Android › Système › Langues › Synthèse vocale › Moteur Google › installer Chinois (Mandarin). Ensuite, recharge la page.",
-    "missingHelpIos": "Sur iPhone : Réglages › Accessibilité › Contenu énoncé › Voix › Chinois, puis télécharge une voix. Ensuite, recharge la page."
+    "missingHelpAndroid": "Sur Android : Paramètres Android › Système › Langues › Synthèse vocale › Moteur Google › installer Chinois (Mandarin). Ensuite, ferme complètement Chrome (balaie-le dans les applis récentes), puis rouvre-le : il ne voit les nouvelles voix qu’après.",
+    "missingHelpIos": "Sur iPhone : Réglages › Accessibilité › Contenu énoncé › Voix › Chinois, puis télécharge une voix. Ensuite, recharge la page.",
+    "title": "Voix",
+    "intro": "Pour comprendre pourquoi un mot n’est pas lu : les voix que le navigateur a trouvées sur cet appareil.",
+    "testZh": "Tester la voix chinoise",
+    "testEn": "Tester la voix anglaise",
+    "reload": "Recharger la liste des voix",
+    "detected": "Voix détectées par le navigateur : {count}",
+    "none": "Aucune voix détectée.",
+    "local": "sur l’appareil",
+    "online": "en ligne",
+    "unknownService": "emplacement inconnu",
+    "chosenZh": "retenue pour le chinois",
+    "chosenEn": "retenue pour l’anglais",
+    "noChinese": "Aucune voix chinoise trouvée : les dictées en chinois s’affichent en pinyin.",
+    "testStatus": {
+      "failed": "La voix n’a pas pu être lue.",
+      "blocked": "Le navigateur a bloqué le son. Touche à nouveau le bouton.",
+      "noVoice": "Pas de voix pour cette langue sur cet appareil."
+    }
   }
 }

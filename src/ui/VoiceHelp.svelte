@@ -5,13 +5,15 @@
   interface Props {
     /** The language without a voice; only Chinese is often missing, e.g. on Android. */
     language: Language;
+    /** Unfolded, e.g. in the settings where it is the point. */
+    open?: boolean;
   }
 
-  const { language }: Props = $props();
+  const { language, open = false }: Props = $props();
 </script>
 
 {#if language === 'zh'}
-  <details class="voice-help">
+  <details class="voice-help" {open}>
     <summary>{fr.voice.missingHelpTitle}</summary>
     <p>{fr.voice.missingHelpAndroid}</p>
     <p>{fr.voice.missingHelpIos}</p>

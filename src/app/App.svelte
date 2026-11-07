@@ -25,6 +25,7 @@
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
+  import VoicePanel from '../features/settings/VoicePanel.svelte';
   import SettingsPanel from '../features/settings/SettingsPanel.svelte';
   import { answerModeOf, newPerDayOf, type AnswerMode } from '../domain/studySettings';
   import { labelMastery, wordProgress } from '../features/progress/wordProgress';
@@ -40,7 +41,12 @@
   import { browserDownloadEnvironment, downloadFile } from '../services/backup/downloadFile';
   import { loadPinyinGenerator } from '../services/pinyinLoader';
   import { persistenceRequester } from '../services/storagePersistence';
-  import { browserSpeechHost, createWebSpeechSpeaker, type Speaker } from '../services/tts/speaker';
+  import {
+    browserSpeechHost,
+    createWebSpeechSpeaker,
+    type Speaker,
+    type VoiceCatalog,
+  } from '../services/tts/speaker';
   import { BackupMetaStore } from '../storage/backupMetaStore';
   import { BackupRepository } from '../storage/backupRepository';
   import { StudyRepository } from '../storage/studyRepository';
@@ -56,6 +62,8 @@
     requestPersistence?: () => Promise<void>;
     /** Reads the words aloud; the browser's voices by default. */
     speaker?: Speaker;
+    /** Lists the voices in the settings; the browser's by default. */
+    voices?: VoiceCatalog;
     /** Saves a backup file on this device; the browser's download by default. */
     download?: (file: BackupFile) => void;
     /** Picks the automatic backup folder; absent where the browser has no folder access. */
@@ -63,12 +71,16 @@
     now?: () => Date;
   }
 
+  /** The browser's voices, shared by the readings and the voice list of the settings. */
+  const browserSpeech = createWebSpeechSpeaker(browserSpeechHost());
+
   const {
     databaseName = 'vocab-learner-default',
     requestPersistence = persistenceRequester(
       'storage' in navigator ? navigator.storage : undefined,
     ),
-    speaker = createWebSpeechSpeaker(browserSpeechHost()),
+    speaker = browserSpeech,
+    voices = browserSpeech,
     download = (file: BackupFile) => {
       downloadFile(file, browserDownloadEnvironment());
     },
@@ -384,6 +396,7 @@
         {#if newPerDay !== undefined}
           <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
         {/if}
+        <VoicePanel {speaker} {voices} />
       {:else if page === 'flashcards'}
         {#if answerMode !== undefined}
           <Flashcards

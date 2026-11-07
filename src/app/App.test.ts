@@ -391,4 +391,25 @@ describe('App', () => {
       expect(screen.getByRole('combobox', { name: fr.settings.newPerDay })).toHaveValue('10');
     });
   });
+
+  it('lists the voices of the browser in the settings, to explain a silent word', async () => {
+    const user = userEvent.setup();
+    const voices = {
+      voiceReport: () =>
+        Promise.resolve({
+          voices: [{ name: 'Chinese China', lang: 'cmn_CN', localService: true }],
+          chosen: {
+            zh: { name: 'Chinese China', lang: 'cmn_CN', localService: true },
+            en: undefined,
+          },
+        }),
+      reloadVoices: vi.fn(),
+    };
+    render(App, { databaseName: 'app-test-voices', speaker: new FakeSpeaker(true, true), voices });
+
+    await user.click(screen.getByRole('button', { name: fr.nav.settings }));
+
+    const section = await screen.findByRole('region', { name: fr.voice.title });
+    expect(await within(section).findByText(fr.voice.chosenZh)).toBeVisible();
+  });
 });

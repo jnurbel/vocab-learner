@@ -370,3 +370,90 @@ describe('the speaker on a phone, where speech needs a user gesture', () => {
     expect(ended).toBe(true);
   });
 });
+
+/** Voices as Chrome on an Android phone lists them, with Google's speech engine. */
+const ANDROID_VOICES = [
+  { name: 'English United States', lang: 'en_US', localService: true },
+  { name: 'English United Kingdom', lang: 'en_GB', localService: true },
+  { name: 'français France', lang: 'fr_FR', localService: true },
+  { name: 'Chinese Hong Kong', lang: 'yue_HK', localService: true },
+  { name: 'Chinese Taiwan', lang: 'zh_TW', localService: true },
+  { name: 'Chinese China', lang: 'cmn_CN', localService: false },
+];
+
+describe('pickVoice on an Android phone', () => {
+  it('picks the mainland Mandarin and the British voices of a real list', () => {
+    expect(pickVoice(ANDROID_VOICES, 'zh')?.name).toBe('Chinese China');
+    expect(pickVoice(ANDROID_VOICES, 'en')?.name).toBe('English United Kingdom');
+  });
+
+  it('finds no Chinese voice before the Chinese voice data is installed', () => {
+    const withoutMandarin = ANDROID_VOICES.filter(({ name }) => name !== 'Chinese China');
+
+    expect(pickVoice(withoutMandarin, 'zh')).toBeUndefined();
+  });
+});
+
+describe('the voices found by the speaker', () => {
+  it('reports every voice, and the one picked for each language', async () => {
+    const { host } = fakeSpeech({ voices: ANDROID_VOICES });
+    const speaker = speakerOf(host);
+
+    const report = await speaker.voiceReport();
+
+    expect(report.voices).toHaveLength(6);
+    expect(report.voices[5]).toEqual({
+      name: 'Chinese China',
+      lang: 'cmn_CN',
+      localService: false,
+    });
+    expect(report.chosen.zh?.name).toBe('Chinese China');
+    expect(report.chosen.en?.name).toBe('English United Kingdom');
+  });
+
+  it('reports no voice in a browser without speech synthesis', async () => {
+    const report = await createWebSpeechSpeaker({}).reloadVoices();
+
+    expect(report).toEqual({ voices: [], chosen: { zh: undefined, en: undefined } });
+  });
+
+  it('never keeps "no Chinese voice": the next session asks the browser again', async () => {
+    const speech = fakeSpeech({
+      voices: [voice('en-GB')],
+      lateVoices: [voice('en-GB'), voice('zh-CN')],
+    });
+    const speaker = speakerOf(speech.host);
+    expect(await speaker.hasVoice('zh')).toBe(false);
+
+    // The voice was installed meanwhile; this browser lists it without any event.
+    speech.deliverLateVoicesSilently();
+
+    expect(await speaker.hasVoice('zh')).toBe(true);
+  });
+
+  it('forgets the voice list when the browser announces a change', async () => {
+    const speech = fakeSpeech({
+      voices: [voice('zh-CN', 'Old')],
+      lateVoices: [voice('zh-CN', 'New')],
+    });
+    const speaker = speakerOf(speech.host);
+    expect((await speaker.voiceReport()).chosen.zh?.name).toBe('Old');
+
+    speech.deliverLateVoices();
+
+    expect((await speaker.voiceReport()).chosen.zh?.name).toBe('New');
+  });
+
+  it('reloads the voice list on demand, without the cache', async () => {
+    const speech = fakeSpeech({
+      voices: [voice('zh-CN', 'Old')],
+      lateVoices: [voice('zh-CN', 'New')],
+    });
+    const speaker = speakerOf(speech.host);
+    await speaker.voiceReport();
+
+    speech.deliverLateVoicesSilently();
+
+    expect((await speaker.reloadVoices()).chosen.zh?.name).toBe('New');
+  });
+});
