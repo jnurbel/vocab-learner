@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tons, paire minimale</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#17705A}a:hover{color:#0F4F3F}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; background: #F6F4EE; color: #1E2A2F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; gap: 20px; padding: 20px 48px; background: #FFFFFF; border-bottom: 1px solid #E3DFD5">
+    <button aria-label="Quitter la session" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #E3DFD5; background: #FFFFFF; color: #1E2A2F; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1">
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><strong>Mini-jeu · Échos des tons</strong><span style="color: #5B6770">4 / 10</span></div>
+      <div style="height: 10px; background: #EDEAE2; border-radius: 999px; overflow: hidden"><div style="width: 40%; height: 100%; background: #17705A"></div></div>
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 28px 48px">
+    <div role="status" style="display: flex; align-items: center; gap: 12px; background: #FBE7D8; color: #6E2F07; border-radius: 14px; padding: 12px 20px; font-size: 16px; font-weight: 700">
+      <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 50%; background: #8A3D0B; color: #FFFFFF; display: flex; align-items: center; justify-content: center">✗</span>
+      Tu as entendu <em>shíjiān</em>, tu as choisi <em>shìjiàn</em>. Écoute les deux.
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; width: 100%; max-width: 900px">
+      <article style="background: #FFFFFF; border: 3px solid #17705A; border-radius: 22px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+        <span style="font-size: 13px; font-weight: 800; color: #0F4F3F; text-transform: uppercase; letter-spacing: 0.06em">Le mot entendu</span>
+        <span style="font-size: 38px; font-weight: 800">shí<span style="color: #5B6770">·</span>jiān</span>
+        <div style="display: flex; gap: 14px" role="img" aria-label="Tons : 2e ton puis 1er ton">
+          <svg width="88" height="52" viewBox="0 0 88 52" aria-hidden="true"><path d="M4 4H84M4 14H84M4 24H84M4 34H84M4 44H84" stroke="#EDEAE2" stroke-width="1"></path><path d="M12 30 L76 6" stroke="#17705A" stroke-width="5" stroke-linecap="round" fill="none"></path></svg>
+          <svg width="88" height="52" viewBox="0 0 88 52" aria-hidden="true"><path d="M4 4H84M4 14H84M4 24H84M4 34H84M4 44H84" stroke="#EDEAE2" stroke-width="1"></path><path d="M12 6 L76 6" stroke="#17705A" stroke-width="5" stroke-linecap="round" fill="none"></path></svg>
+        </div>
+        <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif; font-size: 34px">时间</span>
+        <span style="font-size: 15px; color: #3B464D">le temps, la durée</span>
+        <button style="border: 0; background: #17705A; color: #FFFFFF; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Réécouter</button>
+      </article>
+      <article style="background: #FFFFFF; border: 2px dashed #C9783A; border-radius: 22px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+        <span style="font-size: 13px; font-weight: 800; color: #8A3D0B; text-transform: uppercase; letter-spacing: 0.06em">Ton choix</span>
+        <span style="font-size: 38px; font-weight: 800">shì<span style="color: #5B6770">·</span>jiàn</span>
+        <div style="display: flex; gap: 14px" role="img" aria-label="Tons : 4e ton puis 4e ton">
+          <svg width="88" height="52" viewBox="0 0 88 52" aria-hidden="true"><path d="M4 4H84M4 14H84M4 24H84M4 34H84M4 44H84" stroke="#EDEAE2" stroke-width="1"></path><path d="M12 6 L76 46" stroke="#C9783A" stroke-width="5" stroke-linecap="round" fill="none"></path></svg>
+          <svg width="88" height="52" viewBox="0 0 88 52" aria-hidden="true"><path d="M4 4H84M4 14H84M4 24H84M4 34H84M4 44H84" stroke="#EDEAE2" stroke-width="1"></path><path d="M12 6 L76 46" stroke="#C9783A" stroke-width="5" stroke-linecap="round" fill="none"></path></svg>
+        </div>
+        <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif; font-size: 34px">事件</span>
+        <span style="font-size: 15px; color: #3B464D">un événement</span>
+        <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Écouter mon choix</button>
+      </article>
+    </div>
+  </main>
+
+  <footer style="display: flex; justify-content: space-between; align-items: center; padding: 20px 48px; border-top: 1px solid #E3DFD5; background: #FFFFFF">
+    <span style="font-size: 14px; color: #5B6770">Le jeu des tons ne change pas la plante du mot : il entraîne l'oreille.</span>
+    <button style="border: 0; background: #1E2A2F; color: #FFFFFF; border-radius: 12px; padding: 12px 24px; font: inherit; font-weight: 800; font-size: 15px; min-height: 48px">Continuer (Entrée)</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

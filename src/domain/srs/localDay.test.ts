@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localDay } from './localDay';
+import { addDays, localDay } from './localDay';
 
 const paris = 'Europe/Paris';
 
@@ -48,5 +48,14 @@ describe('localDay', () => {
     expect(() => localDay(new Date('2026-11-06T14:00:00Z'), 24, paris)).toThrow(RangeError);
     expect(() => localDay(new Date('2026-11-06T14:00:00Z'), 1.5, paris)).toThrow(RangeError);
     expect(() => localDay(new Date('2026-11-06T14:00:00Z'), 4, 'Mars/Olympus')).toThrow(RangeError);
+  });
+});
+
+describe('addDays', () => {
+  it('moves a local day forward across month, year and leap-day boundaries', () => {
+    expect(addDays('2026-11-06', 1)).toBe('2026-11-07');
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+    expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
+    expect(addDays('2026-11-06', 0)).toBe('2026-11-06');
   });
 });

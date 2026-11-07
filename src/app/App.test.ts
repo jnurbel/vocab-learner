@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import fr from '../i18n/fr.json';
 import packageJson from '../../package.json';
 import type { BackupFile } from '../services/backup/backupService';
+import { FakeSpeaker } from '../features/dictation/dictation.fixtures';
 import { BackupMetaStore } from '../storage/backupMetaStore';
 import App from './App.svelte';
 
@@ -26,7 +27,7 @@ async function addWord(user: User, line: string, labelName?: string) {
 
 async function studyOneCard(user: User) {
   await user.click(screen.getByRole('button', { name: fr.nav.flashcards }));
-  await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+  await user.click(await screen.findByRole('button', { name: fr.flashcards.start }));
   await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
   await user.click(screen.getByRole('button', { name: fr.flashcards.evaluations.good }));
   await screen.findByRole('heading', { name: fr.flashcards.summaryTitle });
@@ -198,7 +199,7 @@ describe('App', () => {
       'page',
     );
     expect(screen.queryByRole('region', { name: fr.bulkEntry.title })).toBeNull();
-    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+    await user.click(await screen.findByRole('button', { name: fr.flashcards.start }));
     await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
     await user.click(screen.getByRole('button', { name: fr.flashcards.evaluations.good }));
     expect(await screen.findByRole('heading', { name: fr.flashcards.summaryTitle })).toBeVisible();
@@ -206,6 +207,25 @@ describe('App', () => {
     await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
     const list = screen.getByRole('table', { name: fr.wordList.caption });
     expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
+  });
+
+  it('remembers how the learner answers the flashcards, from one visit to the next', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-answer-mode' });
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
+    await user.click(
+      await screen.findByRole('radio', { name: fr.flashcards.answerModes.typeMeaning }),
+    );
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+    await screen.findByText(fr.flashcards.nothingDue);
+
+    await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
+    await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
+
+    expect(
+      await screen.findByRole('radio', { name: fr.flashcards.answerModes.typeMeaning }),
+    ).toBeChecked();
   });
 
   it('reminds to back up once something changed, and the reminder can be hidden', async () => {
@@ -317,5 +337,58 @@ describe('App', () => {
 
     expect(directoryPicker).toHaveBeenCalledOnce();
     expect(await screen.findByText(fr.backup.noFolder)).toBeVisible();
+  });
+
+  it('dictates the entered words from the menu, and the answer counts as a change to back up', async () => {
+    const user = userEvent.setup();
+    const databaseName = 'app-test-dictation';
+    const meta = new BackupMetaStore(databaseName);
+    render(App, { databaseName, download: vi.fn(), speaker: new FakeSpeaker(true, true) });
+    await addWord(user, '猫 | māo | chat');
+    await vi.waitFor(async () => {
+      expect(await meta.lastChangeAt()).toBeDefined();
+    });
+    const changedBefore = await meta.lastChangeAt();
+
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.dictation }));
+    await user.click(screen.getByRole('button', { name: fr.dictation.start }));
+    const field = await screen.findByRole('textbox', { name: fr.dictation.answerLabel });
+    await user.type(field, '猫{Enter}');
+    expect(await screen.findByText(fr.dictation.correct)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: fr.dictation.continue }));
+    expect(await screen.findByText('Score : 1 / 1')).toBeVisible();
+
+    await vi.waitFor(async () => {
+      expect(await meta.lastChangeAt()).not.toBe(changedBefore);
+    });
+    await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
+    const list = screen.getByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
+  });
+
+  it('changes the daily quota of new words from the settings, kept and recorded as a change', async () => {
+    const user = userEvent.setup();
+    const databaseName = 'app-test-settings';
+    const meta = new BackupMetaStore(databaseName);
+    const { unmount } = render(App, { databaseName });
+    const menu = screen.getByRole('navigation', { name: fr.nav.label });
+
+    await user.click(within(menu).getByRole('button', { name: fr.nav.settings }));
+    const quota = await screen.findByRole('combobox', { name: fr.settings.newPerDay });
+    await vi.waitFor(() => {
+      expect(quota).toHaveValue('5');
+    });
+    await user.selectOptions(quota, '10');
+
+    expect(await screen.findByText(fr.settings.saved)).toBeVisible();
+    expect(await meta.lastChangeAt()).toBeDefined();
+    unmount();
+
+    render(App, { databaseName });
+    await user.click(screen.getByRole('button', { name: fr.nav.settings }));
+    await vi.waitFor(() => {
+      expect(screen.getByRole('combobox', { name: fr.settings.newPerDay })).toHaveValue('10');
+    });
   });
 });

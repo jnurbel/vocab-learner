@@ -10,14 +10,23 @@
   import BackupPanel from '../features/backup/BackupPanel.svelte';
   import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
+  import Dictation from '../features/dictation/Dictation.svelte';
+  import {
+    startDictationSession,
+    type DictationSelection,
+  } from '../features/dictation/dictationSession';
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import {
+    loadStudyOutlook,
     startFlashcardSession,
     type FlashcardSelection,
     type FlashcardStore,
   } from '../features/flashcards/flashcardSession';
   import BulkEntry from '../features/import/BulkEntry.svelte';
+  import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
+  import SettingsPanel from '../features/settings/SettingsPanel.svelte';
+  import { answerModeOf, newPerDayOf, type AnswerMode } from '../domain/studySettings';
   import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
@@ -69,8 +78,8 @@
   /** Profiles come later: the pseudonym written into the backup file names. */
   const PROFILE_NAME = 'profil';
 
-  type Page = 'words' | 'flashcards' | 'backup';
-  const PAGES: readonly Page[] = ['words', 'flashcards', 'backup'];
+  type Page = 'words' | 'flashcards' | 'dictation' | 'backup' | 'settings';
+  const PAGES: readonly Page[] = ['words', 'flashcards', 'dictation', 'backup', 'settings'];
   let page = $state<Page>('words');
 
   let repository: VocabularyRepository | undefined;
@@ -159,11 +168,88 @@
       await ready(study).recordAnswer(answer);
       await recordChange();
     },
+    reviseAnswer: async (answer) => {
+      await ready(study).reviseAnswer(answer);
+      await recordChange();
+    },
     endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
   };
 
   function startSession(selection: FlashcardSelection) {
     return startFlashcardSession(selection, { store: flashcardStore, srs, clock: now, newId });
+  }
+
+  /** The same store as the flashcards: every answer is a change to back up. */
+  function startDictation(selection: DictationSelection) {
+    return startDictationSession(selection, { store: flashcardStore, srs, clock: now, newId });
+  }
+
+  /** Typing suits a computer; on a touch screen, writing on paper is the default. */
+  const dictationMode =
+    typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+      ? 'paper'
+      : 'keyboard';
+
+  /** Free practice answers are history to back up too, though they change no review. */
+  const practiceStore: PracticeStore = {
+    startSession: (session) => ready(study).startSession(session),
+    recordPracticeAnswer: async (answer) => {
+      await ready(study).recordPracticeAnswer(answer);
+      await recordChange();
+    },
+    revisePracticeAnswer: async (answer) => {
+      await ready(study).revisePracticeAnswer(answer);
+      await recordChange();
+    },
+    endSession: (sessionId, endedAt) => ready(study).endSession(sessionId, endedAt),
+  };
+
+  function loadOutlook(selection: FlashcardSelection) {
+    return loadStudyOutlook(selection, { store: flashcardStore, srs, clock: now });
+  }
+
+  function startPractice(selection: FlashcardSelection) {
+    return startPracticeSession(selection, { store: practiceStore, clock: now, newId });
+  }
+
+  /** The daily quota of new words, read when the settings open. */
+  let newPerDay = $state<number>();
+
+  $effect(() => {
+    if (page === 'settings') {
+      void loadNewPerDay();
+    }
+  });
+
+  async function loadNewPerDay() {
+    newPerDay = newPerDayOf((await ready(study).load(clock())).settings);
+  }
+
+  /** Applies from the next session on; a setting is worth backing up too. */
+  async function changeNewPerDay(chosen: number) {
+    await ready(study).saveNewPerDay(chosen);
+    newPerDay = chosen;
+    await recordChange();
+  }
+
+  /** How the flashcards are answered, read when they open. */
+  let answerMode = $state<AnswerMode>();
+
+  $effect(() => {
+    if (page === 'flashcards') {
+      void loadAnswerMode();
+    }
+  });
+
+  async function loadAnswerMode() {
+    answerMode = answerModeOf((await ready(study).load(clock())).settings);
+  }
+
+  /** A setting is worth backing up too. */
+  async function changeAnswerMode(chosen: AnswerMode) {
+    await ready(study).saveAnswerMode(chosen);
+    answerMode = chosen;
+    await recordChange();
   }
 
   async function sessionEnded() {
@@ -282,12 +368,33 @@
       {autoBackupStatus}
       onReauthorized={writeAutomaticBackup}
     />
+  {:else if page === 'settings'}
+    {#if newPerDay !== undefined}
+      <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
+    {/if}
   {:else if page === 'flashcards'}
-    <Flashcards
+    {#if answerMode !== undefined}
+      <Flashcards
+        {cards}
+        {labels}
+        {startSession}
+        {startPractice}
+        {loadOutlook}
+        {speaker}
+        loadPinyin={loadPinyinGenerator}
+        {answerMode}
+        onAnswerModeChange={changeAnswerMode}
+        onSessionEnd={() => void sessionEnded()}
+      />
+    {/if}
+  {:else if page === 'dictation'}
+    <Dictation
       {cards}
       {labels}
-      {startSession}
       {speaker}
+      startSession={startDictation}
+      loadPinyin={loadPinyinGenerator}
+      defaultMode={dictationMode}
       onSessionEnd={() => void sessionEnded()}
     />
   {:else}

@@ -119,6 +119,18 @@ describe('the Web Speech speaker', () => {
     await expect(speaking).resolves.toBeUndefined();
   });
 
+  it('reads a word at the speed asked for this reading, e.g. slowly', async () => {
+    const { host, spoken } = fakeHost([voice('zh-CN')]);
+    const speaker = createWebSpeechSpeaker(host, { rate: 0.85 });
+
+    void speaker.speak('你好', 'zh', { rate: 0.6 });
+    await vi.waitFor(() => {
+      expect(spoken).toHaveLength(1);
+    });
+
+    expect(spoken[0]?.rate).toBe(0.6);
+  });
+
   it('resolves quietly when a word is interrupted by the next one', async () => {
     const { host, spoken } = fakeHost([voice('en-GB')]);
     const speaker = createWebSpeechSpeaker(host);

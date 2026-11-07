@@ -10,17 +10,23 @@ import type { Outcome, Rating } from './srs/reviewState';
 /** The spaced repetition owns the review state: storage and backups keep it as it is. */
 export type { Rating, ReviewState as ReviewStateRecord, Stage } from './srs/reviewState';
 
-export type ExerciseType =
-  | 'discovery'
-  | 'audioFlashcard'
-  | 'listenMeaning'
-  | 'listenType'
-  | 'toneEcho'
-  | 'bridgeMatch'
-  | 'sentenceListen'
-  | 'sentenceShuffle'
-  | 'typeEcho'
-  | 'seasonRush';
+/** Every kind of exercise a session result can come from. */
+export const EXERCISE_TYPES = [
+  'discovery',
+  'audioFlashcard',
+  'listenMeaning',
+  'listenType',
+  'toneEcho',
+  'bridgeMatch',
+  'sentenceListen',
+  'sentenceShuffle',
+  'typeEcho',
+  /** The flashcard shows the word, the learner types its French meaning. */
+  'typeMeaning',
+  'seasonRush',
+] as const;
+
+export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 
 /** Outcomes of DESIGN §3 and of GAME_DESIGN §0.6 together. */
 export type SessionOutcome = Rating | Outcome;
@@ -76,6 +82,8 @@ export interface SettingsRecord {
   photoCheckEnabled?: boolean;
   speedGameEnabled?: boolean;
   newPerDay?: number;
+  /** How the flashcards are answered, see AnswerMode. */
+  answerMode?: string;
   sfxEnabled?: boolean;
   sfxVolume?: number;
   audioFreeMode?: boolean;

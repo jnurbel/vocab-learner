@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Bilan de session</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#17705A}a:hover{color:#0F4F3F}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; background: #F6F4EE; color: #1E2A2F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-sizing: border-box; padding: 36px 56px; display: flex; flex-direction: column; gap: 22px">
+  <header style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 13px; font-weight: 700; color: #17705A; text-transform: uppercase; letter-spacing: 0.06em">Session terminée · 11 min</span>
+      <h1 style="margin: 0; font-size: 30px; font-weight: 800">34 réponses justes sur 38</h1>
+    </div>
+    <span style="font-size: 15px; color: #5B6770">Le jardin se repose, à demain.</span>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+    <section aria-label="XP gagnés" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 13px; color: #5B6770; font-weight: 600">XP gagnés</span>
+      <span style="font-size: 28px; font-weight: 800">+412</span>
+      <details style="font-size: 13px; color: #3B464D"><summary style="cursor: pointer">Détail</summary>34 justes, 3 avec indice, fin de session, 2 stades</details>
+    </section>
+    <section aria-label="Objectif du jour" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 18px; padding: 18px; display: flex; align-items: center; gap: 14px">
+      <div role="img" aria-label="Objectif atteint" style="width: 64px; height: 64px; border-radius: 50%; background: conic-gradient(#17705A 0 100%, #E3F1EC 0); display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #17705A; font-weight: 800">✓</div>
+      </div>
+      <div style="display: flex; flex-direction: column"><span style="font-size: 13px; color: #5B6770; font-weight: 600">Objectif du jour</span><span style="font-size: 17px; font-weight: 800">412 / 300 XP</span></div>
+    </section>
+    <section aria-label="Série" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 13px; color: #5B6770; font-weight: 600">Série</span>
+      <span style="font-size: 28px; font-weight: 800">13 jours</span>
+      <span style="font-size: 13px; color: #5B6770">record 21</span>
+    </section>
+    <section aria-label="Niveau" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 13px; color: #5B6770; font-weight: 600">Île niveau 7</span>
+      <div style="height: 10px; background: #EDEAE2; border-radius: 999px; overflow: hidden"><div style="width: 82%; height: 100%; background: #17705A"></div></div>
+      <span style="font-size: 13px; color: #5B6770">encore 120 XP pour le niveau 8</span>
+    </section>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px">
+    <section aria-labelledby="gauge-title" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+      <h2 id="gauge-title" style="margin: 0; font-size: 16px; font-weight: 800">Leçon 7 · maîtrise avant / après</h2>
+      <div style="display: flex; align-items: center; gap: 14px">
+        <span style="font-size: 14px; color: #5B6770; width: 52px">avant</span>
+        <div style="flex: 1; height: 14px; background: #EDEAE2; border-radius: 999px; overflow: hidden"><div style="width: 72%; height: 100%; background: #9FCFBF"></div></div>
+        <strong style="width: 48px; text-align: right">72 %</strong>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px">
+        <span style="font-size: 14px; color: #5B6770; width: 52px">après</span>
+        <div style="flex: 1; height: 14px; background: #EDEAE2; border-radius: 999px; overflow: hidden"><div style="width: 80%; height: 100%; background: #17705A"></div></div>
+        <strong style="width: 48px; text-align: right">80 %</strong>
+      </div>
+      <span style="font-size: 14px; color: #0F4F3F; font-weight: 700">Dans les temps : tout sera maîtrisé mercredi, contrôle vendredi.</span>
+    </section>
+    <section aria-labelledby="step-title" style="background: #1E2A2F; color: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 13px; font-weight: 700; color: #9FD8C6; text-transform: uppercase; letter-spacing: 0.06em">Étape validée</span>
+      <h2 id="step-title" style="margin: 0; font-size: 22px; font-weight: 800">4 · Taper — 21 / 25 mots</h2>
+      <span style="font-size: 14px; color: #D5DCDF">Prochaine étape : la dictée complète de la Leçon 7.</span>
+    </section>
+  </div>
+
+  <section aria-labelledby="grown-title" style="background: #FFFFFF; border: 1px solid #E3DFD5; border-radius: 18px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+    <h2 id="grown-title" style="margin: 0; font-size: 16px; font-weight: 800">Ont grandi aujourd'hui</h2>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap">
+      <sc-for list="{{grown}}" as="g" hint-placeholder-count="5">
+        <div style="display: flex; align-items: center; gap: 10px; background: #F4FAF1; border-radius: 14px; padding: 10px 14px">
+          <span lang="zh-CN" style="font-family: 'Noto Sans SC', sans-serif; font-size: 20px">{{g.w}}</span>
+          <span style="font-size: 13px; color: #3B464D">{{g.from}} → <strong style="color: #0F4F3F">{{g.to}}</strong></span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <footer style="margin-top: auto; display: flex; justify-content: space-between; align-items: center">
+    <button style="border: 1px solid #C9C3B5; background: #FFFFFF; color: #1E2A2F; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 700; font-size: 14px; min-height: 48px">Encore 12 mots ont soif (~4 min) · continuer</button>
+    <button style="border: 0; background: #17705A; color: #FFFFFF; border-radius: 12px; padding: 14px 26px; font: inherit; font-weight: 800; font-size: 16px; min-height: 52px">Retour au jardin</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      grown: [
+        { w: '预报', from: 'pousse', to: 'tige' },
+        { w: '潮湿', from: 'tige', to: 'bouton' },
+        { w: '凉快', from: 'bouton', to: 'fleur' },
+        { w: '刮风', from: 'graine', to: 'pousse' },
+        { w: '晴天', from: 'tige', to: 'bouton' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

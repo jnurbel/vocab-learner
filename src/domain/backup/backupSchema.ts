@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { CARD_LIMITS } from '../card';
 import { LABEL_NAME_MAX_LENGTH } from '../label';
+import { EXERCISE_TYPES } from '../progressRecords';
 import { hexColor, identifier, safeText, singleLine } from '../safeText';
+import { ANSWER_MODES } from '../studySettings';
 import { BACKUP_FORMAT } from './backupDocument';
 
 /** Bounds on an untrusted backup file, so that a hostile file cannot exhaust memory or storage. */
@@ -87,20 +89,7 @@ const rating = z.enum(['again', 'hard', 'good', 'easy']);
 const sessionResultSchema = z.strictObject({
   cardId: identifier,
   outcome: z.enum([...rating.options, 'correct', 'correctWithHint', 'almost', 'wrong']),
-  exercise: z
-    .enum([
-      'discovery',
-      'audioFlashcard',
-      'listenMeaning',
-      'listenType',
-      'toneEcho',
-      'bridgeMatch',
-      'sentenceListen',
-      'sentenceShuffle',
-      'typeEcho',
-      'seasonRush',
-    ])
-    .optional(),
+  exercise: z.enum(EXERCISE_TYPES).optional(),
   rating: rating.optional(),
   hintsUsed: count.optional(),
   responseMs: count.optional(),
@@ -149,6 +138,7 @@ const settingsSchema = z.strictObject({
   photoCheckEnabled: z.boolean().optional(),
   speedGameEnabled: z.boolean().optional(),
   newPerDay: count.max(1_000).optional(),
+  answerMode: z.enum(ANSWER_MODES).optional(),
   sfxEnabled: z.boolean().optional(),
   sfxVolume: z.number().min(0).max(1).optional(),
   audioFreeMode: z.boolean().optional(),

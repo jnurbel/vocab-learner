@@ -3,7 +3,8 @@ import type { SessionRecord } from '../../domain/progressRecords';
 import { GAME_CONFIG } from '../../domain/srs/config';
 import { createFsrsMemoryModel } from '../../domain/srs/fsrsMemoryModel';
 import type { ReviewState } from '../../domain/srs/reviewState';
-import type { AnswerRecord, StudyData } from '../../storage/studyRepository';
+import type { AnswerRecord, PracticeAnswerRecord, StudyData } from '../../storage/studyRepository';
+import type { PracticeStore } from '../practice/practiceSession';
 import type { FlashcardStore } from './flashcardSession';
 
 /** Test helpers shared by the flashcard tests. */
@@ -51,9 +52,13 @@ export function reviewed(cardId: string, overrides: Partial<ReviewState> = {}): 
 }
 
 /** In-memory store that behaves like StudyRepository. */
-export class FakeStore implements FlashcardStore {
+export class FakeStore implements FlashcardStore, PracticeStore {
   sessions: SessionRecord[] = [];
   answers: AnswerRecord[] = [];
+  practiceAnswers: PracticeAnswerRecord[] = [];
+  /** Answers corrected by "J'avais bon", which replace a stored one. */
+  revisions: AnswerRecord[] = [];
+  practiceRevisions: PracticeAnswerRecord[] = [];
   loadedSince: string | undefined;
 
   constructor(private readonly data: Partial<StudyData> = {}) {}
@@ -70,6 +75,21 @@ export class FakeStore implements FlashcardStore {
 
   recordAnswer(answer: AnswerRecord): Promise<void> {
     this.answers.push(answer);
+    return Promise.resolve();
+  }
+
+  reviseAnswer(answer: AnswerRecord): Promise<void> {
+    this.revisions.push(answer);
+    return Promise.resolve();
+  }
+
+  revisePracticeAnswer(answer: PracticeAnswerRecord): Promise<void> {
+    this.practiceRevisions.push(answer);
+    return Promise.resolve();
+  }
+
+  recordPracticeAnswer(answer: PracticeAnswerRecord): Promise<void> {
+    this.practiceAnswers.push(answer);
     return Promise.resolve();
   }
 

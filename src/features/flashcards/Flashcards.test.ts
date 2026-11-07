@@ -6,9 +6,14 @@ import type { Label } from '../../domain/label';
 import type { StudyData } from '../../storage/studyRepository';
 import fr from '../../i18n/fr.json';
 import type { Speaker } from '../../services/tts/speaker';
+import { startPracticeSession } from '../practice/practiceSession';
 import { card, FakeStore, reviewed, srs } from './flashcards.fixtures';
 import Flashcards from './Flashcards.svelte';
-import { startFlashcardSession, type FlashcardSelection } from './flashcardSession';
+import {
+  loadStudyOutlook,
+  startFlashcardSession,
+  type FlashcardSelection,
+} from './flashcardSession';
 
 const morning = new Date('2026-11-06T08:00:00Z');
 
@@ -62,7 +67,20 @@ function setup({
   const startSession = vi.fn((selection: FlashcardSelection) =>
     startFlashcardSession(selection, { store, srs, clock: () => morning, newId: () => 's1' }),
   );
-  render(Flashcards, { cards, labels: [animals], startSession, speaker, onSessionEnd });
+  const startPractice = vi.fn((selection: FlashcardSelection) =>
+    startPracticeSession(selection, { store, clock: () => morning, newId: () => 'p1' }),
+  );
+  render(Flashcards, {
+    cards,
+    labels: [animals],
+    startSession,
+    startPractice,
+    loadOutlook: (selection: FlashcardSelection) =>
+      loadStudyOutlook(selection, { store, srs, clock: () => morning }),
+    loadPinyin: () => Promise.reject(new Error('Only a typed word needs the pinyin')),
+    speaker,
+    onSessionEnd,
+  });
   return { store, startSession, speaker, onSessionEnd, user: userEvent.setup() };
 }
 
