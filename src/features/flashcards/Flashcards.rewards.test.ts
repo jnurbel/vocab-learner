@@ -21,6 +21,8 @@ const speaker: Speaker = {
   hasVoice: () => Promise.resolve(true),
   speak: () => Promise.resolve(),
   cancel: () => undefined,
+  unlock: () => undefined,
+  setRate: () => undefined,
 };
 
 function setup(cards: Card[], outlook?: (selection: FlashcardSelection) => StudyOutlookView) {

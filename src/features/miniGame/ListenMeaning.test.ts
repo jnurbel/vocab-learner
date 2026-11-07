@@ -24,6 +24,8 @@ function fakeSpeaker(withVoice = true) {
     hasVoice: vi.fn<Speaker['hasVoice']>(() => Promise.resolve(withVoice)),
     speak: vi.fn<Speaker['speak']>(() => Promise.resolve()),
     cancel: vi.fn(),
+    unlock: vi.fn(),
+    setRate: vi.fn(),
   } satisfies Speaker;
 }
 
@@ -61,6 +63,22 @@ async function begin(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('ListenMeaning', () => {
+  it('unlocks the speech in the click on Start, before any await, so that phones play it', async () => {
+    const { speaker, user } = setup();
+    let unlockedBeforeVoiceCheck = false;
+    speaker.hasVoice.mockImplementation(() => {
+      unlockedBeforeVoiceCheck = speaker.unlock.mock.calls.length > 0;
+      return Promise.resolve(true);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Commencer le mini-jeu' }));
+
+    await vi.waitFor(() => {
+      expect(speaker.hasVoice).toHaveBeenCalled();
+    });
+    expect(unlockedBeforeVoiceCheck).toBe(true);
+  });
+
   it('speaks the word without writing it, then offers its meaning among 3 or 4', async () => {
     const { user, speaker } = setup();
     await begin(user);
@@ -129,7 +147,7 @@ describe('ListenMeaning', () => {
     await user.keyboard('l');
 
     expect(speaker.speak).toHaveBeenCalledTimes(4);
-    expect(speaker.speak.mock.calls.at(-1)?.[2]).toEqual({ rate: 0.6 });
+    expect(speaker.speak.mock.calls.at(-1)?.[2]).toEqual({ rate: 0.4 });
 
     await user.keyboard('0');
     expect(await screen.findByRole('status')).toHaveTextContent("C'était");

@@ -5,7 +5,7 @@ import { GAME_CONFIG } from '../../domain/srs/config';
 import { createFsrsMemoryModel } from '../../domain/srs/fsrsMemoryModel';
 import type { ReviewState } from '../../domain/srs/reviewState';
 import type { AnswerRecord, ProgressUpdate, StudyData } from '../../storage/studyRepository';
-import type { SpeakOptions, Speaker } from '../../services/tts/speaker';
+import { SpeechBlockedError, type SpeakOptions, type Speaker } from '../../services/tts/speaker';
 import type { DictationStore } from './dictationSession';
 
 /** Test helpers shared by the dictation tests. */
@@ -17,6 +17,8 @@ export interface Reading {
   /** Ends the utterance, as the browser's `onend` would. */
   end: () => void;
   fail: () => void;
+  /** Refuses the reading, as Chrome Android does without a user gesture (not-allowed). */
+  block: () => void;
 }
 
 /** A speaker whose readings end only when the test says so. */
@@ -36,6 +38,12 @@ export class FakeSpeaker implements Speaker {
     }
   });
 
+  /** Called in the click that starts audio, to let a phone speak. */
+  readonly unlock = vi.fn();
+
+  /** The speed chosen in the settings. */
+  readonly setRate = vi.fn();
+
   hasVoice(): Promise<boolean> {
     return Promise.resolve(this.voice);
   }
@@ -48,6 +56,7 @@ export class FakeSpeaker implements Speaker {
         rate: options.rate,
         end: () => undefined,
         fail: () => undefined,
+        block: () => undefined,
       });
       return Promise.reject(new Error(`No voice for ${language}`));
     }
@@ -62,6 +71,9 @@ export class FakeSpeaker implements Speaker {
         end: resolve,
         fail: () => {
           reject(new Error('Speech failed'));
+        },
+        block: () => {
+          reject(new SpeechBlockedError());
         },
       });
     });

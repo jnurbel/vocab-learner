@@ -170,13 +170,26 @@ describe('DictationPlayer', () => {
 
     player.repeat({ slow: true });
     expect(player.snapshot).toMatchObject({ status: 'speaking', index: 0 });
-    expect(speaker.last()).toMatchObject({ text: '猫', rate: 0.6 });
+    // Half the chosen rate of 0.85, rounded.
+    expect(speaker.last()).toMatchObject({ text: '猫', rate: 0.43 });
     speaker.last().end();
     await settle();
     expect(player.snapshot).toMatchObject({ status: 'waiting', remainingMs: 3_000 });
 
     player.repeat();
     expect(speaker.last()).toMatchObject({ text: '猫', rate: 0.85 });
+  });
+
+  it('reads a slow replay at half the dictation rate, never below 0.4', () => {
+    const fast = setup({ rate: 0.9 });
+    fast.player.play();
+    fast.player.repeat({ slow: true });
+    expect(fast.speaker.last().rate).toBe(0.45);
+
+    const normal = setup({ rate: 0.7 });
+    normal.player.play();
+    normal.player.repeat({ slow: true });
+    expect(normal.speaker.last().rate).toBe(0.4);
   });
 
   it('repeats a word only once even when each word is read twice', async () => {
@@ -258,6 +271,37 @@ describe('DictationPlayer', () => {
     await settle();
 
     expect(player.snapshot).toMatchObject({ status: 'speaking', index: 1, audioFailed: false });
+  });
+
+  it('tells a reading refused by the browser apart from a failure', async () => {
+    const { speaker, player } = setup();
+    player.play();
+
+    speaker.last().block();
+    await settle();
+
+    expect(player.snapshot).toMatchObject({ audioFailed: true, audioBlocked: true });
+  });
+
+  it('turns the sound back on: reads the current word again, once', async () => {
+    const { speaker, player } = setup({ readingsPerWord: 2 });
+    player.play();
+    speaker.last().block();
+    await settle();
+
+    player.enableAudio();
+
+    expect(player.snapshot).toMatchObject({
+      status: 'speaking',
+      index: 0,
+      audioFailed: false,
+      audioBlocked: false,
+    });
+    expect(speaker.texts).toEqual(['猫', '猫']);
+    speaker.last().end();
+    await settle();
+    expect(speaker.texts).toEqual(['猫', '猫']);
+    expect(player.snapshot.status).toBe('waiting');
   });
 });
 

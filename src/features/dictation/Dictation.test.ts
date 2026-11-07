@@ -6,6 +6,8 @@ import type { Card } from '../../domain/card';
 import type { Label } from '../../domain/label';
 import type { PinyinGenerator } from '../../domain/pinyinGeneration';
 import fr from '../../i18n/fr.json';
+import { createWebSpeechSpeaker } from '../../services/tts/speaker';
+import { fakeSpeech, voice } from '../../services/tts/speech.fixtures';
 import type { StudyData } from '../../storage/studyRepository';
 import { card, FakeSpeaker, FakeStore, srs } from './dictation.fixtures';
 import Dictation from './Dictation.svelte';
@@ -39,12 +41,14 @@ function setup({
   data = {},
   speaker = new FakeSpeaker(true, true),
   defaultMode,
+  defaultSpeed,
   timers,
 }: {
   cards?: Card[];
   data?: Partial<StudyData>;
   speaker?: FakeSpeaker;
   defaultMode?: 'keyboard' | 'paper';
+  defaultSpeed?: 'slow' | 'normal' | 'fast';
   timers?: PlayerTimers;
 } = {}) {
   const store = new FakeStore(data);
@@ -61,6 +65,7 @@ function setup({
     onSessionEnd,
     newSeed: () => 'seed',
     ...(defaultMode === undefined ? {} : { defaultMode }),
+    ...(defaultSpeed === undefined ? {} : { defaultSpeed }),
     ...(timers === undefined ? {} : { timers }),
   });
   return { store, startSession, speaker, onSessionEnd, user: userEvent.setup() };
@@ -90,10 +95,25 @@ describe('Dictation, start screen', () => {
     expect(screen.getByRole('checkbox', { name: 'Leçon 7' })).not.toBeChecked();
     expect(screen.getByRole('spinbutton', { name: fr.dictation.wordCount })).toHaveValue(10);
     expect(screen.getByRole('checkbox', { name: fr.dictation.shuffle })).not.toBeChecked();
-    expect(screen.getByRole('checkbox', { name: fr.dictation.readTwice })).not.toBeChecked();
+    // Twice by default: a word heard once on a phone speaker is easily missed.
+    expect(screen.getByRole('checkbox', { name: fr.dictation.readTwice })).toBeChecked();
     expect(screen.getByRole('combobox', { name: fr.dictation.delay })).toHaveValue('5');
     expect(screen.getByRole('radio', { name: fr.dictation.speeds.normal })).toBeChecked();
     expect(screen.getByRole('radio', { name: fr.dictation.modes.keyboard })).toBeChecked();
+  });
+
+  it('starts at the speed of the voice chosen in the settings', () => {
+    setup({ defaultSpeed: 'slow' });
+
+    expect(screen.getByRole('radio', { name: fr.dictation.speeds.slow })).toBeChecked();
+  });
+
+  it('reads at the new, slower rates: 0.5, 0.7 and 0.9', async () => {
+    const { user, speaker } = setup();
+    await user.click(screen.getByRole('radio', { name: fr.dictation.speeds.fast }));
+    await startDictation(user);
+
+    expect(speaker.last()).toMatchObject({ text: '再', rate: 0.9 });
   });
 
   it('can default to answering on paper, e.g. on a phone', () => {
@@ -133,7 +153,7 @@ describe('Dictation, answering with the keyboard', () => {
     expect(field).toHaveFocus();
     expect(field).toHaveAttribute('lang', 'zh-CN');
     expect(within(region()).getByRole('status')).toHaveTextContent('Mot 1 sur 3');
-    expect(speaker.last()).toMatchObject({ text: '再', language: 'zh', rate: 0.85 });
+    expect(speaker.last()).toMatchObject({ text: '再', language: 'zh', rate: 0.7 });
     expect(within(region()).queryByText('再')).toBeNull();
 
     await user.type(field, '再{Enter}');
@@ -196,8 +216,8 @@ describe('Dictation, feedback', () => {
     expect(within(region()).getByText('zài')).toBeVisible();
     expect(within(region()).getByText('encore')).toBeVisible();
     expect(store.answers[0]?.result).toMatchObject({ outcome: 'wrong', rating: 'again' });
-    // The word is read again after a mistake.
-    expect(speaker.texts).toEqual(['再', '再']);
+    // Read twice, then once more after a mistake.
+    expect(speaker.texts).toEqual(['再', '再', '再']);
     expect(screen.getByRole('button', { name: fr.dictation.continue })).toHaveFocus();
   });
 
@@ -257,18 +277,20 @@ describe('Dictation, listening again', () => {
     const { user, speaker } = setup();
     const field = await startDictation(user);
 
+    // Read twice at start, then once per replay.
     await user.click(screen.getByRole('button', { name: fr.dictation.replay }));
-    expect(speaker.readings).toHaveLength(2);
+    expect(speaker.readings).toHaveLength(3);
     field.focus();
     await user.keyboard('{ArrowUp}');
-    expect(speaker.readings).toHaveLength(3);
+    expect(speaker.readings).toHaveLength(4);
     await user.keyboard('{ArrowDown}');
-    expect(speaker.last()).toMatchObject({ text: '再', rate: 0.6 });
+    // Half the normal 0.7, raised to the minimum of 0.4.
+    expect(speaker.last()).toMatchObject({ text: '再', rate: 0.4 });
 
     // The arrows belong to the input method while it composes.
     await fireEvent.compositionStart(field);
     await fireEvent.keyDown(field, { key: 'ArrowUp' });
-    expect(speaker.readings).toHaveLength(4);
+    expect(speaker.readings).toHaveLength(5);
   });
 
   it('replays with R outside the answer field only', async () => {
@@ -276,10 +298,10 @@ describe('Dictation, listening again', () => {
     const field = await startDictation(user);
 
     await user.type(field, 'r');
-    expect(speaker.readings).toHaveLength(1);
+    expect(speaker.readings).toHaveLength(2);
     await user.click(screen.getByRole('heading', { name: fr.dictation.title }));
     await user.keyboard('r');
-    expect(speaker.readings).toHaveLength(2);
+    expect(speaker.readings).toHaveLength(3);
   });
 });
 
@@ -313,6 +335,84 @@ describe('Dictation without a voice', () => {
 
     expect(await screen.findByText(fr.dictation.audioError)).toBeVisible();
     expect(within(region()).getByText('zài')).toBeVisible();
+  });
+});
+
+describe('Dictation on a phone, where speech needs a user gesture', () => {
+  /** The real speaker over a fake phone synthesis that drops speech outside a gesture. */
+  function setupOnPhone() {
+    const speech = fakeSpeech({ lateVoices: [voice('zh-CN')], requireGesture: true });
+    const speaker = createWebSpeechSpeaker(speech.host, { leadInMs: 0 });
+    const store = new FakeStore();
+    render(Dictation, {
+      cards: [zai, cat, dog],
+      labels: [],
+      speaker,
+      startSession: (selection: DictationSelection) =>
+        startDictationSession(selection, { store, srs, clock: () => morning, newId: () => 'd1' }),
+      loadPinyin: () => Promise.resolve(fakePinyin),
+      onSessionEnd: vi.fn(),
+      newSeed: () => 'seed',
+    });
+    return speech;
+  }
+
+  it('reads the first word aloud after the click on Start, despite the awaits before it', async () => {
+    const speech = setupOnPhone();
+    const start = screen.getByRole('button', { name: fr.dictation.start });
+
+    speech.gesture(() => {
+      start.click();
+    });
+    speech.deliverLateVoices();
+
+    await vi.waitFor(() => {
+      expect(speech.heard).toEqual(['再']);
+    });
+    expect(speech.dropped).toEqual([]);
+  });
+
+  it('unlocks the speech in the click itself, before anything is awaited', () => {
+    const { speaker } = setup();
+
+    screen.getByRole('button', { name: fr.dictation.start }).click();
+
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlocks the speech again in the click on Replay', async () => {
+    const { user, speaker } = setup();
+    await startDictation(user);
+    speaker.unlock.mockClear();
+
+    screen.getByRole('button', { name: fr.dictation.replay }).click();
+
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers to turn the sound on when the browser refused to speak, then reads the word', async () => {
+    const { user, speaker } = setup({ speaker: new FakeSpeaker() });
+    await startDictation(user);
+
+    speaker.last().block();
+
+    expect(await screen.findByText(fr.voice.blocked)).toBeVisible();
+    expect(within(region()).getByText('zài')).toBeVisible();
+    speaker.unlock.mockClear();
+    await user.click(screen.getByRole('button', { name: fr.voice.enable }));
+
+    expect(speaker.unlock).toHaveBeenCalledTimes(1);
+    expect(speaker.texts).toEqual(['再', '再']);
+    expect(screen.queryByText(fr.voice.blocked)).toBeNull();
+    expect(answerField()).toHaveFocus();
+  });
+
+  it('explains how to install the Chinese voice when the phone has none', async () => {
+    const { user } = setup({ speaker: new FakeSpeaker(false) });
+    await startDictation(user);
+
+    expect(screen.getByText(fr.voice.missingHelpTitle)).toBeVisible();
+    expect(screen.getByText(fr.voice.missingHelpAndroid)).toBeInTheDocument();
   });
 });
 
@@ -442,7 +542,7 @@ describe('Dictation on paper', () => {
     expect(
       await screen.findByRole('heading', { name: fr.dictation.correctionTitle }),
     ).toBeVisible();
-    expect(speaker.texts).toEqual(['再', '猫', '狗']);
+    expect(speaker.texts).toEqual(['再', '再', '猫', '猫', '狗', '狗']);
     expect(within(region()).getByText('再')).toHaveAttribute('lang', 'zh-CN');
     expect(within(region()).getByText('zài')).toBeVisible();
     expect(within(region()).getByText('encore')).toBeVisible();
@@ -485,7 +585,7 @@ describe('Dictation on paper', () => {
     expect(within(region()).getByRole('status')).toHaveTextContent('Mot 1 sur 3');
     await user.keyboard('r');
     await user.keyboard('{ArrowDown}');
-    expect(speaker.last()).toMatchObject({ text: '再', rate: 0.6 });
+    expect(speaker.last()).toMatchObject({ text: '再', rate: 0.4 });
   });
 
   it('has buttons for every reading control', async () => {

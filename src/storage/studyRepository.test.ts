@@ -323,6 +323,20 @@ describe('StudyRepository', () => {
     },
   );
 
+  it('saves the speed of the voice and keeps the other settings', async () => {
+    await repository.saveNewPerDay(10);
+
+    await repository.saveTtsRate(0.5);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({ newPerDay: 10, ttsRate: 0.5 });
+  });
+
+  it('refuses to store a speech rate of no speed', async () => {
+    await expect(repository.saveTtsRate(3)).rejects.toThrow(RangeError);
+    await expect(repository.saveTtsRate(Number.NaN)).rejects.toThrow(RangeError);
+    expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
+  });
+
   it('refuses to store a daily quota out of range', async () => {
     await expect(repository.saveNewPerDay(0)).rejects.toThrow(RangeError);
     await expect(repository.saveNewPerDay(Number.NaN)).rejects.toThrow(RangeError);

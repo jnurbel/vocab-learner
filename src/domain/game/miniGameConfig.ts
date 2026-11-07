@@ -81,7 +81,7 @@ export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
     }),
   }),
   voices: Object.freeze({ zh: 'zh-CN', en: 'en-GB' }),
-  slowRate: 0.6,
+  slowRate: 0.4,
   feedbackCorrectMs: 900,
   englishHomophones: Object.freeze(
     [

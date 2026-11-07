@@ -65,6 +65,8 @@
   });
 
   async function start() {
+    // Phones only let speech start inside the tap: unlock it before any await.
+    speaker.unlock();
     error = undefined;
     view = { kind: 'starting' };
     try {
@@ -107,6 +109,7 @@
     if (word === undefined || voice !== 'available') {
       return;
     }
+    speaker.unlock();
     speaker
       .speak(word.term, word.language, slow ? { rate: MINI_GAME_CONFIG.slowRate } : undefined)
       .catch(() => {
@@ -116,6 +119,7 @@
 
   function playChosen() {
     if (feedback !== undefined && feedback.chosen !== 'unknown' && voice === 'available') {
+      speaker.unlock();
       void speaker.speak(feedback.chosen.term, feedback.chosen.language).catch(() => undefined);
     }
   }

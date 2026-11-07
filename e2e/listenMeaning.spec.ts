@@ -32,7 +32,10 @@ async function installFakeSpeech(page: Page) {
       removeEventListener: () => undefined,
       cancel: () => undefined,
       speak: (utterance: FakeUtterance) => {
-        window.spokenTexts.push(utterance.text);
+        // The blank utterance that unlocks speech on phones is not a word.
+        if (utterance.text.trim() !== '') {
+          window.spokenTexts.push(utterance.text);
+        }
         setTimeout(() => utterance.onend?.(), 20);
       },
     };
