@@ -37,7 +37,7 @@ test.describe('on a phone, 390 pixels wide', () => {
     expect(box?.y ?? 0).toBeGreaterThan(844 / 2);
     expect(box?.width).toBe(390);
 
-    for (const name of ['Flashcards', 'Dictée', 'Sauvegarde', 'Réglages']) {
+    for (const name of ['Accueil', 'Flashcards', 'Dictée', 'Sauvegarde', 'Réglages']) {
       await menu.getByRole('button', { name }).click();
       await expect(menu.getByRole('button', { name })).toHaveAttribute('aria-current', 'page');
       expect(await horizontalOverflow(page)).toBe(0);

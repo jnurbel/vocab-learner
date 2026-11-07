@@ -293,14 +293,16 @@
                     <svg viewBox="0 0 36 36" aria-hidden="true" focusable="false">
                       <circle class="gauge-track" cx="18" cy="18" r="15.9155" pathLength="100"
                       ></circle>
-                      <circle
-                        class="gauge-value"
-                        cx="18"
-                        cy="18"
-                        r="15.9155"
-                        pathLength="100"
-                        stroke-dasharray={`${String(percent)} 100`}
-                      ></circle>
+                      {#if percent > 0}
+                        <circle
+                          class="gauge-value"
+                          cx="18"
+                          cy="18"
+                          r="15.9155"
+                          pathLength="100"
+                          stroke-dasharray={`${String(percent)} 100`}
+                        ></circle>
+                      {/if}
                     </svg>
                     <span class="gauge-text" aria-hidden="true">
                       <strong>{percent} %</strong>
@@ -685,7 +687,7 @@
   }
 
   .gauge-track {
-    stroke: var(--jade-soft);
+    stroke: var(--track);
   }
 
   .gauge-value {

@@ -67,12 +67,11 @@ test('a learner pins a label with a test in 3 days and works on its words first 
 
   // The order of the cards is drawn from the session seed: never assume it, only check that
   // every card proposed belongs to the pinned label.
-  const meanings = [...Object.values(LESSON), ...Object.values(OTHERS)].join('|');
   const seen: string[] = [];
   for (let position = 1; position <= 3; position += 1) {
     await expect(flashcards.getByText(`${String(position)} / 3`)).toBeVisible();
     await page.keyboard.press('Space');
-    const meaning = flashcards.getByText(new RegExp(`^(${meanings})$`));
+    const meaning = flashcards.getByText(/^(chat|chien|poisson|livre|stylo)$/);
     await expect(meaning).toBeVisible();
     seen.push((await meaning.textContent()) ?? '');
     await page.keyboard.press('3');

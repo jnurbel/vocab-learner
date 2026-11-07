@@ -44,7 +44,7 @@ licence OFL à joindre) ou repli système. Hanzi : polices système (`"Microsoft
 
 ## Captures de l'appli
 
-`screenshots/` contient les écrans existants de l'appli (mots, import, flashcards, réponse tapée,
+`screenshots/` contient les écrans existants de l'appli (accueil, mots, import, flashcards, réponse tapée,
 dictée, sauvegarde, réglages), en clair et en sombre, à 1280 px (page entière) et à 390 × 844
 (un écran, comme `Mobile.dc.html`), pour comparer avec les maquettes. Pour les régénérer :
 
