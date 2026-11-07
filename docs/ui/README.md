@@ -41,3 +41,13 @@ Rayons : 10–14 px (boutons), 16–24 px (cartes). Cibles tactiles ≥ 44 px. T
 **Polices** : la CSP interdit Google Fonts. Interface : Plus Jakarta Sans **auto-hébergée** (woff2,
 licence OFL à joindre) ou repli système. Hanzi : polices système (`"Microsoft YaHei", "PingFang SC",
 "Noto Sans SC", sans-serif`) — Noto Sans SC complète pèse plusieurs Mo.
+
+## Captures de l'appli
+
+`screenshots/` contient les écrans existants de l'appli (mots, import, flashcards, réponse tapée,
+dictée, sauvegarde, réglages), en clair et en sombre, à 1280 px (page entière) et à 390 × 844
+(un écran, comme `Mobile.dc.html`), pour comparer avec les maquettes. Pour les régénérer :
+
+```sh
+UPDATE_SCREENSHOTS=1 npx playwright test screenshots
+```

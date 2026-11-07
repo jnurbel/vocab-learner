@@ -283,22 +283,37 @@
 </form>
 
 <style>
+  label {
+    display: block;
+  }
+
   input[type='text'],
   textarea {
     display: block;
     width: 100%;
+    margin-bottom: var(--space-3);
+  }
+
+  input[lang='zh-CN'] {
+    font-size: var(--text-xl);
   }
 
   .help {
-    font-size: 0.9rem;
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 
   .error {
-    color: #b00020;
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--ochre);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
   }
 
   .actions {
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: var(--space-3);
   }
 </style>

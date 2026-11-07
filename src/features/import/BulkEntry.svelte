@@ -180,58 +180,60 @@
   {#if !parsed.ok}
     <p role="alert" class="error">{fr.bulkEntry.inputErrors[parsed.errors[0] ?? 'inputTooLong']}</p>
   {:else if parsed.value.entries.length > 0}
-    <table>
-      <caption>{fr.bulkEntry.previewCaption}</caption>
-      <thead>
-        <tr>
-          <th scope="col">{fr.bulkEntry.columnLine}</th>
-          {#each EDITABLE_COLUMNS as column (column)}
-            <th scope="col">{fr.bulkEntry.columns[column]}</th>
-          {/each}
-          <th scope="col">{fr.bulkEntry.columnStatus}</th>
-          <th scope="col">{fr.bulkEntry.columnExclude}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each parsed.value.entries as line (line.lineNumber)}
-          {@const isChinese = detectLanguage(shown(line, 'term')) === 'zh'}
-          <tr class:excluded={isExcluded(line.lineNumber)}>
-            <th scope="row">{line.lineNumber}</th>
+    <div class="table-scroll">
+      <table>
+        <caption>{fr.bulkEntry.previewCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{fr.bulkEntry.columnLine}</th>
             {#each EDITABLE_COLUMNS as column (column)}
-              <td>
-                {#if column !== 'pinyin' || isChinese}
-                  <input
-                    type="text"
-                    maxlength="600"
-                    lang={column === 'term' && isChinese ? 'zh-CN' : undefined}
-                    aria-label={format(fr.bulkEntry.cellLabel, {
-                      column: fr.bulkEntry.columns[column],
-                      line: line.lineNumber,
-                    })}
-                    value={shown(line, column)}
-                    disabled={isExcluded(line.lineNumber)}
-                    oninput={(event) => {
-                      editLine(line.lineNumber, { [column]: event.currentTarget.value });
-                    }}
-                  />
-                {/if}
-              </td>
+              <th scope="col">{fr.bulkEntry.columns[column]}</th>
             {/each}
-            <td>{lineStatus(line.lineNumber)}</td>
-            <td>
-              <input
-                type="checkbox"
-                aria-label={format(fr.bulkEntry.excludeLine, { line: line.lineNumber })}
-                checked={isExcluded(line.lineNumber)}
-                onchange={(event) => {
-                  editLine(line.lineNumber, { excluded: event.currentTarget.checked });
-                }}
-              />
-            </td>
+            <th scope="col">{fr.bulkEntry.columnStatus}</th>
+            <th scope="col">{fr.bulkEntry.columnExclude}</th>
           </tr>
-        {/each}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {#each parsed.value.entries as line (line.lineNumber)}
+            {@const isChinese = detectLanguage(shown(line, 'term')) === 'zh'}
+            <tr class:excluded={isExcluded(line.lineNumber)}>
+              <th scope="row">{line.lineNumber}</th>
+              {#each EDITABLE_COLUMNS as column (column)}
+                <td>
+                  {#if column !== 'pinyin' || isChinese}
+                    <input
+                      type="text"
+                      maxlength="600"
+                      lang={column === 'term' && isChinese ? 'zh-CN' : undefined}
+                      aria-label={format(fr.bulkEntry.cellLabel, {
+                        column: fr.bulkEntry.columns[column],
+                        line: line.lineNumber,
+                      })}
+                      value={shown(line, column)}
+                      disabled={isExcluded(line.lineNumber)}
+                      oninput={(event) => {
+                        editLine(line.lineNumber, { [column]: event.currentTarget.value });
+                      }}
+                    />
+                  {/if}
+                </td>
+              {/each}
+              <td class="status">{lineStatus(line.lineNumber)}</td>
+              <td>
+                <input
+                  type="checkbox"
+                  aria-label={format(fr.bulkEntry.excludeLine, { line: line.lineNumber })}
+                  checked={isExcluded(line.lineNumber)}
+                  onchange={(event) => {
+                    editLine(line.lineNumber, { excluded: event.currentTarget.checked });
+                  }}
+                />
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
   {/if}
 
   {#if preview && preview.existingWords.length > 0}
@@ -240,7 +242,7 @@
 
   {#if preview && preview.errors.length > 0}
     <h3 id="bulk-entry-errors">{fr.bulkEntry.errorsTitle}</h3>
-    <ul aria-labelledby="bulk-entry-errors" class="error">
+    <ul aria-labelledby="bulk-entry-errors" class="error errors">
       {#each preview.errors as error (error.lineNumber)}
         <li>{describe(error)}</li>
       {/each}
@@ -266,29 +268,59 @@
     <p role="alert" class="error">{fr.bulkEntry.saveFailed}</p>
   {/if}
 
-  <button type="button" disabled={!canSave} onclick={save}>{saveText}</button>
+  <button type="button" class="primary" disabled={!canSave} onclick={save}>{saveText}</button>
 </section>
 
 <style>
+  label {
+    display: block;
+  }
+
+  /* The lines to import, as in docs/ui/mockups/Import.dc.html. */
   textarea {
     display: block;
     width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 2px solid var(--jade);
+    border-radius: var(--radius-md);
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, var(--font-hanzi), monospace;
+    font-size: var(--text-md);
+    line-height: 1.8;
+  }
+
+  .table-scroll {
+    margin: var(--space-4) 0;
   }
 
   table input[type='text'] {
     width: 100%;
-    min-width: 5rem;
+    min-width: 6rem;
+  }
+
+  table input[lang='zh-CN'] {
+    font-size: var(--text-lg);
+  }
+
+  .status {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
   }
 
   .excluded {
+    color: var(--muted);
     text-decoration: line-through;
   }
 
   .help {
-    font-size: 0.9rem;
+    margin-top: var(--space-2);
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 
-  .error {
-    color: #b00020;
+  .errors {
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-6);
+    border-radius: var(--radius-md);
+    background: var(--ochre-soft);
   }
 </style>
