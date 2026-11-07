@@ -94,46 +94,60 @@ function statusOf(
 
 type Count = Omit<StepView, 'step' | 'status'>;
 
-function countStep(step: PathStep, input: PathInput, config: PathConfigUsed): Count {
-  const { cards, progress } = input;
+/** The words a step counts, and whether a word meets its criterion (GAME_DESIGN.md 5.1). */
+export interface StepWords {
+  words: Card[];
+  meets: (card: Card) => boolean;
+}
+
+/** Undefined for the final challenge, which is judged on its score, not word by word. */
+export function stepWords(
+  step: PathStep,
+  { cards, states, progress }: PathInput,
+): StepWords | undefined {
   switch (step) {
+    case 'finalChallenge':
+      return undefined;
     case 'discover': {
-      const introduced = new Set(input.states.filter(({ reps }) => reps >= 1).map((s) => s.cardId));
-      return countWords(cards, ({ id }) => introduced.has(id), config);
+      const introduced = new Set(states.filter(({ reps }) => reps >= 1).map((s) => s.cardId));
+      return { words: [...cards], meets: ({ id }) => introduced.has(id) };
     }
-    case 'recognize': {
-      const words = countWords(cards, rightIn(progress, step), config);
-      return { ...words, met: words.met && toneEchoMet(input, config) };
-    }
-    case 'sentences': {
-      const withExample = cards.filter(hasExample);
-      const words = countWords(withExample, rightIn(progress, step), config);
-      const shuffled = withExample.filter(({ id }) => progress?.shuffledSentences?.[id] === true);
-      const enoughShuffled = shuffled.length >= Math.min(3, withExample.length);
-      return { ...words, met: words.met && enoughShuffled };
-    }
-    case 'finalChallenge': {
-      const best = progress?.finalChallengeBest ?? 0;
-      const required = config.finalChallengePassScore20;
-      return { done: best, required, total: SCORE_MAX, met: best >= required };
-    }
+    case 'sentences':
+      return { words: cards.filter(hasExample), meets: rightIn(progress, step) };
     default:
-      return countWords(cards, rightIn(progress, step), config);
+      return { words: [...cards], meets: rightIn(progress, step) };
   }
+}
+
+function countStep(step: PathStep, input: PathInput, config: PathConfigUsed): Count {
+  const { progress } = input;
+  const counted = stepWords(step, input);
+  if (counted === undefined) {
+    const best = progress?.finalChallengeBest ?? 0;
+    const required = config.finalChallengePassScore20;
+    return { done: best, required, total: SCORE_MAX, met: best >= required };
+  }
+  const words = countWords(counted, config);
+  if (step === 'recognize') {
+    return { ...words, met: words.met && toneEchoMet(input, config) };
+  }
+  if (step === 'sentences') {
+    const shuffled = counted.words.filter(({ id }) => progress?.shuffledSentences?.[id] === true);
+    const enoughShuffled = shuffled.length >= Math.min(3, counted.words.length);
+    return { ...words, met: words.met && enoughShuffled };
+  }
+  return words;
 }
 
 function rightIn(progress: PathProgressRecord | undefined, step: PathStep) {
   const attempts = progress?.stepAttempts?.[step];
-  return ({ id }: Card) => attempts !== undefined && Object.hasOwn(attempts, id) && attempts[id];
+  return ({ id }: Card) =>
+    attempts !== undefined && Object.hasOwn(attempts, id) && attempts[id] === true;
 }
 
-function countWords(
-  cards: readonly Card[],
-  meets: (card: Card) => boolean | undefined,
-  config: PathConfigUsed,
-): Count {
-  const total = cards.length;
-  const done = cards.filter((card) => meets(card) === true).length;
+function countWords({ words, meets }: StepWords, config: PathConfigUsed): Count {
+  const total = words.length;
+  const done = words.filter(meets).length;
   const required = requiredWords(total, config.stepPassRatio);
   return { done, required, total, met: total > 0 && done >= required };
 }

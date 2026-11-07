@@ -30,6 +30,8 @@ export interface PathConfig {
     listenMeaning: number;
     typeEcho: number;
     listenType: number;
+    bridgeMatchPair: number;
+    sentenceListen: number;
   }>;
 }
 
@@ -45,5 +47,12 @@ export const PATH_CONFIG: PathConfig = Object.freeze({
   finalChallengeMix: Object.freeze({ listening: 0.3, dictation: 0.4, translation: 0.3 }),
   finalChallengeReplaysPerWord: 1,
   finalChallengePassScore20: 16,
-  itemCostSec: Object.freeze({ discovery: 25, listenMeaning: 7, typeEcho: 14, listenType: 12 }),
+  itemCostSec: Object.freeze({
+    discovery: 25,
+    listenMeaning: 7,
+    typeEcho: 14,
+    listenType: 12,
+    bridgeMatchPair: 6,
+    sentenceListen: 15,
+  }),
 });
