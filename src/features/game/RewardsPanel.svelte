@@ -92,6 +92,7 @@
   .rewards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    align-items: start;
     gap: var(--space-3);
     margin: var(--space-4) 0;
   }

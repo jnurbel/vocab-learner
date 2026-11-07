@@ -523,6 +523,7 @@
     display: flex;
     gap: var(--space-3);
     align-items: center;
+    justify-content: flex-start;
     min-height: var(--target-lg);
     padding: var(--space-2) var(--space-4);
     border: 2px solid var(--line-strong);
