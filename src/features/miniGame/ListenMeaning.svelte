@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import type { Card, Language } from '../../domain/card';
   import type { ListenMeaningQuestion } from '../../domain/game/listenMeaning';
   import { MINI_GAME_CONFIG } from '../../domain/game/miniGameConfig';
@@ -11,6 +11,7 @@
   import RewardsPanel from '../game/RewardsPanel.svelte';
   import type { RewardsSummary } from '../game/sessionRewards';
   import type {
+    ListenMeaningLaunch,
     ListenMeaningSelection,
     ListenMeaningSession,
     ListenMeaningSummary,
@@ -22,9 +23,14 @@
     startSession: (selection: ListenMeaningSelection) => Promise<ListenMeaningSession>;
     /** Called once a round with at least one answer ends. */
     onSessionEnd: () => void;
+    /**
+     * Starts this round at once, as a step session of the path does: the target words only,
+     * the words of the labels as distractors. The voice was unlocked by the click that opened it.
+     */
+    startWith?: ListenMeaningLaunch;
   }
 
-  const { cards, speaker, startSession, onSessionEnd }: Props = $props();
+  const { cards, speaker, startSession, onSessionEnd, startWith }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
 
@@ -64,13 +70,24 @@
     speaker.cancel();
   });
 
+  onMount(() => {
+    if (startWith !== undefined) {
+      language = startWith.language;
+      void start();
+    }
+  });
+
   async function start() {
     // Phones only let speech start inside the tap: unlock it before any await.
     speaker.unlock();
     error = undefined;
     view = { kind: 'starting' };
     try {
-      session = await startSession({ cards, language, labelIds: [] });
+      session = await startSession(
+        startWith === undefined
+          ? { cards, language, labelIds: [] }
+          : { cards, ...startWith, labelIds: [...startWith.labelIds] },
+      );
       voice = (await speaker.hasVoice(language)) ? 'available' : 'missing';
     } catch {
       error = 'startFailed';

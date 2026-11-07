@@ -144,4 +144,23 @@ describe('a ListenMeaning session', () => {
 
     await expect(session.answer('unknown', { hintsUsed: 0 })).rejects.toThrow('The round is over');
   });
+
+  it('asks only the target words of a step session, the others serving as distractors', async () => {
+    const store = new FakeStore({ reviewStates: words.map(({ id }) => reviewed(id)) });
+    const session = await startListenMeaningSession(
+      { cards: words, language: 'zh', labelIds: [], targetCardIds: ['w1', 'w3'] },
+      { store, srs, clock: () => morning, newId: () => 'step-1' },
+    );
+
+    const asked: string[] = [];
+    const offered = new Set<string>();
+    while (session.current !== undefined) {
+      asked.push(session.current.target.id);
+      session.current.options.forEach(({ id }) => offered.add(id));
+      await session.answer(session.current.target, { hintsUsed: 0 });
+    }
+
+    expect(asked.sort()).toEqual(['w1', 'w3']);
+    expect([...offered].some((id) => id !== 'w1' && id !== 'w3')).toBe(true);
+  });
 });

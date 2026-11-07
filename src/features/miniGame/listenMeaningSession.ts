@@ -41,7 +41,17 @@ export interface ListenMeaningSelection {
   language: Language;
   /** Empty: every word of the language. */
   labelIds: readonly string[];
+  /**
+   * A step session of the path asks these words only, in a round of their own size; the other
+   * words of the selection serve as distractors (GAME_DESIGN.md 5.3).
+   */
+  targetCardIds?: readonly string[];
 }
+
+/** A round started from elsewhere, such as a step session of the path, on these words only. */
+export type ListenMeaningLaunch = Omit<ListenMeaningSelection, 'cards' | 'targetCardIds'> & {
+  targetCardIds: readonly string[];
+};
 
 export interface GivenChoice {
   /** 1 when the written word was shown as a hint. */
@@ -105,10 +115,19 @@ export class ListenMeaningSession {
     private readonly deps: ListenMeaningDependencies,
   ) {
     this.states = new Map(states.map((state) => [state.cardId, state]));
-    this.round = listenMeaningRound(cards, states, selection.language, {
-      seed: id,
-      size: LISTEN_MEANING_ROUND_SIZE,
-    });
+    const targets = selection.targetCardIds;
+    this.round =
+      targets === undefined
+        ? listenMeaningRound(cards, states, selection.language, {
+            seed: id,
+            size: LISTEN_MEANING_ROUND_SIZE,
+          })
+        : listenMeaningRound(
+            cards.filter(({ id: cardId }) => targets.includes(cardId)),
+            [],
+            selection.language,
+            { seed: id, size: targets.length },
+          );
     this.pool = {
       cards,
       introduced: new Set(states.filter(({ reps }) => reps > 0).map(({ cardId }) => cardId)),
