@@ -1,13 +1,17 @@
+import type { Language } from '../domain/card';
 import type { Label } from '../domain/label';
 import { dailyGoalOf } from '../domain/game/answerEvents';
 import { applyEvent, type GameEvent } from '../domain/game/applyEvent';
 import { ECONOMY_CONFIG, type EconomyConfig } from '../domain/game/economyConfig';
 import { MINI_GAME_CONFIG, type MiniGameConfig } from '../domain/game/miniGameConfig';
 import { PATH_CONFIG, type PathConfig } from '../domain/path/pathConfig';
+import type { PathStepValidatedEvent } from '../domain/path/advancePath';
 import { pathsAfterAnswer } from '../domain/path/pathsAfterAnswer';
+import { applyPlacementTest, type PlacementScore } from '../domain/path/placementTest';
 import { GAME_CONFIG } from '../domain/srs/config';
 import { localDay, type LocalDay } from '../domain/srs/localDay';
 import type {
+  PathProgressRecord,
   ProgressRecord,
   ReviewStateRecord,
   SessionRecord,
@@ -107,6 +111,61 @@ export class StudyRepository {
 
   async reviewStates(): Promise<ReviewStateRecord[]> {
     return this.db.reviewStates.toArray();
+  }
+
+  /** The path of a label in one language; absent until an answer or a test fed it. */
+  async pathProgress(labelId: string, language: Language): Promise<PathProgressRecord | undefined> {
+    return this.db.pathProgress.get([labelId, language]);
+  }
+
+  /** The answers of the sessions started since `since` (ISO datetime), in order. */
+  async resultsSince(since: string): Promise<SessionResultRecord[]> {
+    const sessions = await this.db.sessions
+      .where('startedAt')
+      .aboveOrEqual(since)
+      .sortBy('startedAt');
+    return sessions.flatMap(({ results }) => results);
+  }
+
+  /**
+   * A placement test was scored (GAME_DESIGN.md 5.2): a passed one validates the current step,
+   * with its points, in one write. Returns the steps validated; none after a failed test.
+   */
+  async applyPlacementTest(
+    labelId: string,
+    language: Language,
+    score: PlacementScore,
+    today: LocalDay,
+  ): Promise<PathStepValidatedEvent[]> {
+    if (!score.passed) {
+      return [];
+    }
+    const { cards, reviewStates, pathProgress, progress, settings } = this.db;
+    return this.db.transaction(
+      'rw',
+      [cards, reviewStates, pathProgress, progress, settings],
+      async () => {
+        const stored = (await pathProgress.get([labelId, language])) ?? { labelId, language };
+        const labelCards = (await cards.where('labelIds').equals(labelId).toArray())
+          .map(toCard)
+          .filter((card) => card.language === language);
+        const states = await reviewStates.bulkGet(labelCards.map(({ id }) => id));
+        const advance = applyPlacementTest(
+          {
+            cards: labelCards,
+            states: states.filter((state) => state !== undefined),
+            progress: stored,
+          },
+          score,
+          this.rules.path,
+        );
+        if (advance.events.length > 0) {
+          await pathProgress.put(advance.progress);
+          await this.applyGameEvents(advance.events, today);
+        }
+        return advance.events;
+      },
+    );
   }
 
   async startSession(session: SessionRecord): Promise<void> {

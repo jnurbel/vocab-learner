@@ -202,4 +202,92 @@ describe('StudyRepository and the label paths', () => {
 
     expect(await db.pathProgress.count()).toBe(0);
   });
+
+  it('reads the path of a label in a language, absent before any answer', async () => {
+    expect(await repository.pathProgress('lesson', 'zh')).toBeUndefined();
+
+    await answer('a', 'listenMeaning');
+
+    expect(await repository.pathProgress('lesson', 'zh')).toEqual({
+      labelId: 'lesson',
+      language: 'zh',
+      stepAttempts: { listen: { a: true } },
+    });
+  });
+
+  it('reads the answers of the sessions started since a moment, for a placement test', async () => {
+    await answer('a', 'listenMeaning');
+    await repository.startSession({
+      id: 'test',
+      language: 'zh',
+      startedAt: '2026-11-07T10:00:00.000Z',
+      results: [],
+    });
+    await repository.recordAnswer({
+      sessionId: 'test',
+      state: reviewState('b'),
+      result: result('b', 'listenMeaning'),
+      activeDay: day,
+    });
+
+    expect(await repository.resultsSince('2026-11-07T09:30:00.000Z')).toEqual([
+      result('b', 'listenMeaning'),
+    ]);
+  });
+
+  it('validates the current step of a passed placement test, with its points', async () => {
+    await db.pathProgress.put({
+      labelId: 'lesson',
+      language: 'zh',
+      steps: { discover: 'validated' },
+    });
+
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'listen', correct: 3, total: 3, passed: true },
+      day,
+    );
+
+    expect(events.map(({ step, via }) => [step, via])).toEqual([['listen', 'placementTest']]);
+    expect((await lessonPath())?.steps).toEqual({ discover: 'validated', listen: 'validated' });
+    expect((await db.progress.get(SINGLETON_KEY))?.xp).toBe(50);
+  });
+
+  it('changes nothing after a failed placement test', async () => {
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'discover', correct: 1, total: 3, passed: false },
+      day,
+    );
+
+    expect(events).toEqual([]);
+    expect(await db.pathProgress.count()).toBe(0);
+    expect(await db.progress.get(SINGLETON_KEY)).toBeUndefined();
+  });
+
+  it('starts the path of a label with a placement test passed on its first step', async () => {
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'discover', correct: 3, total: 3, passed: true },
+      day,
+    );
+
+    expect(events.map(({ step }) => step)).toEqual(['discover']);
+    expect((await lessonPath())?.steps).toEqual({ discover: 'validated' });
+  });
+
+  it('ignores a passed placement test of a step that is no longer the current one', async () => {
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'type', correct: 3, total: 3, passed: true },
+      day,
+    );
+
+    expect(events).toEqual([]);
+    expect(await db.pathProgress.count()).toBe(0);
+  });
 });
