@@ -586,6 +586,36 @@
     "startFailed": "Le mini-jeu n'a pas pu démarrer.",
     "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
   },
+  "bridgeMatch": {
+    "title": "Mini-jeu : relier les deux rives",
+    "intro": "Relie chaque élément de gauche à celui qui lui correspond à droite : clique sur l'un, puis sur l'autre.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Plateau {board} · {found} / {total} paires",
+    "leftBank": {
+      "term": "Rive des mots",
+      "audio": "Rive des sons"
+    },
+    "rightBank": {
+      "meaning": "Rive des sens",
+      "term": "Rive des mots écrits",
+      "pinyin": "Rive du pinyin"
+    },
+    "sound": "Son {number}",
+    "bridgeLabel": "Pont : {found} planches posées sur {total}",
+    "keysHelp": "Chiffres pour la rive de gauche, lettres pour celle de droite · Espace ou R pour réécouter le son choisi · L pour l'écouter lentement",
+    "match": "Paire juste : {term}, {meaning}. {found} sur {total}.",
+    "mismatch": "Pas une paire : {left} et {right}.",
+    "noVoice": "Pas de voix : les mots sont écrits.",
+    "quit": "Quitter",
+    "summaryTitle": "Pont terminé",
+    "score": "{correct} / {total} paires du premier coup",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "notEligible": "Il faut au moins 3 mots de sens différents.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La paire n'a pas pu être enregistrée. Réessaie."
+  },
   "home": {
     "title": "Aujourd’hui",
     "sessionLength": "{minutes} min suffisent aujourd’hui.",
