@@ -364,7 +364,10 @@ describe('App', () => {
     });
     await user.click(within(menu).getByRole('button', { name: fr.nav.words }));
     const list = screen.getByRole('table', { name: fr.wordList.caption });
-    expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
+    // The word list is read again once the dictation has stored its end.
+    await vi.waitFor(() => {
+      expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.sprout);
+    });
   });
 
   it('changes the daily quota of new words from the settings, kept and recorded as a change', async () => {

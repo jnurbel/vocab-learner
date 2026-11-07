@@ -30,7 +30,7 @@ describe('the game rewards of a free practice', () => {
     const store = new FakeStore();
     const session = start(store, twelveWords);
 
-    for (const _ of twelveWords) {
+    while (!session.finished) {
       await session.answer('good');
     }
 
