@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Card, Language } from '../card';
+import { EXAM_CONFIG } from '../exam/examConfig';
+import { focusLabel } from '../exam/exam.fixtures';
+import type { Label } from '../label';
 import { GAME_CONFIG } from './config';
 import { buildReviewQueue, type ReviewQueueInput } from './reviewQueue';
 import { createInitialReviewState, type ReviewState } from './reviewState';
@@ -187,5 +190,148 @@ describe('buildReviewQueue', () => {
 
   it('returns an empty queue when there is nothing to do', () => {
     expect(queue({})).toEqual([]);
+  });
+});
+
+describe('buildReviewQueue with labels to work on', () => {
+  const exam = '2026-11-13';
+  const labels: Label[] = [
+    focusLabel('exam', exam),
+    focusLabel('soon', '2026-11-09'),
+    focusLabel('pinned'),
+    focusLabel('today', today),
+  ];
+  const focus = { labels, exam: EXAM_CONFIG };
+  const due = (cardId: string, at = '2026-11-05T08:00:00Z', extra: Partial<ReviewState> = {}) =>
+    reviewed(cardId, at, extra);
+
+  it('puts first the words of a label with a test, then the pinned ones, the new ones, the others', () => {
+    const items = queue({
+      cards: [
+        card('other'),
+        card('pinned-word', { labelIds: ['pinned'] }),
+        card('exam-word', { labelIds: ['exam'] }),
+        card('new-word', { labelIds: ['exam'] }),
+      ],
+      states: [
+        due('other', '2026-10-01T08:00:00Z'),
+        due('pinned-word', '2026-10-02T08:00:00Z'),
+        due('exam-word'),
+      ],
+      focus,
+    });
+
+    expect(ids(items)).toEqual(['exam-word', 'pinned-word', 'new-word', 'other']);
+  });
+
+  it('serves the nearest test first, then the most overdue word', () => {
+    const items = queue({
+      cards: [
+        card('exam-late', { labelIds: ['exam'] }),
+        card('exam-early', { labelIds: ['exam'] }),
+        card('soon-word', { labelIds: ['soon'] }),
+      ],
+      states: [
+        due('exam-late', '2026-11-05T08:00:00Z'),
+        due('exam-early', '2026-11-01T08:00:00Z'),
+        due('soon-word', '2026-11-06T08:00:00Z'),
+      ],
+      focus,
+    });
+
+    expect(ids(items)).toEqual(['soon-word', 'exam-early', 'exam-late']);
+  });
+
+  it('asks again inside the 2-day window a word the memory model planned after the test', () => {
+    const cards = [card('exam-word', { labelIds: ['exam'] }), card('other')];
+    const states = [due('exam-word', '2026-12-01T08:00:00Z'), due('other', '2026-12-01T08:00:00Z')];
+
+    expect(ids(queue({ cards, states, focus, today: '2026-11-10' }))).toEqual([]);
+    expect(ids(queue({ cards, states, focus, today: '2026-11-11' }))).toEqual(['exam-word']);
+  });
+
+  it('introduces the new words of the pinned labels before any other new word', () => {
+    const items = queue({
+      cards: [
+        card('other-new', { createdAt: '2026-01-01T00:00:00.000Z' }),
+        card('pinned-new', { labelIds: ['pinned'] }),
+        card('exam-new', { labelIds: ['exam'], createdAt: '2026-11-01T00:00:00.000Z' }),
+      ],
+      focus,
+      newPerDay: 5,
+    });
+
+    expect(ids(items)).toEqual(['exam-new', 'pinned-new']);
+  });
+
+  it('introduces other new words when no pinned label has any left', () => {
+    const items = queue({ cards: [card('other-new')], focus });
+
+    expect(ids(items)).toEqual(['other-new']);
+  });
+
+  it('follows the test quota, at most 12 new words in one session', () => {
+    const cards = Array.from({ length: 30 }, (_, index) =>
+      card(`w${String(index)}`, { labelIds: ['exam'] }),
+    );
+
+    expect(queue({ cards, focus, newPerDay: 3 })).toHaveLength(5);
+    const crowded = [
+      ...cards,
+      ...Array.from({ length: 200 }, (_, index) =>
+        card(`x${String(index)}`, { labelIds: ['exam'] }),
+      ),
+    ];
+    expect(queue({ cards: crowded, focus, newPerDay: 3 })).toHaveLength(12);
+  });
+
+  it('counts the new words already introduced today against the test quota', () => {
+    const cards = Array.from({ length: 30 }, (_, index) =>
+      card(`w${String(index)}`, { labelIds: ['exam'] }),
+    );
+
+    expect(queue({ cards, focus, newPerDay: 3, newIntroducedToday: 4 })).toHaveLength(1);
+  });
+
+  it('introduces no new word of a label tested today, but still offers its due words', () => {
+    const items = queue({
+      cards: [
+        card('today-new', { labelIds: ['today'] }),
+        card('today-due', { labelIds: ['today'] }),
+      ],
+      states: [due('today-due')],
+      focus,
+    });
+
+    expect(ids(items)).toEqual(['today-due']);
+  });
+
+  it('still keeps to the chosen labels', () => {
+    const items = queue({
+      cards: [
+        card('exam-word', { labelIds: ['exam'] }),
+        card('pinned-word', { labelIds: ['pinned'] }),
+      ],
+      states: [due('exam-word'), due('pinned-word')],
+      focus,
+      labelIds: ['pinned'],
+    });
+
+    expect(ids(items)).toEqual(['pinned-word']);
+  });
+
+  it('orders tied words the same way for the same seed, whatever the input order', () => {
+    const cards = Array.from({ length: 6 }, (_, index) =>
+      card(`w${String(index)}`, { labelIds: ['exam'] }),
+    );
+    const states = cards.slice(0, 3).map(({ id }) => due(id));
+
+    const first = ids(queue({ cards, states, focus }));
+    const reversed = ids(
+      queue({ cards: [...cards].reverse(), states: [...states].reverse(), focus }),
+    );
+
+    expect(reversed).toEqual(first);
+    expect(first).toHaveLength(6);
   });
 });
