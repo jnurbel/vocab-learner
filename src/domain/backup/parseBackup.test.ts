@@ -256,6 +256,8 @@ describe('parseBackup', () => {
       ['an invalid day', ['reviewStates', 0, 'lastSuccessDay'], '2026-13-45'],
       ['an unknown session outcome', ['sessions', 0, 'results', 0, 'outcome'], 'perfect'],
       ['a negative xp', ['progress', 'xp'], -5],
+      ['a negative count of answers today', ['progress', 'dailyAnswers'], -1],
+      ['a streak day that is not a day', ['progress', 'lastStreakDay'], '<script>'],
       ['a volume above 100 %', ['settings', 'sfxVolume'], 1.5],
       ['an unknown path step status', ['pathProgress', 0, 'steps', 'listen'], 'flying'],
       ['a final challenge score above 20', ['pathProgress', 0, 'finalChallengeBest'], 21],

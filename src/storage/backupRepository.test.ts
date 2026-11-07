@@ -116,4 +116,35 @@ describe('BackupRepository', () => {
     expect(parsed.ok).toBe(true);
     expect(await elsewhere.snapshot()).toStrictEqual(await repository.snapshot());
   });
+
+  it('gives back the whole game progress after a backup and a restore elsewhere', async () => {
+    const data = sampleData();
+    data.progress = {
+      xp: 1860,
+      level: 8,
+      streakDays: 12,
+      bestStreak: 21,
+      unlocks: ['pier', 'pathLamps'],
+      lastActiveDate: '2026-11-06',
+      dailyXp: 312,
+      dailyXpDay: '2026-11-06',
+      dailyRewardedCount: { c1: 4 },
+      dailyAnswers: 27,
+      lastStreakDay: '2026-11-06',
+      brumeDays: ['2026-11-03'],
+      gameLevels: { 'listenMeaning:zh': { level: 3, window: [true, false] } },
+      stamps: 2,
+    };
+    await repository.replaceAll(data);
+    const text = serializeBackup(await createBackup(await repository.snapshot(), metadata, sha256));
+
+    const parsed = await parseBackup(text, sha256);
+    const elsewhere = newRepository();
+    if (parsed.ok) {
+      await elsewhere.replaceAll(parsed.value.data);
+    }
+
+    expect(parsed.ok).toBe(true);
+    expect((await elsewhere.snapshot()).progress).toStrictEqual(data.progress);
+  });
 });

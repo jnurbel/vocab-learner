@@ -127,6 +127,8 @@ const progressSchema = z.strictObject({
   rushRecords: boundedRecord(token, count).optional(),
   stamps: count.optional(),
   dailyRewardedCount: boundedRecord(identifier, count).optional(),
+  dailyAnswers: count.optional(),
+  lastStreakDay: day.optional(),
 });
 
 const settingsSchema = z.strictObject({
