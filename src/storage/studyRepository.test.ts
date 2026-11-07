@@ -235,6 +235,27 @@ describe('StudyRepository', () => {
     expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
   });
 
+  it('remembers the intensive mode chosen for a test, label by label, keeping the rest', async () => {
+    await repository.saveNewPerDay(10);
+
+    await repository.saveIntensiveExamMode('lesson-7', true);
+    await repository.saveIntensiveExamMode('lesson-8', true);
+    await repository.saveIntensiveExamMode('lesson-8', false);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({
+      newPerDay: 10,
+      intensiveExamMode: { 'lesson-7': true, 'lesson-8': false },
+    });
+  });
+
+  it.each(['__proto__', 'constructor', '<b>x</b>', ''])(
+    'refuses to store the intensive mode under the key %j',
+    async (labelId) => {
+      await expect(repository.saveIntensiveExamMode(labelId, true)).rejects.toThrow(RangeError);
+      expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();
+    },
+  );
+
   it('refuses to store a daily quota out of range', async () => {
     await expect(repository.saveNewPerDay(0)).rejects.toThrow(RangeError);
     await expect(repository.saveNewPerDay(Number.NaN)).rejects.toThrow(RangeError);
