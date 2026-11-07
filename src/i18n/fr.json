@@ -426,5 +426,61 @@
       "paper": "Clavier : Espace pour pause ou reprise, R ou flèche haut pour réécouter, flèche bas pour lent, flèches gauche et droite pour précédent et suivant."
     },
     "markLegend": "Mot {position}, ton résultat :"
+  },
+  "game": {
+    "rewardsTitle": "Ce que la séance t'a rapporté",
+    "xpGained": "+{xp} XP",
+    "xpGainedLabel": "XP gagnés",
+    "xpDetail": "Détail des XP",
+    "xpLine": "{reason} : {xp} XP",
+    "reasons": {
+      "correct": "Réponses justes",
+      "correctWithHint": "Justes avec indice",
+      "almost": "Presque justes",
+      "wrong": "Erreurs et « Je ne sais pas »",
+      "cardIntroduced": "Mots découverts",
+      "sessionCompleted": "Fin de séance",
+      "messengerCompleted": "Dictée du Messager",
+      "stageReached": "Plantes qui ont grandi",
+      "pathStepValidated": "Étapes de parcours",
+      "finalChallengePassed": "Défi final"
+    },
+    "dailyGoal": "Objectif du jour",
+    "dailyGoalProgress": "Objectif du jour : {xp} / {goal} XP",
+    "dailyGoalReached": "Objectif atteint. Les XP comptent moitié moins, ta mémoire, elle, en profite toujours.",
+    "streak": {
+      "one": "Série : {count} jour (record : {best})",
+      "other": "Série : {count} jours (record : {best})"
+    },
+    "level": "Île niveau {level}",
+    "xpToNext": "Encore {xp} XP pour le niveau {next}",
+    "levelUp": "Niveau {level} atteint",
+    "unlocked": "Débloqué : {names}",
+    "bonusOffer": {
+      "one": "Encore {count} mot a soif (≈ {minutes} min). Continuer",
+      "other": "Encore {count} mots ont soif (≈ {minutes} min). Continuer"
+    },
+    "unlocks": {
+      "pier": "Ponton en bois",
+      "pathLamps": "Lampions sur le chemin",
+      "stoneBenches": "Bancs de pierre",
+      "paletteAutumn": "Palette « automne »",
+      "pond": "Étang",
+      "kite": "Cerf-volant",
+      "bamboo": "Bambous",
+      "rowboat": "Barque",
+      "pavilion": "Pavillon",
+      "paletteWinter": "Palette « hiver »",
+      "archBridge": "Pont en arc",
+      "beehives": "Ruches",
+      "lighthouse": "Phare",
+      "paletteNight": "Palette « nuit »",
+      "pebbleGarden": "Jardin de galets",
+      "observatory": "Observatoire",
+      "greatTree": "Grand arbre",
+      "waterfall": "Cascade",
+      "paletteDawn": "Palette « aube »",
+      "secondIslet": "Îlot voisin"
+    }
   }
 }
