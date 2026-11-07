@@ -106,8 +106,12 @@ export interface PathProgressRecord {
   steps?: Partial<Record<PathStep, PathStepStatus>>;
   /** Last result per card per step. */
   stepAttempts?: Partial<Record<PathStep, Record<string, boolean>>>;
-  /** Best score out of 20. */
+  /** Best score out of 20, to the half point. */
   finalChallengeBest?: number;
+  /** Last toneEcho items of the label, oldest first (recognize step). */
+  toneEchoRecent?: boolean[];
+  /** Last sentenceShuffle result per card whose example was put back in order. */
+  shuffledSentences?: Record<string, boolean>;
 }
 
 /** "I already know it": never proposed again by the text import. */
