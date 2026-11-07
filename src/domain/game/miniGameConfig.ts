@@ -46,6 +46,8 @@ export interface MiniGameConfig {
   /** Slow replay rate (key L). */
   readonly slowRate: number;
   readonly feedbackCorrectMs: number;
+  /** English words heard the same: never two right answers in an audio question. */
+  readonly englishHomophones: readonly (readonly string[])[];
 }
 
 export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
@@ -81,4 +83,28 @@ export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
   voices: Object.freeze({ zh: 'zh-CN', en: 'en-GB' }),
   slowRate: 0.6,
   feedbackCorrectMs: 900,
+  englishHomophones: Object.freeze(
+    [
+      ['two', 'too', 'to'],
+      ['their', 'there', "they're"],
+      ['your', "you're"],
+      ['its', "it's"],
+      ['right', 'write'],
+      ['hear', 'here'],
+      ['know', 'no'],
+      ['new', 'knew'],
+      ['see', 'sea'],
+      ['buy', 'by', 'bye'],
+      ['four', 'for'],
+      ['one', 'won'],
+      ['eight', 'ate'],
+      ['weather', 'whether'],
+      ['week', 'weak'],
+      ['wear', 'where'],
+      ['flour', 'flower'],
+      ['meet', 'meat'],
+      ['road', 'rode'],
+      ['sun', 'son'],
+    ].map((group) => Object.freeze(group)),
+  ),
 });
