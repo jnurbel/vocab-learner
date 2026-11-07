@@ -34,6 +34,12 @@ export interface EconomyConfig {
   /** Going from level n to n + 1 takes levelBaseXp + levelStepXp * (n - 1) points. */
   readonly levelBaseXp: number;
   readonly levelStepXp: number;
+  /** A day is active with this many answers, or a finished session. */
+  readonly activeDayMinAnswers: number;
+  /** Missed days covered per ISO week without breaking the streak. */
+  readonly brumeDaysPerWeek: number;
+  /** Brume days older than this are forgotten. */
+  readonly brumeRetentionDays: number;
 }
 
 export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
@@ -59,4 +65,7 @@ export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
   ]),
   levelBaseXp: 100,
   levelStepXp: 50,
+  activeDayMinAnswers: 10,
+  brumeDaysPerWeek: 2,
+  brumeRetentionDays: 14,
 });
