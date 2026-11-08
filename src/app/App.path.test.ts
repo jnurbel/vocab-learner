@@ -103,4 +103,35 @@ describe('App and the label path', () => {
 
     expect(await screen.findByRole('heading', { name: 'Leçon 7', level: 2 })).toBeVisible();
   });
+
+  it('takes the final challenge from the path and shows its score out of 20', async () => {
+    const databaseName = 'app-test-path-challenge';
+    await seedPinnedLesson(databaseName, {
+      labelId: 'lesson',
+      language: 'zh',
+      steps: {
+        discover: 'validated',
+        listen: 'validated',
+        recognize: 'validated',
+        type: 'validated',
+        dictation: 'validated',
+      },
+    });
+    const user = userEvent.setup();
+    render(App, { databaseName, now, speaker: new FakeSpeaker(true, true) });
+
+    await openPath(user);
+    await user.click(screen.getByRole('button', { name: fr.path.finalChallenge }));
+    await user.click(await screen.findByRole('button', { name: fr.finalChallenge.start }));
+    await user.click(screen.getByRole('button', { name: fr.finalChallenge.dontKnow }));
+    await screen.findByText('2/2');
+    await user.click(screen.getByRole('button', { name: fr.finalChallenge.dontKnow }));
+
+    expect(
+      await screen.findByRole('heading', { name: fr.finalChallenge.resultNotYet }),
+    ).toBeVisible();
+    expect(screen.getByText('Note : 0 sur 20')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: fr.finalChallenge.backToPath }));
+    expect(await screen.findByRole('list', { name: fr.path.stepsLabel })).toBeVisible();
+  });
 });

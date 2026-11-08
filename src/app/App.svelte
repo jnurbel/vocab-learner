@@ -81,6 +81,11 @@
     type PlacementOutcome,
   } from '../features/path/pathSession';
   import type { ListenMeaningLaunch } from '../features/miniGame/listenMeaningSession';
+  import FinalChallenge from '../features/path/FinalChallenge.svelte';
+  import {
+    startFinalChallenge,
+    type FinalChallengeStore,
+  } from '../features/path/finalChallengeSession';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -120,7 +125,7 @@
 
   type MenuPage = 'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
   /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
-  type Page = MenuPage | 'miniGame' | 'path';
+  type Page = MenuPage | 'miniGame' | 'path' | 'finalChallenge';
   const PAGES: readonly MenuPage[] = [
     'home',
     'words',
@@ -561,6 +566,53 @@
     pathNotice = fr.path.comingSoon;
   }
 
+  /** The final challenge of the path shown: same storage as the flashcards, plus its score. */
+  const challengeStore: FinalChallengeStore = {
+    load: flashcardStore.load,
+    startSession: flashcardStore.startSession,
+    recordAnswer: flashcardStore.recordAnswer,
+    endSession: flashcardStore.endSession,
+    recordFinalChallenge: async (labelId, language, score20, today) => {
+      const event = await ready(study).recordFinalChallenge(labelId, language, score20, today);
+      await recordChange();
+      return event;
+    },
+  };
+
+  /** The words of the final challenge, taken from the path that opened it. */
+  let challengeWords = $state.raw<readonly PathCard[]>([]);
+
+  function openFinalChallenge(path: LoadedPath) {
+    pathTarget = { label: path.label, language: path.language };
+    challengeWords = path.words;
+    validatedBefore = path.view.steps
+      .filter(({ status }) => status === 'validated')
+      .map(({ step }) => step);
+    placementOutcome = undefined;
+    pathNotice = undefined;
+    page = 'finalChallenge';
+  }
+
+  async function startChallenge() {
+    const { label, language } = ready(pathTarget);
+    return startFinalChallenge(
+      { label, language, cards: challengeWords, audio: await speaker.hasVoice(language) },
+      { store: challengeStore, srs, clock: now, newId, loadPinyin: loadPinyinGenerator },
+    );
+  }
+
+  /** "Revoir ces mots": a free practice on the words missed, then back to the path. */
+  function reviewMissed(words: readonly PathCard[]) {
+    const { language } = ready(pathTarget);
+    fromPath = true;
+    launchFlashcards({
+      mode: 'practice',
+      language,
+      labelIds: [],
+      cardIds: words.map(({ id }) => id),
+    });
+  }
+
   /** Back from a step session or a test: a test is scored on the answers given since it began. */
   async function returnToPath() {
     const pending = pendingPlacement;
@@ -668,12 +720,21 @@
             {...placementOutcome === undefined ? {} : { placement: placementOutcome }}
             onStartStep={startStep}
             onLaunchExercise={launchExercise}
-            onFinalChallenge={() => undefined}
+            onFinalChallenge={openFinalChallenge}
             onAddExamples={() => {
               page = 'words';
             }}
           />
         {/key}
+      {:else if page === 'finalChallenge' && pathTarget !== undefined}
+        <FinalChallenge
+          labelName={pathTarget.label.name}
+          {speaker}
+          {startChallenge}
+          onReview={reviewMissed}
+          onBack={() => void returnToPath()}
+          onFinished={() => void sessionEnded()}
+        />
       {:else if page === 'backup' && backupService !== undefined}
         <BackupPanel
           service={backupService}
