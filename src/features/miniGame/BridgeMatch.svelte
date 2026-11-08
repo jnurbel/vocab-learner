@@ -466,6 +466,7 @@
   }
 
   .card {
+    min-width: 0;
     display: flex;
     gap: var(--space-3);
     align-items: center;
@@ -523,6 +524,11 @@
     border: 1px solid var(--line);
     color: var(--ink-soft);
     font-size: var(--text-sm);
+  }
+
+  .text {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .text[lang='zh-CN'] {
