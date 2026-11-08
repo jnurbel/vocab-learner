@@ -1,0 +1,308 @@
+// @vitest-environment node
+import 'fake-indexeddb/auto';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { Card } from '../domain/card';
+import type { Label } from '../domain/label';
+import type {
+  ExerciseType,
+  PathProgressRecord,
+  ReviewStateRecord,
+  SessionResultRecord,
+} from '../domain/progressRecords';
+import { SINGLETON_KEY, toStored, VocabularyDatabase } from './database';
+import { StudyRepository } from './studyRepository';
+
+function card(id: string, labelIds: string[], extra: Partial<Card> = {}): Card {
+  return {
+    id,
+    language: 'zh',
+    term: `词${id}`,
+    translation: `mot ${id}`,
+    labelIds,
+    source: 'manual',
+    createdAt: '2026-11-01T08:00:00.000Z',
+    updatedAt: '2026-11-01T08:00:00.000Z',
+    ...extra,
+  };
+}
+
+function label(id: string, isFocus: boolean): Label {
+  return {
+    id,
+    name: id,
+    isFocus,
+    createdAt: '2026-11-01T08:00:00.000Z',
+    updatedAt: '2026-11-01T08:00:00.000Z',
+  };
+}
+
+function reviewState(cardId: string, reps = 1): ReviewStateRecord {
+  return {
+    cardId,
+    due: '2026-11-08T12:00:00.000Z',
+    stability: 1,
+    difficulty: 5,
+    reps,
+    lapses: 0,
+    state: 'review',
+    successDays: 1,
+    peakStage: 'sprout',
+  };
+}
+
+function result(
+  cardId: string,
+  exercise: ExerciseType,
+  outcome: SessionResultRecord['outcome'] = 'correct',
+): SessionResultRecord {
+  return { cardId, exercise, outcome, at: '2026-11-07T09:00:00.000Z' };
+}
+
+const day = '2026-11-07';
+let repository: StudyRepository;
+let db: VocabularyDatabase;
+let databaseCount = 0;
+
+beforeEach(async () => {
+  databaseCount += 1;
+  const name = `study-path-test-${String(databaseCount)}`;
+  repository = new StudyRepository(name);
+  db = new VocabularyDatabase(name);
+  await db.labels.bulkAdd([label('lesson', true), label('loose', false)]);
+  await db.cards.bulkAdd(
+    [
+      card('a', ['lesson'], { example: '例句 a' }),
+      card('b', ['lesson'], { example: '例句 b' }),
+      card('c', ['lesson', 'loose']),
+      card('free', ['loose']),
+    ].map(toStored),
+  );
+  await repository.startSession({
+    id: 's1',
+    language: 'zh',
+    startedAt: '2026-11-07T08:00:00.000Z',
+    results: [],
+  });
+});
+
+afterEach(async () => {
+  db.close();
+  await repository.deleteDatabase();
+});
+
+const lessonPath = () => db.pathProgress.get(['lesson', 'zh']);
+
+async function answer(cardId: string, exercise: ExerciseType, reps = 1) {
+  await repository.recordAnswer({
+    sessionId: 's1',
+    state: reviewState(cardId, reps),
+    result: result(cardId, exercise),
+    activeDay: day,
+  });
+}
+
+describe('StudyRepository and the label paths', () => {
+  it.each<[ExerciseType, Partial<PathProgressRecord>]>([
+    ['bridgeMatch', { stepAttempts: { recognize: { a: true } } }],
+    ['toneEcho', { toneEchoRecent: [true] }],
+    ['sentenceListen', { stepAttempts: { sentences: { a: true } } }],
+    ['sentenceShuffle', { shuffledSentences: { a: true } }],
+    ['listenMeaning', { stepAttempts: { listen: { a: true } } }],
+    ['typeEcho', { stepAttempts: { type: { a: true } } }],
+    ['listenType', { stepAttempts: { dictation: { a: true } } }],
+  ])('feeds the path of the pinned label with an answer in %s', async (exercise, expected) => {
+    await answer('a', exercise);
+
+    expect(await lessonPath()).toEqual({ labelId: 'lesson', language: 'zh', ...expected });
+  });
+
+  it('keeps no path for a word of no pinned label', async () => {
+    await answer('free', 'listenMeaning');
+
+    expect(await db.pathProgress.count()).toBe(0);
+  });
+
+  it('feeds the path with free practice answers too', async () => {
+    await repository.recordPracticeAnswer({ sessionId: 's1', result: result('b', 'typeEcho') });
+
+    expect((await lessonPath())?.stepAttempts).toEqual({ type: { b: true } });
+  });
+
+  it('feeds the path with a revised answer, which replaces the last attempt', async () => {
+    await repository.recordAnswer({
+      sessionId: 's1',
+      state: reviewState('a'),
+      result: result('a', 'typeEcho', 'wrong'),
+      activeDay: day,
+    });
+
+    await repository.reviseAnswer({
+      sessionId: 's1',
+      state: reviewState('a'),
+      result: result('a', 'typeEcho'),
+      activeDay: day,
+    });
+
+    expect((await lessonPath())?.stepAttempts).toEqual({ type: { a: true } });
+  });
+
+  it('validates a step in the same write as the answer, and gives its 50 points', async () => {
+    await db.progress.put({ xp: 100, dailyXp: 0, dailyXpDay: day }, SINGLETON_KEY);
+    await answer('a', 'discovery');
+    await answer('b', 'discovery');
+
+    await answer('c', 'discovery');
+
+    expect((await lessonPath())?.steps).toEqual({ discover: 'validated' });
+    expect((await db.progress.get(SINGLETON_KEY))?.xp).toBe(150);
+  });
+
+  it('gives the points of a step on top of those of the answer', async () => {
+    await answer('a', 'discovery');
+    await answer('b', 'discovery');
+
+    await repository.recordAnswer({
+      sessionId: 's1',
+      state: reviewState('c'),
+      result: result('c', 'discovery'),
+      activeDay: day,
+      progress: ({ progress }) => ({ ...progress, xp: (progress.xp ?? 0) + 10 }),
+    });
+
+    expect((await db.progress.get(SINGLETON_KEY))?.xp).toBe(60);
+  });
+
+  it('gives the points of a step reached by free practice on the day of the answer', async () => {
+    await db.reviewStates.bulkAdd([reviewState('a'), reviewState('b'), reviewState('c')]);
+    await db.pathProgress.put({
+      labelId: 'lesson',
+      language: 'zh',
+      steps: { discover: 'validated' },
+      stepAttempts: { listen: { a: true, b: true } },
+    });
+
+    await repository.recordPracticeAnswer({
+      sessionId: 's1',
+      result: result('c', 'listenMeaning'),
+    });
+
+    expect((await lessonPath())?.steps).toEqual({ discover: 'validated', listen: 'validated' });
+    expect(await db.progress.get(SINGLETON_KEY)).toMatchObject({ xp: 50, dailyXpDay: day });
+  });
+
+  it('writes no path when the answer cannot be stored', async () => {
+    await expect(
+      repository.recordAnswer({
+        sessionId: 'unknown',
+        state: reviewState('a'),
+        result: result('a', 'listenMeaning'),
+        activeDay: day,
+      }),
+    ).rejects.toThrow();
+
+    expect(await db.pathProgress.count()).toBe(0);
+  });
+
+  it('reads the path of a label in a language, absent before any answer', async () => {
+    expect(await repository.pathProgress('lesson', 'zh')).toBeUndefined();
+
+    await answer('a', 'listenMeaning');
+
+    expect(await repository.pathProgress('lesson', 'zh')).toEqual({
+      labelId: 'lesson',
+      language: 'zh',
+      stepAttempts: { listen: { a: true } },
+    });
+  });
+
+  it('reads the answers of the sessions started since a moment, for a placement test', async () => {
+    await answer('a', 'listenMeaning');
+    await repository.startSession({
+      id: 'test',
+      language: 'zh',
+      startedAt: '2026-11-07T10:00:00.000Z',
+      results: [],
+    });
+    await repository.recordAnswer({
+      sessionId: 'test',
+      state: reviewState('b'),
+      result: result('b', 'listenMeaning'),
+      activeDay: day,
+    });
+
+    expect(await repository.resultsSince('2026-11-07T09:30:00.000Z')).toEqual([
+      result('b', 'listenMeaning'),
+    ]);
+  });
+
+  it('validates the current step of a passed placement test, with its points', async () => {
+    await db.pathProgress.put({
+      labelId: 'lesson',
+      language: 'zh',
+      steps: { discover: 'validated' },
+    });
+
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'listen', correct: 3, total: 3, passed: true },
+      day,
+    );
+
+    expect(events.map(({ step, via }) => [step, via])).toEqual([['listen', 'placementTest']]);
+    expect((await lessonPath())?.steps).toEqual({ discover: 'validated', listen: 'validated' });
+    expect((await db.progress.get(SINGLETON_KEY))?.xp).toBe(50);
+  });
+
+  it('changes nothing after a failed placement test', async () => {
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'discover', correct: 1, total: 3, passed: false },
+      day,
+    );
+
+    expect(events).toEqual([]);
+    expect(await db.pathProgress.count()).toBe(0);
+    expect(await db.progress.get(SINGLETON_KEY)).toBeUndefined();
+  });
+
+  it('starts the path of a label with a placement test passed on its first step', async () => {
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'discover', correct: 3, total: 3, passed: true },
+      day,
+    );
+
+    expect(events.map(({ step }) => step)).toEqual(['discover']);
+    expect((await lessonPath())?.steps).toEqual({ discover: 'validated' });
+  });
+
+  it('ignores a passed placement test of a step that is no longer the current one', async () => {
+    const events = await repository.applyPlacementTest(
+      'lesson',
+      'zh',
+      { step: 'type', correct: 3, total: 3, passed: true },
+      day,
+    );
+
+    expect(events).toEqual([]);
+    expect(await db.pathProgress.count()).toBe(0);
+  });
+
+  it('keeps the best score of the final challenge, with 100 points for a first success', async () => {
+    const first = await repository.recordFinalChallenge('lesson', 'zh', 17, day);
+    const second = await repository.recordFinalChallenge('lesson', 'zh', 12, day);
+
+    expect(first).toMatchObject({ passed: true, firstPass: true });
+    expect(second).toMatchObject({ passed: false, firstPass: false });
+    expect(await lessonPath()).toEqual({
+      labelId: 'lesson',
+      language: 'zh',
+      finalChallengeBest: 17,
+      steps: { finalChallenge: 'validated' },
+    });
+    expect((await db.progress.get(SINGLETON_KEY))?.xp).toBe(100);
+  });
+});

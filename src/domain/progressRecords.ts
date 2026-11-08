@@ -75,6 +75,8 @@ export interface ProgressRecord {
   dailyAnswers?: number;
   /** The last active day counted in the streak; lastActiveDate is the last day with an answer. */
   lastStreakDay?: string;
+  /** The level of the island last seen in the garden: it grows from there after a level up. */
+  islandLevelSeen?: number;
 }
 
 export interface SettingsRecord {
@@ -106,8 +108,12 @@ export interface PathProgressRecord {
   steps?: Partial<Record<PathStep, PathStepStatus>>;
   /** Last result per card per step. */
   stepAttempts?: Partial<Record<PathStep, Record<string, boolean>>>;
-  /** Best score out of 20. */
+  /** Best score out of 20, to the half point. */
   finalChallengeBest?: number;
+  /** Last toneEcho items of the label, oldest first (recognize step). */
+  toneEchoRecent?: boolean[];
+  /** Last sentenceShuffle result per card whose example was put back in order. */
+  shuffledSentences?: Record<string, boolean>;
 }
 
 /** "I already know it": never proposed again by the text import. */

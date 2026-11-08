@@ -2,6 +2,7 @@ import type { Card, Language } from '../domain/card';
 import type { ImportChanges } from '../domain/importPlan';
 import type { Label } from '../domain/label';
 import type { LabelChanges } from '../domain/labelOperations';
+import { mergePaths } from '../domain/path/mergePaths';
 import { toCard, toStored, VocabularyDatabase } from './database';
 
 /** Persists words and labels; the domain decides, the repository only stores. */
@@ -62,7 +63,10 @@ export class VocabularyRepository {
     return this.db.labels.toArray();
   }
 
-  /** Stores the outcome of a rename, merge or deletion atomically; a removed label loses its path. */
+  /**
+   * Stores the outcome of a rename, merge or deletion atomically. A merged label hands its path
+   * over to the label kept (validated steps, best score); a deleted label loses its path.
+   */
   async applyLabelChanges(changes: LabelChanges): Promise<void> {
     const { labels, cards, pathProgress } = this.db;
     await this.db.transaction('rw', labels, cards, pathProgress, async () => {
@@ -71,10 +75,25 @@ export class VocabularyRepository {
         (id) => !keptIds.has(id),
       );
       await this.db.labels.bulkDelete(removedIds);
+      if (changes.merged !== undefined) {
+        await this.carryPathsOver(changes.merged.sourceId, changes.merged.targetId);
+      }
       await this.db.pathProgress.where('labelId').anyOf(removedIds).delete();
       await this.db.labels.bulkPut(changes.labels);
       await this.db.cards.bulkPut(changes.cardsToUpdate.map(toStored));
     });
+  }
+
+  /** Runs inside the transaction of a merge. */
+  private async carryPathsOver(sourceId: string, targetId: string): Promise<void> {
+    const absorbed = await this.db.pathProgress.where('labelId').equals(sourceId).toArray();
+    for (const path of absorbed) {
+      const kept = (await this.db.pathProgress.get([targetId, path.language])) ?? {
+        labelId: targetId,
+        language: path.language,
+      };
+      await this.db.pathProgress.put(mergePaths(path, kept));
+    }
   }
 
   async deleteDatabase(): Promise<void> {

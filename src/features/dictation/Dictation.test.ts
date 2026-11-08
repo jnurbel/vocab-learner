@@ -612,3 +612,30 @@ describe('Dictation on paper', () => {
     expect(within(region()).getByText('zài')).toBeVisible();
   });
 });
+
+describe('a dictation asked for by a step session of the path', () => {
+  it('starts at once on the words of the step', async () => {
+    const store = new FakeStore();
+    const startSession = vi.fn((selection: DictationSelection) =>
+      startDictationSession(selection, { store, srs, clock: () => morning, newId: () => 'd1' }),
+    );
+    render(Dictation, {
+      cards: [zai, cat, dog, necessary],
+      labels: [lesson],
+      speaker: new FakeSpeaker(true, true),
+      startSession,
+      loadPinyin: () => Promise.resolve(fakePinyin),
+      onSessionEnd: vi.fn(),
+      newSeed: () => 'seed',
+      startWith: { language: 'zh', words: [dog, cat] },
+    });
+
+    await vi.waitFor(() => {
+      expect(startSession).toHaveBeenCalledWith({
+        language: 'zh',
+        labelIds: [],
+        words: [dog, cat],
+      });
+    });
+  });
+});

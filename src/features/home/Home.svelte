@@ -21,6 +21,8 @@
     onAddWords: () => void;
     onUndoUnpin: (label: Label) => Promise<void>;
     onIntensiveChange: (label: Label, intensive: boolean) => Promise<void>;
+    /** Opens the path of a pinned label in the language shown (GAME_DESIGN.md 8.4). */
+    onOpenPath?: (label: Label, language: Language) => void;
   }
 
   const {
@@ -32,6 +34,7 @@
     onAddWords,
     onUndoUnpin,
     onIntensiveChange,
+    onOpenPath,
   }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
@@ -322,6 +325,9 @@
                       {/if}
                     </p>
                     <ul class="pills">
+                      {#if focus.readyForExam}
+                        <li class="pill ready">{fr.home.readyForExam}</li>
+                      {/if}
                       {#if focus.dueCount > 0}
                         <li class="pill thirst">
                           {formatCount(fr.home.thirstPill, focus.dueCount)}
@@ -333,6 +339,18 @@
                     </ul>
                   </div>
                 </div>
+
+                {#if onOpenPath !== undefined}
+                  <div class="actions">
+                    <button
+                      type="button"
+                      aria-label={format(fr.home.openPathLabel, { name: focus.label.name })}
+                      onclick={() => {
+                        onOpenPath(focus.label, language);
+                      }}>{fr.home.openPath}</button
+                    >
+                  </div>
+                {/if}
 
                 {#if focus.forecast?.status === 'examDay'}
                   <div class="actions">
@@ -747,6 +765,11 @@
   .badge.thirst {
     background: var(--thirst-soft);
     color: var(--thirst);
+  }
+
+  .pill.ready {
+    background: var(--jade);
+    color: var(--on-jade);
   }
 
   .pill.new {

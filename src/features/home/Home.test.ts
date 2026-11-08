@@ -49,6 +49,7 @@ function setup(views: Partial<Record<Language, HomeView>>) {
     onIntensiveChange: vi.fn<(label: Label, intensive: boolean) => Promise<void>>(() =>
       Promise.resolve(),
     ),
+    onOpenPath: vi.fn(),
   };
   render(Home, props);
   return { ...props, user: userEvent.setup() };
@@ -70,6 +71,26 @@ describe('Home', () => {
     ).toBeVisible();
     expect(within(region).getByText(/^Au rythme prévu/)).toBeVisible();
     expect(within(region).getByText('5 nouveaux mots')).toBeVisible();
+  });
+
+  it('says that a label is ready for its test once its final challenge is passed', async () => {
+    setup({
+      zh: viewOf({ cards: words('lesson', 5), labels: [lesson()], readyLabelIds: ['lesson'] }),
+    });
+
+    expect(within(await focusCard()).getByText(fr.home.readyForExam)).toBeVisible();
+  });
+
+  it('opens the path of a pinned label in the language shown', async () => {
+    const { onOpenPath, user } = setup({
+      zh: viewOf({ cards: words('lesson', 25), labels: [lesson('2026-11-13')] }),
+    });
+
+    await user.click(
+      within(await focusCard()).getByRole('button', { name: 'Voir le parcours de Leçon 7' }),
+    );
+
+    expect(onOpenPath).toHaveBeenCalledWith(expect.objectContaining({ id: 'lesson' }), 'zh');
   });
 
   it('starts today’s session of the language with its estimated length', async () => {

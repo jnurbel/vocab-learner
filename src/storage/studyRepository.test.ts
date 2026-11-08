@@ -80,6 +80,18 @@ describe('StudyRepository', () => {
     expect(await db.progress.get(SINGLETON_KEY)).toEqual({ xp: 40, lastActiveDate: '2026-11-06' });
   });
 
+  it('records an answer the FSRS does not rate without touching the review states', async () => {
+    await db.reviewStates.put(reviewState('a', 2));
+    await repository.startSession(session('s1', '2026-11-06T08:00:00.000Z'));
+    const result = { cardId: 'a', outcome: 'correct' as const, exercise: 'toneEcho' as const };
+
+    await repository.recordAnswer({ sessionId: 's1', result, activeDay: '2026-11-06' });
+
+    expect(await db.reviewStates.toArray()).toEqual([reviewState('a', 2)]);
+    expect((await db.sessions.get('s1'))?.results).toEqual([result]);
+    expect(await db.progress.get(SINGLETON_KEY)).toEqual({ lastActiveDate: '2026-11-06' });
+  });
+
   it('applies the game to the stored progress and settings in the same write as the answer', async () => {
     await db.progress.put({ xp: 40, lastActiveDate: '2026-11-05' }, SINGLETON_KEY);
     await db.settings.put({ dailyGoalXp: 150 }, SINGLETON_KEY);

@@ -185,6 +185,40 @@ describe('VocabularyRepository', () => {
     database.close();
   });
 
+  it('carries the path of a merged label over to the label kept, in each language', async () => {
+    const lesson = label('lesson-3', 'Leçon 3');
+    await repository.saveLabel(lesson);
+    await repository.saveLabel(label('animals', 'Animaux'));
+    const database = new VocabularyDatabase(databaseName);
+    await database.pathProgress.bulkAdd([
+      { labelId: 'lesson-3', language: 'zh', steps: { discover: 'validated' } },
+      {
+        labelId: 'animals',
+        language: 'zh',
+        steps: { listen: 'validated' },
+        finalChallengeBest: 18,
+      },
+      { labelId: 'animals', language: 'en', steps: { discover: 'validated' } },
+    ]);
+
+    await repository.applyLabelChanges({
+      labels: [lesson],
+      cardsToUpdate: [],
+      merged: { sourceId: 'animals', targetId: 'lesson-3' },
+    });
+
+    expect(await database.pathProgress.toArray()).toEqual([
+      { labelId: 'lesson-3', language: 'en', steps: { discover: 'validated' } },
+      {
+        labelId: 'lesson-3',
+        language: 'zh',
+        steps: { listen: 'validated', discover: 'validated' },
+        finalChallengeBest: 18,
+      },
+    ]);
+    database.close();
+  });
+
   it('deletes a word and keeps the others', async () => {
     const cat = card('c1', '猫', []);
     const dog = card('c2', '狗', []);

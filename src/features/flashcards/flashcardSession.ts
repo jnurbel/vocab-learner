@@ -1,5 +1,6 @@
 import type { Card, Language } from '../../domain/card';
 import type { AnswerExercise } from '../../domain/answerExercise';
+import type { AnswerMode } from '../../domain/studySettings';
 import { cleanAnswer } from '../../domain/dictation/answerText';
 import { answerEvents } from '../../domain/game/answerEvents';
 import type { ExerciseType, SessionResultRecord } from '../../domain/progressRecords';
@@ -61,6 +62,10 @@ export interface FlashcardLaunch {
   mode: 'review' | 'practice';
   language: Language;
   labelIds: readonly string[];
+  /** A step session of the path: these words only, whatever their labels. */
+  cardIds?: readonly string[];
+  /** The way of answering of this session only; the learner's own choice is kept. */
+  answerMode?: AnswerMode;
 }
 
 export interface StageChange {

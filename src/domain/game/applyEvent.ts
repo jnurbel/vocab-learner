@@ -1,4 +1,6 @@
 import type { Language } from '../card';
+import type { PathStepValidatedEvent } from '../path/advancePath';
+import type { FinalChallengeFinishedEvent } from '../path/finalChallenge';
 import type { ExerciseType, ProgressRecord } from '../progressRecords';
 import type { LocalDay } from '../srs/localDay';
 import type { Outcome, Stage } from '../srs/reviewState';
@@ -45,7 +47,9 @@ export type GameEvent =
       kind: SessionKind;
       answers: number;
       correct: number;
-    };
+    }
+  | PathStepValidatedEvent
+  | FinalChallengeFinishedEvent;
 
 /** What the interface shows of an event (GAME_DESIGN.md 9.2). */
 export type GameEffect =
@@ -76,7 +80,13 @@ export interface GameUpdate {
 }
 
 /** Exercises with an adaptive level of their own (GAME_DESIGN.md 6.0). */
-const MINI_GAMES: ReadonlySet<ExerciseType> = new Set(['listenMeaning']);
+const MINI_GAMES: ReadonlySet<ExerciseType> = new Set([
+  'listenMeaning',
+  'bridgeMatch',
+  'toneEcho',
+  'sentenceListen',
+  'sentenceShuffle',
+]);
 
 /**
  * The game reducer: pure, it never touches the spaced repetition. It returns the new progress
@@ -116,6 +126,12 @@ function reduce(
         return progress;
       }
       return activeDay(earn(progress, 'sessionCompleted', context, effects), context, effects);
+    case 'PathStepValidated':
+      return earn(progress, 'pathStepValidated', context, effects);
+    case 'FinalChallengeFinished':
+      return event.passed && event.firstPass
+        ? earn(progress, 'finalChallengePassed', context, effects)
+        : progress;
   }
 }
 

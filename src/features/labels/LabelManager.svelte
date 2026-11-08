@@ -28,9 +28,11 @@
     masteryOf?: (label: Label) => Partial<Record<Language, Mastery>>;
     /** The learner's day, which bounds the test dates; the pin column is hidden without it. */
     today?: LocalDay;
+    /** Opens the path of a pinned label; no button without it. */
+    onOpenPath?: (label: Label) => void;
   }
 
-  const { labels, cards, clock, onChange, masteryOf, today }: Props = $props();
+  const { labels, cards, clock, onChange, masteryOf, today, onOpenPath }: Props = $props();
 
   const usages = $derived(countWordsByLabel(labels, cards));
   /** Typed new names and chosen merge targets, by label id. */
@@ -197,6 +199,17 @@
               {/if}
               <td>
                 <div class="actions">
+                  {#if onOpenPath !== undefined && label.isFocus}
+                    <div class="action">
+                      <button
+                        type="button"
+                        aria-label={format(fr.labelManager.openPathLabel, { name: label.name })}
+                        onclick={() => {
+                          onOpenPath(label);
+                        }}>{fr.labelManager.openPath}</button
+                      >
+                    </div>
+                  {/if}
                   <div class="action">
                     <input
                       type="text"

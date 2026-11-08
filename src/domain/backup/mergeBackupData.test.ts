@@ -71,7 +71,14 @@ describe('mergeBackupData', () => {
           results: [{ cardId: 'c1', outcome: 'correct' }],
         },
       ],
-      pathProgress: [{ labelId: 'l1', language: 'zh', stepAttempts: { listen: { c1: true } } }],
+      pathProgress: [
+        {
+          labelId: 'l1',
+          language: 'zh',
+          stepAttempts: { listen: { c1: true } },
+          shuffledSentences: { c1: true },
+        },
+      ],
       settings: { intensiveExamMode: { l1: true } },
       progress: { dailyRewardedCount: { c1: 2 } },
     });
@@ -86,7 +93,12 @@ describe('mergeBackupData', () => {
       results: [{ cardId: 'new-2', outcome: 'correct' }],
     });
     expect(merged.pathProgress).toEqual([
-      { labelId: 'new-1', language: 'zh', stepAttempts: { listen: { 'new-2': true } } },
+      {
+        labelId: 'new-1',
+        language: 'zh',
+        stepAttempts: { listen: { 'new-2': true } },
+        shuffledSentences: { 'new-2': true },
+      },
     ]);
     expect(merged.settings).toEqual({ intensiveExamMode: { 'new-1': true } });
     expect(merged.progress).toEqual({ dailyRewardedCount: { 'new-2': 2 } });
@@ -140,6 +152,16 @@ describe('mergeBackupData', () => {
       bestStreak: 9,
       unlocks: ['pond', 'bridge'],
     });
+  });
+
+  it('keeps the highest level of the island seen, so that it never grows twice', () => {
+    const merged = mergeBackupData(
+      data({ progress: { islandLevelSeen: 4 } }),
+      data({ progress: { islandLevelSeen: 7 } }),
+      idGenerator(),
+    );
+
+    expect(merged.progress).toEqual({ islandLevelSeen: 7 });
   });
 
   it('keeps the progress fields that only one side has', () => {
