@@ -579,6 +579,16 @@
     color: var(--jade-strong);
   }
 
+  /* Read by screen readers only: the big score above is hidden from them. */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   @media (min-width: 900px) {
     .result {
       grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
