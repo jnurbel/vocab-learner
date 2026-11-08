@@ -1,59 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '../../domain/card';
-import type { Label } from '../../domain/label';
-import type { FinalChallengeFinishedEvent } from '../../domain/path/finalChallenge';
-import { card, FakeStore, reviewed, srs } from '../flashcards/flashcards.fixtures';
-import {
-  startFinalChallenge,
-  type FinalChallengeSession,
-  type FinalChallengeStore,
-} from './finalChallengeSession';
+import { reviewed, srs } from '../flashcards/flashcards.fixtures';
+import { ChallengeStore, fruitWords, lessonLabel } from './path.fixtures';
+import { startFinalChallenge, type FinalChallengeSession } from './finalChallengeSession';
 
 const morning = new Date('2026-11-07T08:00:00Z');
-const label: Label = {
-  id: 'lesson',
-  name: 'Unit 3',
-  isFocus: true,
-  createdAt: '2026-10-01T00:00:00.000Z',
-  updatedAt: '2026-10-01T00:00:00.000Z',
-};
-const terms = [
-  'apple',
-  'banana',
-  'cherry',
-  'grape',
-  'lemon',
-  'mango',
-  'melon',
-  'peach',
-  'pear',
-  'plum',
-];
-const words = terms.map((term) =>
-  card(term, undefined, {
-    language: 'en',
-    term,
-    translation: `fruit ${term}`,
-    labelIds: ['lesson'],
-  }),
-);
-
-class ChallengeStore extends FakeStore implements FinalChallengeStore {
-  readonly finished: [string, string, number, string][] = [];
-
-  recordFinalChallenge(labelId: string, language: 'zh' | 'en', score20: number, today: string) {
-    this.finished.push([labelId, language, score20, today]);
-    const event: FinalChallengeFinishedEvent = {
-      type: 'FinalChallengeFinished',
-      labelId,
-      language,
-      score20,
-      passed: score20 >= 16,
-      firstPass: score20 >= 16,
-    };
-    return Promise.resolve(event);
-  }
-}
+const label = lessonLabel;
+const words = fruitWords;
 
 async function start(
   store = new ChallengeStore({ reviewStates: words.map(({ id }) => reviewed(id)) }),
