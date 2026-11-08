@@ -152,6 +152,7 @@ describe('mergeLabels', () => {
           { ...cat, labelIds: ['lesson'], updatedAt: now },
           { ...dog, labelIds: ['lesson'], updatedAt: now },
         ],
+        merged: { sourceId: 'animals', targetId: 'lesson' },
       },
     });
   });
