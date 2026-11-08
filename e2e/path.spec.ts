@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { openWords } from './navigation.ts';
+import { reachFinalChallenge } from './pathSeed.ts';
 
 declare global {
   interface Window {
@@ -161,47 +162,6 @@ test('a placement test passed validates the listening step', async ({ page }) =>
   await expect(steps.getByRole('listitem').nth(1)).toContainText('Validée');
   expect(errors).toEqual([]);
 });
-
-/** Validates the first five steps in the stored path, to reach the final challenge at once. */
-async function reachFinalChallenge(page: Page) {
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve, reject) => {
-        const opening = indexedDB.open('vocab-learner-default');
-        opening.onerror = () => {
-          reject(new Error('The database did not open'));
-        };
-        opening.onsuccess = () => {
-          const db = opening.result;
-          const transaction = db.transaction(['labels', 'pathProgress'], 'readwrite');
-          const reading = transaction.objectStore('labels').getAll();
-          reading.onsuccess = () => {
-            const labels = reading.result as { id: string; name: string }[];
-            const lesson = labels.find(({ name }) => name === 'Leçon 7');
-            transaction.objectStore('pathProgress').put({
-              labelId: lesson?.id,
-              language: 'zh',
-              steps: {
-                discover: 'validated',
-                listen: 'validated',
-                recognize: 'validated',
-                type: 'validated',
-                dictation: 'validated',
-              },
-            });
-          };
-          transaction.oncomplete = () => {
-            db.close();
-            resolve();
-          };
-          transaction.onerror = () => {
-            reject(new Error('The path was not stored'));
-          };
-        };
-      }),
-  );
-  await page.reload();
-}
 
 test('the final challenge, heard through the speech synthesis, is scored out of 20', async ({
   page,

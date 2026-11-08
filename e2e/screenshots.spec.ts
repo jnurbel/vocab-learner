@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openWords } from './navigation.ts';
+import { reachFinalChallenge } from './pathSeed.ts';
 
 /**
  * Screenshots of the main screens, light and dark, on a computer and on a phone, written to
@@ -195,6 +196,33 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await dictation.getByRole('textbox', { name: 'Ta réponse' }).press('Enter');
         await expect(dictation.getByRole('button', { name: 'Continuer' })).toBeVisible();
         await shoot(page, 'dictation-answer', device, scheme, dictation.getByRole('status'));
+      });
+
+      test('label path and final challenge', async ({ page }) => {
+        await installSilentVoice(page);
+        await page.goto('./');
+        await openWords(page);
+        await addWords(page);
+        await page.getByRole('button', { name: 'Épingler Leçon 7' }).click();
+        await expect(page.getByRole('button', { name: 'Désépingler Leçon 7' })).toBeVisible();
+        await page.getByRole('button', { name: 'Voir le parcours de Leçon 7' }).click();
+        const path = page.getByRole('region', { name: 'Leçon 7' });
+        await expect(path.getByRole('list', { name: 'Étapes du parcours' })).toBeVisible();
+        await shoot(page, 'path', device, scheme, path);
+
+        await reachFinalChallenge(page);
+        await page.getByRole('button', { name: 'Voir le parcours de Leçon 7' }).click();
+        await page.getByRole('button', { name: 'Lancer le défi final' }).click();
+        const challenge = page.getByRole('region', { name: 'Défi final' });
+        await challenge.getByRole('button', { name: 'Commencer' }).click();
+        await expect(challenge.getByText('1/4', { exact: true })).toBeVisible();
+        await shoot(page, 'final-challenge', device, scheme, challenge);
+        for (let question = 1; question <= 4; question += 1) {
+          await expect(challenge.getByText(String(question) + '/4', { exact: true })).toBeVisible();
+          await challenge.getByRole('button', { name: 'Je ne sais pas' }).click();
+        }
+        await expect(challenge.getByRole('heading', { name: /Pas encore prêt/ })).toBeVisible();
+        await shoot(page, 'final-challenge-result', device, scheme, challenge);
       });
 
       test('session summary, garden and ListenMeaning', async ({ page }) => {
