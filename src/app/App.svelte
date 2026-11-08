@@ -74,6 +74,7 @@
   import { StudyRepository } from '../storage/studyRepository';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
   import { appVersion } from './appVersion';
+  import { format } from '../i18n/format';
   import NavIcon from '../ui/NavIcon.svelte';
   import { srs } from './srs';
   import { EXAM_CONFIG } from '../domain/exam/examConfig';
@@ -712,6 +713,9 @@
     <header class="brand">
       <span class="logo" lang="zh-CN" aria-hidden="true">词</span>
       <h1>{fr.app.title}</h1>
+      <small class="version" title={format(fr.app.versionTitle, { version: appVersion })}
+        >v{appVersion}</small
+      >
     </header>
 
     <nav aria-label={fr.nav.label} class="menu">
@@ -1026,6 +1030,14 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .version {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    white-space: nowrap;
   }
 
   .logo {
