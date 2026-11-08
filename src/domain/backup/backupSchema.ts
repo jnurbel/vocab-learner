@@ -167,7 +167,10 @@ const pathProgressSchema = z.strictObject({
     .partialRecord(pathStep, z.enum(['locked', 'current', 'validated', 'skipped']))
     .optional(),
   stepAttempts: z.partialRecord(pathStep, boundedRecord(identifier, z.boolean())).optional(),
-  finalChallengeBest: count.max(20).optional(),
+  // Out of 20, to the half point.
+  finalChallengeBest: z.number().min(0).max(20).multipleOf(0.5).optional(),
+  toneEchoRecent: boundedList(z.boolean()).optional(),
+  shuffledSentences: boundedRecord(identifier, z.boolean()).optional(),
 });
 
 export const backupDataSchema = z.strictObject({

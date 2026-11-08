@@ -189,6 +189,25 @@ describe('parseBackup', () => {
       });
     });
 
+    it('keeps a half-point best score, the toneEcho items and the sentences put in order', async () => {
+      const data = sampleData();
+      data.pathProgress = [
+        {
+          labelId: 'animals',
+          language: 'zh',
+          finalChallengeBest: 15.5,
+          toneEchoRecent: [true, false],
+          shuffledSentences: { c1: true },
+        },
+      ];
+      const backup = await createBackup(data, metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
     it('keeps the way of answering the flashcards chosen by the learner', async () => {
       const data = sampleData();
       data.settings = { ...data.settings, answerMode: 'mixed' };
@@ -278,6 +297,7 @@ describe('parseBackup', () => {
       ['a volume above 100 %', ['settings', 'sfxVolume'], 1.5],
       ['an unknown path step status', ['pathProgress', 0, 'steps', 'listen'], 'flying'],
       ['a final challenge score above 20', ['pathProgress', 0, 'finalChallengeBest'], 21],
+      ['a score off the half points', ['pathProgress', 0, 'finalChallengeBest'], 15.3],
     ])('refuses %s', async (_case, path, value) => {
       const text = await resealed((document) => {
         let target = data(document);
@@ -292,6 +312,26 @@ describe('parseBackup', () => {
       expect(parsed.ok).toBe(false);
       expect(parsed.ok ? [] : parsed.errors.map((issue) => issue.path)).toEqual([
         `data.${path.join('.')}`,
+      ]);
+    });
+
+    it.each([
+      ['a toneEcho item that is no result', 'toneEchoRecent', ['yes'], 'toneEchoRecent.0'],
+      [
+        'a sentence put in order by no result',
+        'shuffledSentences',
+        { c1: 1 },
+        'shuffledSentences.c1',
+      ],
+    ])('refuses %s', async (_case, field, value, issuePath) => {
+      const text = await resealed((document) => {
+        member(data(document)['pathProgress'], 0)[field] = value;
+      });
+
+      const parsed = await parseBackup(text, sha256);
+
+      expect(parsed.ok ? [] : parsed.errors.map((issue) => issue.path)).toEqual([
+        `data.pathProgress.0.${issuePath}`,
       ]);
     });
 

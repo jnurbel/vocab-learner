@@ -188,10 +188,11 @@ function remapSession(session: SessionRecord, labelIds: IdMap, cardIds: IdMap): 
 }
 
 function remapPath(path: PathProgressRecord, labelIds: IdMap, cardIds: IdMap): PathProgressRecord {
-  const { stepAttempts } = path;
+  const { stepAttempts, shuffledSentences } = path;
   return {
     ...path,
     labelId: remap(labelIds, path.labelId),
+    ...optional('shuffledSentences', shuffledSentences && remapKeys(shuffledSentences, cardIds)),
     ...optional(
       'stepAttempts',
       stepAttempts &&
