@@ -44,13 +44,9 @@ licence OFL à joindre) ou repli système. Hanzi : polices système (`"Microsoft
 
 ## Captures de l'appli
 
-<<<<<<< HEAD
-`screenshots/` contient les écrans existants de l'appli (mots, import, flashcards, réponse tapée,
-dictée, sauvegarde, réglages, bilan de séance, jardin et sa vue liste, mini-jeu `ListenMeaning`), en clair et en sombre, à 1280 px (page entière) et à 390 × 844
-=======
 `screenshots/` contient les écrans existants de l'appli (accueil, mots, import, flashcards, réponse tapée,
-dictée, sauvegarde, réglages), en clair et en sombre, à 1280 px (page entière) et à 390 × 844
->>>>>>> origin/feature-focus-home
+dictée, sauvegarde, réglages, bilan de séance, jardin et sa vue liste, île aux niveaux 1, 5, 10 et 20,
+mini-jeu `ListenMeaning`), en clair et en sombre, à 1280 px (page entière) et à 390 × 844
 (un écran, comme `Mobile.dc.html`), pour comparer avec les maquettes. Pour les régénérer :
 
 ```sh
