@@ -54,6 +54,9 @@ export interface MiniGameConfig {
   readonly bridgeMinPairs: number;
   /** Boards in a BridgeMatch round. */
   readonly bridgeBoardsPerRound: number;
+  /** SentenceShuffle: sentences of this many chunks only (GAME_DESIGN.md 6.6). */
+  readonly shuffleMinChunks: number;
+  readonly shuffleMaxChunks: number;
 }
 
 export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
@@ -116,4 +119,6 @@ export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
   bridgePairsByLevel: Object.freeze({ 1: 4, 2: 5, 3: 6 }),
   bridgeMinPairs: 3,
   bridgeBoardsPerRound: 2,
+  shuffleMinChunks: 3,
+  shuffleMaxChunks: 8,
 });
