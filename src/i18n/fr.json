@@ -724,6 +724,47 @@
     "startFailed": "Le mini-jeu n'a pas pu démarrer.",
     "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
   },
+  "miniGames": {
+    "title": "Mini-jeux",
+    "intro": "Des jeux courts pour reconnaître tes mots à l'oreille, à l'écrit et dans leurs phrases.",
+    "languageLegend": "Langue",
+    "listLabel": "Liste des mini-jeux",
+    "games": {
+      "listenMeaning": {
+        "name": "Écouter et choisir le sens",
+        "description": "Tu entends un mot, tu choisis son sens."
+      },
+      "bridgeMatch": {
+        "name": "Relier les deux rives",
+        "description": "Relie chaque mot, ou son son, à son sens."
+      },
+      "toneEcho": {
+        "name": "Échos des tons",
+        "nameEn": "Paires proches",
+        "description": "Retrouve les tons de ce que tu entends.",
+        "descriptionEn": "Retrouve lequel de deux mots proches tu entends."
+      },
+      "sentenceListen": {
+        "name": "Le mot dans la phrase",
+        "description": "Tu entends une phrase d'exemple, tu retrouves le mot de ta liste."
+      },
+      "sentenceShuffle": {
+        "name": "Remettre la phrase dans l'ordre",
+        "description": "Replace les morceaux d'une phrase d'exemple."
+      }
+    },
+    "eligible": {
+      "one": "{count} mot éligible",
+      "other": "{count} mots éligibles"
+    },
+    "reasons": {
+      "fewWords": "Ajoute d'autres mots dans cette langue.",
+      "noPinyin": "Ajoute le pinyin de tes mots.",
+      "noExamples": "Ajoute des phrases d'exemple."
+    },
+    "play": "Jouer",
+    "back": "Retour aux mini-jeux"
+  },
   "home": {
     "title": "Aujourd’hui",
     "sessionLength": "{minutes} min suffisent aujourd’hui.",

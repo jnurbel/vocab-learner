@@ -272,18 +272,33 @@ describe('App', () => {
     );
   });
 
-  it('opens the ListenMeaning mini-game from the garden and from the flashcards', async () => {
+  it('opens the list of mini-games from the garden and from the flashcards, then a game', async () => {
     const user = userEvent.setup();
     render(App, { databaseName: 'app-test-mini-game' });
     const menu = screen.getByRole('navigation', { name: fr.nav.label });
+    await openWords();
+    await addWord(user, '猫 | māo | chat');
+    await addWord(user, '狗 | gǒu | chien');
 
     await user.click(within(menu).getByRole('button', { name: fr.nav.garden }));
     await user.click(screen.getByRole('button', { name: fr.garden.miniGame }));
+    const games = screen.getByRole('list', { name: fr.miniGames.listLabel });
+    expect(screen.getByRole('region', { name: fr.miniGames.title })).toBeVisible();
+    const listen = within(games)
+      .getAllByRole('listitem')
+      .find((item) => item.textContent.includes(fr.miniGames.games.listenMeaning.name));
+    if (listen === undefined) {
+      throw new Error('ListenMeaning is not listed');
+    }
+
+    await user.click(within(listen).getByRole('button', { name: /Jouer/ }));
     expect(screen.getByRole('region', { name: fr.listenMeaning.title })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: fr.miniGames.back }));
+    expect(screen.getByRole('region', { name: fr.miniGames.title })).toBeVisible();
 
     await user.click(within(menu).getByRole('button', { name: fr.nav.flashcards }));
     await user.click(await screen.findByRole('button', { name: fr.garden.miniGame }));
-    expect(screen.getByRole('region', { name: fr.listenMeaning.title })).toBeVisible();
+    expect(screen.getByRole('region', { name: fr.miniGames.title })).toBeVisible();
   });
 
   it('remembers how the learner answers the flashcards, from one visit to the next', async () => {

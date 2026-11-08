@@ -87,6 +87,7 @@ test('ListenMeaning: a right answer, then a wrong one, heard through the speech 
     .getByRole('button', { name: 'Jardin' })
     .click();
   await page.getByRole('button', { name: 'Mini-jeu' }).click();
+  await page.getByRole('button', { name: 'Jouer Écouter et choisir le sens' }).click();
   const game = page.getByRole('region', { name: 'Mini-jeu : écouter et choisir le sens' });
   await game.getByRole('button', { name: 'Commencer le mini-jeu' }).click();
   const options = game.getByRole('group', { name: 'Que veut dire ce mot ?' });

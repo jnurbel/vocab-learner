@@ -18,6 +18,20 @@
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import Garden from '../features/garden/Garden.svelte';
   import ListenMeaning from '../features/miniGame/ListenMeaning.svelte';
+  import BridgeMatch from '../features/miniGame/BridgeMatch.svelte';
+  import MiniGameMenu from '../features/miniGame/MiniGameMenu.svelte';
+  import SentenceListen from '../features/miniGame/SentenceListen.svelte';
+  import SentenceShuffle from '../features/miniGame/SentenceShuffle.svelte';
+  import ToneEcho from '../features/miniGame/ToneEcho.svelte';
+  import {
+    startBridgeMatchSession,
+    type BridgeMatchSelection,
+  } from '../features/miniGame/bridgeMatchSession';
+  import type { MiniGameSelection } from '../features/miniGame/miniGameRecorder';
+  import { startSentenceListenSession } from '../features/miniGame/sentenceListenSession';
+  import { startSentenceShuffleSession } from '../features/miniGame/sentenceShuffleSession';
+  import { startToneEchoSession } from '../features/miniGame/toneEchoSession';
+  import type { MiniGame } from '../domain/game/miniGameCatalog';
   import {
     startListenMeaningSession,
     type ListenMeaningSelection,
@@ -250,9 +264,28 @@
     return startListenMeaningSession(selection, { store: flashcardStore, srs, clock: now, newId });
   }
 
+  /** The game open from the list of mini-games; none: the list itself. */
+  let openGame = $state.raw<{ game: MiniGame; language: Language }>();
+
   function openMiniGame() {
+    openGame = undefined;
     page = 'miniGame';
   }
+
+  function backToMiniGames() {
+    openGame = undefined;
+  }
+
+  /** The games share the store of the flashcards: every answer is a change to back up. */
+  const gameDeps = () => ({ store: flashcardStore, srs, clock: now, newId });
+  const startBridgeMatch = (selection: BridgeMatchSelection) =>
+    startBridgeMatchSession(selection, gameDeps());
+  const startToneEcho = (selection: MiniGameSelection) =>
+    startToneEchoSession(selection, gameDeps());
+  const startSentenceListen = (selection: MiniGameSelection) =>
+    startSentenceListenSession(selection, gameDeps());
+  const startSentenceShuffle = (selection: MiniGameSelection) =>
+    startSentenceShuffleSession(selection, gameDeps());
 
   /** Typing suits a computer; on a touch screen, writing on paper is the default. */
   const dictationMode =
@@ -531,12 +564,64 @@
           onMiniGame={openMiniGame}
         />
       {:else if page === 'miniGame'}
-        <ListenMeaning
-          {cards}
-          {speaker}
-          startSession={startMiniGame}
-          onSessionEnd={() => void sessionEnded()}
-        />
+        {@const speechRate = SPEECH_RATES[voiceSpeed ?? speechSpeedOf(undefined)]}
+        {#if openGame === undefined}
+          <MiniGameMenu
+            {cards}
+            {speaker}
+            onOpen={(game: MiniGame, language: Language) => {
+              openGame = { game, language };
+            }}
+          />
+        {:else if openGame.game === 'listenMeaning'}
+          <ListenMeaning
+            {cards}
+            {speaker}
+            startSession={startMiniGame}
+            onSessionEnd={() => void sessionEnded()}
+          />
+          <button type="button" onclick={backToMiniGames}>{fr.miniGames.back}</button>
+        {:else if openGame.game === 'bridgeMatch'}
+          <BridgeMatch
+            {cards}
+            language={openGame.language}
+            {speaker}
+            {speechRate}
+            startSession={startBridgeMatch}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'toneEcho'}
+          <ToneEcho
+            {cards}
+            language={openGame.language}
+            {speaker}
+            {speechRate}
+            startSession={startToneEcho}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'sentenceListen'}
+          <SentenceListen
+            {cards}
+            language={openGame.language}
+            {speaker}
+            {speechRate}
+            startSession={startSentenceListen}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else}
+          <SentenceShuffle
+            {cards}
+            language={openGame.language}
+            {speaker}
+            {speechRate}
+            startSession={startSentenceShuffle}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {/if}
       {:else if page === 'flashcards'}
         {#if answerMode !== undefined}
           <Flashcards
