@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "vocab-learner",
-    "tagline": "Maîtrise le vocabulaire de ta leçon, en chinois et en anglais."
+    "tagline": "Maîtrise le vocabulaire de ta leçon, en chinois et en anglais.",
+    "versionTitle": "Version {version}"
   },
   "wordForm": {
     "title": "Ajouter un mot",

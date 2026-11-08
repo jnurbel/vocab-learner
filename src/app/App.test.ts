@@ -40,6 +40,17 @@ async function studyOneCard(user: User) {
 }
 
 describe('App', () => {
+  it('shows the version of the app next to its name, on every page', () => {
+    render(App, { databaseName: 'app-test-version' });
+
+    const brand = screen.getByRole('banner');
+    expect(within(brand).getByText(`v${packageJson.version}`)).toBeVisible();
+    expect(within(brand).getByText(`v${packageJson.version}`)).toHaveAttribute(
+      'title',
+      `Version ${packageJson.version}`,
+    );
+  });
+
   it('opens on the home screen, the first entry of the menu', async () => {
     render(App, { databaseName: 'app-test-home' });
 
