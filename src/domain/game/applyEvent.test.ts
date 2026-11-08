@@ -316,6 +316,33 @@ describe('applying a path step validated', () => {
   });
 });
 
+describe('applying a final challenge finished', () => {
+  const finished: GameEvent = {
+    type: 'FinalChallengeFinished',
+    labelId: 'lesson',
+    language: 'zh',
+    score20: 17,
+    passed: true,
+    firstPass: true,
+  };
+
+  it('awards 100 points for the first success, never reduced by the daily goal', () => {
+    const farBeyond: ProgressRecord = { xp: 900, dailyXp: 900, dailyXpDay: today };
+
+    const { progress, effects } = applyEvent(farBeyond, finished, context);
+
+    expect(progress.xp).toBe(1000);
+    expect(effects).toContainEqual(expect.objectContaining({ reason: 'finalChallengePassed' }));
+  });
+
+  it('awards nothing for a later success nor for a failed attempt', () => {
+    expect(applyEvent({}, { ...finished, firstPass: false }, context).progress.xp ?? 0).toBe(0);
+    expect(
+      applyEvent({}, { ...finished, passed: false, firstPass: false }, context).progress.xp ?? 0,
+    ).toBe(0);
+  });
+});
+
 describe('the streak across days', () => {
   it('covers a missed day with a brume day, and tells it', () => {
     const monday: ProgressRecord = {
