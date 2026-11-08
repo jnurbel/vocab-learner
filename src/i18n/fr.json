@@ -588,6 +588,185 @@
     "startFailed": "Le mini-jeu n'a pas pu démarrer.",
     "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
   },
+  "bridgeMatch": {
+    "title": "Mini-jeu : relier les deux rives",
+    "intro": "Relie chaque élément de gauche à celui qui lui correspond à droite : clique sur l'un, puis sur l'autre.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Plateau {board} · {found} / {total} paires",
+    "leftBank": {
+      "term": "Rive des mots",
+      "audio": "Rive des sons"
+    },
+    "rightBank": {
+      "meaning": "Rive des sens",
+      "term": "Rive des mots écrits",
+      "pinyin": "Rive du pinyin"
+    },
+    "sound": "Son {number}",
+    "bridgeLabel": "Pont : {found} planches posées sur {total}",
+    "keysHelp": "Chiffres pour la rive de gauche, lettres pour celle de droite · Espace ou R pour réécouter le son choisi · L pour l'écouter lentement",
+    "match": "Paire juste : {term}, {meaning}. {found} sur {total}.",
+    "mismatch": "Pas une paire : {left} et {right}.",
+    "noVoice": "Pas de voix : les mots sont écrits.",
+    "quit": "Quitter",
+    "summaryTitle": "Pont terminé",
+    "score": "{correct} / {total} paires du premier coup",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "notEligible": "Il faut au moins 3 mots de sens différents.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La paire n'a pas pu être enregistrée. Réessaie."
+  },
+  "toneEcho": {
+    "title": "Mini-jeu : échos des tons",
+    "titleEn": "Mini-jeu : paires proches",
+    "intro": "Écoute bien : retrouve le ton d'une syllabe, les tons d'un mot, ou lequel de deux mots proches tu entends.",
+    "introEn": "Écoute bien : deux mots proches s'affichent, retrouve celui que tu entends.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Échos · {position} / {total}",
+    "replay": "Réécouter",
+    "slow": "Lent",
+    "promptTone": "Quel ton entends-tu ?",
+    "promptPattern": "Tape les tons du mot, par exemple 34 (0 ou 5 pour le ton neutre).",
+    "promptPair": "Lequel entends-tu ?",
+    "tonesLabel": "Tons",
+    "pairLabel": "Les deux mots",
+    "patternLabel": "Tons du mot",
+    "validate": "Valider",
+    "toneNames": {
+      "1": "1er ton",
+      "2": "2e ton",
+      "3": "3e ton",
+      "4": "4e ton",
+      "neutral": "ton neutre"
+    },
+    "curveLabel": "Tons : {tones}",
+    "curveThen": " puis ",
+    "keysHelpTone": "Touches 1 à 4 pour le ton, 5 ou 0 pour le ton neutre · Espace ou R pour réécouter · L pour écouter lentement",
+    "keysHelpPair": "Touches 1 et 2, ou flèches gauche et droite · Espace ou R pour réécouter · L pour écouter lentement",
+    "keysHelpPattern": "Entrée pour valider · flèche haut pour réécouter, flèche bas pour écouter lentement",
+    "right": "Juste.",
+    "wrongHeard": "Tu as entendu {heard}, tu as choisi {chosen}. Écoute les deux.",
+    "wrongTone": "Tu as entendu {heard}, tu as choisi : {chosen}.",
+    "heardTitle": "Le son entendu",
+    "chosenTitle": "Ton choix",
+    "listenChosen": "Écouter mon choix",
+    "sandhi": "En parlant, deux 3e tons de suite deviennent 2e ton puis 3e ton : on tape quand même les tons du dictionnaire.",
+    "noRating": "Le jeu des tons ne change pas la plante du mot : il entraîne l'oreille.",
+    "practiceOnly": "Paire d'entraînement : elle ne compte pas pour tes mots.",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "summaryTitle": "Échos terminés",
+    "score": "{correct} / {total} justes",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "noVoice": "Ce jeu a besoin d'une voix pour cette langue : installe-la dans les réglages de ton appareil.",
+    "notEligible": "Aucun de tes mots n'a de son à travailler ici : il faut du pinyin pour le chinois.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "sentenceListen": {
+    "title": "Mini-jeu : le mot dans la phrase",
+    "intro": "Tu entends une phrase d'exemple de ta liste. Retrouve le mot de ta liste qu'elle contient.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Phrases · {position} / {total}",
+    "prompt": "Écoute la phrase · quel mot de ta liste as-tu entendu ?",
+    "promptWritten": "Quel mot de ta liste manque dans la phrase ?",
+    "optionsLabel": "Quel mot de ta liste as-tu entendu ?",
+    "keysHelp": "Touches 1 à 4 pour choisir · Espace ou R pour réécouter · L pour écouter lentement · 0 pour « Je ne sais pas »",
+    "replay": "Réécouter la phrase",
+    "slow": "Lent",
+    "unknown": "Je ne sais pas",
+    "noVoice": "Pas de voix : la phrase est écrite, avec un trou.",
+    "audioError": "La phrase n'a pas pu être lue : elle est écrite, avec un trou.",
+    "right": "Juste.",
+    "wrong": "C'était {term}",
+    "chose": "Tu as choisi : {term}",
+    "unknownChosen": "Tu as répondu « Je ne sais pas ».",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "summaryTitle": "Phrases écoutées",
+    "score": "{correct} / {total} justes",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "notEligible": "Ajoute des phrases d'exemple qui contiennent tes mots pour jouer à ce jeu.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "sentenceShuffle": {
+    "title": "Mini-jeu : remettre la phrase dans l'ordre",
+    "intro": "Les morceaux d'une phrase d'exemple sont mélangés : remets-les dans l'ordre.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Phrase {position} / {total}",
+    "meaning": "Avec le mot {term} : {translation}",
+    "line": "Ta phrase",
+    "lineEmpty": "Touche les morceaux dans l'ordre de la phrase.",
+    "reserve": "Morceaux à placer",
+    "trapHint": "Attention : un morceau n'appartient pas à la phrase.",
+    "keysHelp": "Chiffres pour placer un morceau · Retour arrière pour retirer le dernier · Entrée pour valider",
+    "validate": "Valider",
+    "listen": "Écouter la phrase",
+    "slow": "Lent",
+    "right": "Juste.",
+    "retry": "Pas tout à fait : le début en vert est juste, le reste revient dans la réserve. Essaie encore.",
+    "wrong": "Ta phrase est peut-être correcte aussi ; voici celle de ta liste :",
+    "claimRight": "J'étais juste",
+    "giveUp": "Voir la phrase",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "summaryTitle": "Phrases remises en ordre",
+    "score": "{correct} / {total} du premier coup",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "notEligible": "Ajoute des phrases d'exemple de 3 à 8 morceaux pour jouer à ce jeu.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "miniGames": {
+    "title": "Mini-jeux",
+    "intro": "Des jeux courts pour reconnaître tes mots à l'oreille, à l'écrit et dans leurs phrases.",
+    "languageLegend": "Langue",
+    "listLabel": "Liste des mini-jeux",
+    "games": {
+      "listenMeaning": {
+        "name": "Écouter et choisir le sens",
+        "description": "Tu entends un mot, tu choisis son sens."
+      },
+      "bridgeMatch": {
+        "name": "Relier les deux rives",
+        "description": "Relie chaque mot, ou son son, à son sens."
+      },
+      "toneEcho": {
+        "name": "Échos des tons",
+        "nameEn": "Paires proches",
+        "description": "Retrouve les tons de ce que tu entends.",
+        "descriptionEn": "Retrouve lequel de deux mots proches tu entends."
+      },
+      "sentenceListen": {
+        "name": "Le mot dans la phrase",
+        "description": "Tu entends une phrase d'exemple, tu retrouves le mot de ta liste."
+      },
+      "sentenceShuffle": {
+        "name": "Remettre la phrase dans l'ordre",
+        "description": "Replace les morceaux d'une phrase d'exemple."
+      }
+    },
+    "eligible": {
+      "one": "{count} mot éligible",
+      "other": "{count} mots éligibles"
+    },
+    "reasons": {
+      "fewWords": "Ajoute d'autres mots dans cette langue.",
+      "noPinyin": "Ajoute le pinyin de tes mots.",
+      "noExamples": "Ajoute des phrases d'exemple."
+    },
+    "play": "Jouer",
+    "back": "Retour aux mini-jeux"
+  },
   "home": {
     "title": "Aujourd’hui",
     "sessionLength": "{minutes} min suffisent aujourd’hui.",
@@ -770,6 +949,7 @@
     "placementPassed": "{correct}/{total} : étape validée.",
     "placementNotYet": "{correct}/{total} : pas encore. Tes réponses comptent quand même.",
     "comingSoon": "Cet exercice arrive bientôt. En attendant, avance sur les autres étapes.",
+    "chooseGame": "Choisis un jeu pour cette étape :",
     "nothingLeft": "Plus aucun mot à travailler aujourd’hui pour cette étape."
   },
   "finalChallenge": {

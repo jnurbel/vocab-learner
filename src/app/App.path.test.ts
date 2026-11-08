@@ -76,7 +76,7 @@ describe('App and the label path', () => {
     expect(steps[1]).toHaveTextContent('À faire');
   });
 
-  it('says that the exercises of the recognize step are coming soon', async () => {
+  it('offers the recognize games on the words of the step, and opens BridgeMatch on them', async () => {
     const databaseName = 'app-test-path-recognize';
     await seedPinnedLesson(databaseName, {
       labelId: 'lesson',
@@ -89,7 +89,18 @@ describe('App and the label path', () => {
     await openPath(user);
     await user.click(screen.getByRole('button', { name: fr.path.continue }));
 
-    expect(await screen.findByText(fr.path.comingSoon)).toBeVisible();
+    const games = await screen.findByRole('region', { name: fr.path.chooseGame });
+    expect(
+      within(games).getByRole('button', { name: fr.miniGames.games.toneEcho.name }),
+    ).toBeVisible();
+    await user.click(
+      within(games).getByRole('button', { name: fr.miniGames.games.bridgeMatch.name }),
+    );
+
+    expect((await screen.findAllByRole('button', { name: fr.path.back })).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.queryByRole('region', { name: fr.path.chooseGame })).toBeNull();
   });
 
   it('opens the path of a pinned label from the labels screen', async () => {

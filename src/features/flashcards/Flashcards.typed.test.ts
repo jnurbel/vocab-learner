@@ -152,7 +152,7 @@ describe('Flashcards answered by typing', () => {
     });
     expect(store.answers).toHaveLength(1);
     expect(store.revisions[0]?.result).toMatchObject({ outcome: 'correct', rating: 'good' });
-    expect(store.revisions[0]?.state.lapses).toBe(0);
+    expect(store.revisions[0]?.state?.lapses).toBe(0);
   });
 
   it('never plays the word before it is typed, then reads it as an echo', async () => {

@@ -18,6 +18,20 @@
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import Garden from '../features/garden/Garden.svelte';
   import ListenMeaning from '../features/miniGame/ListenMeaning.svelte';
+  import BridgeMatch from '../features/miniGame/BridgeMatch.svelte';
+  import MiniGameMenu from '../features/miniGame/MiniGameMenu.svelte';
+  import SentenceListen from '../features/miniGame/SentenceListen.svelte';
+  import SentenceShuffle from '../features/miniGame/SentenceShuffle.svelte';
+  import ToneEcho from '../features/miniGame/ToneEcho.svelte';
+  import {
+    startBridgeMatchSession,
+    type BridgeMatchSelection,
+  } from '../features/miniGame/bridgeMatchSession';
+  import type { MiniGameSelection } from '../features/miniGame/miniGameRecorder';
+  import { startSentenceListenSession } from '../features/miniGame/sentenceListenSession';
+  import { startSentenceShuffleSession } from '../features/miniGame/sentenceShuffleSession';
+  import { startToneEchoSession } from '../features/miniGame/toneEchoSession';
+  import type { MiniGame } from '../domain/game/miniGameCatalog';
   import {
     startListenMeaningSession,
     type ListenMeaningSelection,
@@ -284,9 +298,38 @@
     return startListenMeaningSession(selection, { store: flashcardStore, srs, clock: now, newId });
   }
 
+  /** The game open from the list of mini-games; none: the list itself. */
+  let openGame = $state.raw<{
+    game: MiniGame;
+    language: Language;
+    /** Words imposed by a step session of the path. */
+    cardIds?: readonly string[];
+  }>();
+  /** The games of a path step (recognize, sentences) offered on the step's words. */
+  let stepGames = $state.raw<readonly MiniGame[]>();
+  let stepCardIds = $state.raw<readonly string[]>([]);
+  let stepLanguage = $state<Language>('zh');
+
   function openMiniGame() {
+    openGame = undefined;
+    stepGames = undefined;
     page = 'miniGame';
   }
+
+  function backToMiniGames() {
+    openGame = undefined;
+  }
+
+  /** The games share the store of the flashcards: every answer is a change to back up. */
+  const gameDeps = () => ({ store: flashcardStore, srs, clock: now, newId });
+  const startBridgeMatch = (selection: BridgeMatchSelection) =>
+    startBridgeMatchSession(selection, gameDeps());
+  const startToneEcho = (selection: MiniGameSelection) =>
+    startToneEchoSession(selection, gameDeps());
+  const startSentenceListen = (selection: MiniGameSelection) =>
+    startSentenceListenSession(selection, gameDeps());
+  const startSentenceShuffle = (selection: MiniGameSelection) =>
+    startSentenceShuffleSession(selection, gameDeps());
 
   /** Typing suits a computer; on a touch screen, writing on paper is the default. */
   const dictationMode =
@@ -564,14 +607,17 @@
     }
   }
 
-  /**
-   * The exercises of the recognize and sentences steps (bridgeMatch, toneEcho, sentenceListen,
-   * sentenceShuffle) come with another feature: until then, the path says they are coming.
-   * Plug their screens in here, like startStep does, on `cardIds` of the label in the language.
-   */
+  /** Steps 3 and 6 offer their games (GAME_DESIGN.md 5.1) on the words of the step. */
   function launchExercise(step: ExerciseStep, cardIds: readonly string[], purpose: LaunchPurpose) {
+    const { language } = shownPath();
     leavePath(step, cardIds, purpose);
-    pathNotice = fr.path.comingSoon;
+    fromPath = true;
+    stepLanguage = language;
+    stepCardIds = cardIds;
+    stepGames =
+      step === 'recognize' ? ['bridgeMatch', 'toneEcho'] : ['sentenceListen', 'sentenceShuffle'];
+    openGame = undefined;
+    page = 'miniGame';
   }
 
   /** The final challenge of the path shown: same storage as the flashcards, plus its score. */
@@ -633,6 +679,8 @@
     flashcardLaunch = undefined;
     listenLaunch = undefined;
     dictationLaunch = undefined;
+    stepGames = undefined;
+    openGame = undefined;
     pathVisit += 1;
     page = 'path';
   }
@@ -668,6 +716,8 @@
             flashcardLaunch = undefined;
             listenLaunch = undefined;
             dictationLaunch = undefined;
+            stepGames = undefined;
+            openGame = undefined;
             fromPath = false;
             page = name;
           }}><NavIcon {name} /><span class="menu-text">{fr.nav[name]}</span></button
@@ -775,13 +825,87 @@
           onMiniGame={openMiniGame}
         />
       {:else if page === 'miniGame'}
-        <ListenMeaning
-          {cards}
-          {speaker}
-          startSession={startMiniGame}
-          onSessionEnd={() => void sessionEnded()}
-          {...listenLaunch === undefined ? {} : { startWith: listenLaunch }}
-        />
+        {@const speechRate = SPEECH_RATES[voiceSpeed ?? speechSpeedOf(undefined)]}
+        {#if listenLaunch !== undefined}
+          <ListenMeaning
+            {cards}
+            {speaker}
+            startSession={startMiniGame}
+            onSessionEnd={() => void sessionEnded()}
+            startWith={listenLaunch}
+          />
+        {:else if openGame === undefined && stepGames !== undefined}
+          <section class="step-games" aria-label={fr.path.chooseGame}>
+            <p>{fr.path.chooseGame}</p>
+            {#each stepGames as game (game)}
+              <button
+                type="button"
+                onclick={() => (openGame = { game, language: stepLanguage, cardIds: stepCardIds })}
+                >{fr.miniGames.games[game].name}</button
+              >
+            {/each}
+          </section>
+        {:else if openGame === undefined}
+          <MiniGameMenu
+            {cards}
+            {speaker}
+            onOpen={(game: MiniGame, language: Language) => {
+              openGame = { game, language };
+            }}
+          />
+        {:else if openGame.game === 'listenMeaning'}
+          <ListenMeaning
+            {cards}
+            {speaker}
+            startSession={startMiniGame}
+            onSessionEnd={() => void sessionEnded()}
+          />
+          <button type="button" onclick={backToMiniGames}>{fr.miniGames.back}</button>
+        {:else if openGame.game === 'bridgeMatch'}
+          <BridgeMatch
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startBridgeMatch}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'toneEcho'}
+          <ToneEcho
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startToneEcho}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'sentenceListen'}
+          <SentenceListen
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startSentenceListen}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else}
+          <SentenceShuffle
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startSentenceShuffle}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {/if}
       {:else if page === 'flashcards'}
         {#if answerMode !== undefined}
           <Flashcards

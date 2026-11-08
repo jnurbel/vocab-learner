@@ -208,6 +208,33 @@ describe('parseBackup', () => {
       });
     });
 
+    it('accepts the answers of the recognise and sentence games, FSRS-rated or not', async () => {
+      const data = sampleData();
+      data.sessions[0]?.results.push(
+        { cardId: 'c1', outcome: 'correct', exercise: 'bridgeMatch', rating: 'good', at: now },
+        { cardId: 'c1', outcome: 'wrong', exercise: 'toneEcho', at: now },
+        { cardId: 'c2', outcome: 'correct', exercise: 'sentenceListen', rating: 'good', at: now },
+        { cardId: 'c2', outcome: 'correctWithHint', exercise: 'sentenceShuffle', at: now },
+      );
+      const backup = await createBackup(data, metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
+    it('rejects an answer from an unknown exercise', async () => {
+      const text = await resealed((document) => {
+        const sessions = (document['data'] as Record<string, unknown>)['sessions'] as {
+          results: Record<string, unknown>[];
+        }[];
+        sessions[0]?.results.push({ cardId: 'c1', outcome: 'correct', exercise: '__proto__' });
+      });
+
+      expect((await parseBackup(text, sha256)).ok).toBe(false);
+    });
+
     it('keeps the way of answering the flashcards chosen by the learner', async () => {
       const data = sampleData();
       data.settings = { ...data.settings, answerMode: 'mixed' };

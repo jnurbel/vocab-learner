@@ -66,7 +66,7 @@ describe('a ListenMeaning session', () => {
       hintsUsed: 0,
       responseMs: 1000,
     });
-    expect(store.answers[0]?.state.lastRatedDay).toBe('2026-11-06');
+    expect(store.answers[0]?.state?.lastRatedDay).toBe('2026-11-06');
   });
 
   it('rates a wrong choice again, and "Je ne sais pas" too', async () => {
@@ -107,7 +107,7 @@ describe('a ListenMeaning session', () => {
       due,
       lastRatedDay,
     });
-    expect(store.answers[0]?.state.successDays).toBe(before.successDays + 1);
+    expect(store.answers[0]?.state?.successDays).toBe(before.successDays + 1);
     expect(session.rewards()?.breakdown).toMatchObject({ correct: 10 });
   });
 

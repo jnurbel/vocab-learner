@@ -79,7 +79,7 @@ describe('a final challenge', () => {
       ...Array<string>(3).fill('typeEcho'),
     ]);
     expect(store.answers.every(({ result }) => result.rating === 'good')).toBe(true);
-    expect(store.answers.every(({ state }) => state.lastRatedDay === '2026-11-07')).toBe(true);
+    expect(store.answers.every(({ state }) => state?.lastRatedDay === '2026-11-07')).toBe(true);
   });
 
   it('scores the challenge out of 20 at the end, and stores it', async () => {
