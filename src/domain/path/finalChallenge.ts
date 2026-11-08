@@ -100,6 +100,17 @@ export function scoreFinalChallenge(
   return { score20, passed: score20 >= config.finalChallengePassScore20, sections };
 }
 
+/** "Prêt pour le contrôle": the final challenge of the label was passed once (5.4). */
+export function isReadyForExam(
+  progress: PathProgressRecord | undefined,
+  config: Pick<PathConfig, 'finalChallengePassScore20'>,
+): boolean {
+  return (
+    progress?.steps?.finalChallenge === 'validated' ||
+    (progress?.finalChallengeBest ?? 0) >= config.finalChallengePassScore20
+  );
+}
+
 /** Keeps the best score; a success validates the last step of the path for good. */
 export function recordFinalChallenge(
   progress: PathProgressRecord,

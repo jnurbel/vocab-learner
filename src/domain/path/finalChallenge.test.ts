@@ -3,6 +3,7 @@ import type { Card } from '../card';
 import type { PathProgressRecord } from '../progressRecords';
 import {
   composeFinalChallenge,
+  isReadyForExam,
   recordFinalChallenge,
   scoreFinalChallenge,
   type ChallengeAnswer,
@@ -163,5 +164,18 @@ describe('recordFinalChallenge', () => {
 
     expect(recorded.progress).toEqual({ ...path, finalChallengeBest: 12.5 });
     expect(recorded.event).toMatchObject({ passed: false, firstPass: false });
+  });
+});
+
+describe('isReadyForExam', () => {
+  it('is ready once the final challenge was passed, and stays so', () => {
+    const path: PathProgressRecord = { labelId: 'lesson', language: 'zh' };
+
+    expect(isReadyForExam(undefined, PATH_CONFIG)).toBe(false);
+    expect(isReadyForExam({ ...path, finalChallengeBest: 15.5 }, PATH_CONFIG)).toBe(false);
+    expect(isReadyForExam({ ...path, finalChallengeBest: 16 }, PATH_CONFIG)).toBe(true);
+    expect(isReadyForExam({ ...path, steps: { finalChallenge: 'validated' } }, PATH_CONFIG)).toBe(
+      true,
+    );
   });
 });

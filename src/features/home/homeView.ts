@@ -28,6 +28,8 @@ export interface HomeViewInput {
   newIntroducedToday: number;
   settings?: SettingsRecord;
   progress?: ProgressRecord;
+  /** Pinned labels whose final challenge was passed: ready for their test. */
+  readyLabelIds?: readonly string[];
 }
 
 export interface LabelView {
@@ -43,6 +45,8 @@ export interface FocusLabelView extends LabelView {
   newCount: number;
   /** With a test date only. */
   forecast?: ExamForecast;
+  /** "Prêt pour le contrôle": the final challenge of the label was passed. */
+  readyForExam: boolean;
 }
 
 export interface ProgressView {
@@ -113,6 +117,7 @@ export function buildHomeView(input: HomeViewInput, deps: HomeViewDependencies):
       return {
         ...view,
         newCount: outlook.newAvailableToday,
+        readyForExam: input.readyLabelIds?.includes(label.id) === true,
         ...(label.examDate === undefined
           ? {}
           : {

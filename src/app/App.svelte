@@ -433,7 +433,15 @@
   }
 
   function loadHome(language: Language) {
-    return loadHomeView({ cards, labels, language }, { store: flashcardStore, srs, clock: now });
+    return loadHomeView(
+      { cards, labels, language },
+      {
+        store: flashcardStore,
+        srs,
+        clock: now,
+        paths: { pathProgress: (labelId, shown) => ready(study).pathProgress(labelId, shown) },
+      },
+    );
   }
 
   function launchFlashcards(launch: FlashcardLaunch) {

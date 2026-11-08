@@ -325,6 +325,9 @@
                       {/if}
                     </p>
                     <ul class="pills">
+                      {#if focus.readyForExam}
+                        <li class="pill ready">{fr.home.readyForExam}</li>
+                      {/if}
                       {#if focus.dueCount > 0}
                         <li class="pill thirst">
                           {formatCount(fr.home.thirstPill, focus.dueCount)}
@@ -762,6 +765,11 @@
   .badge.thirst {
     background: var(--thirst-soft);
     color: var(--thirst);
+  }
+
+  .pill.ready {
+    background: var(--jade);
+    color: var(--on-jade);
   }
 
   .pill.new {
