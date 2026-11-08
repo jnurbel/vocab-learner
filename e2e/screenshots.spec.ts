@@ -232,6 +232,7 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
       test('session summary, garden and ListenMeaning', async ({ page }) => {
         await installSilentVoice(page);
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await menu(page).getByRole('button', { name: 'Flashcards' }).click();
         const flashcards = page.getByRole('region', { name: 'Flashcards' });
