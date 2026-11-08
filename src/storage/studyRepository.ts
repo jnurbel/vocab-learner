@@ -6,6 +6,10 @@ import { ECONOMY_CONFIG, type EconomyConfig } from '../domain/game/economyConfig
 import { MINI_GAME_CONFIG, type MiniGameConfig } from '../domain/game/miniGameConfig';
 import { PATH_CONFIG, type PathConfig } from '../domain/path/pathConfig';
 import type { PathStepValidatedEvent } from '../domain/path/advancePath';
+import {
+  recordFinalChallenge,
+  type FinalChallengeFinishedEvent,
+} from '../domain/path/finalChallenge';
 import { pathsAfterAnswer } from '../domain/path/pathsAfterAnswer';
 import { applyPlacementTest, type PlacementScore } from '../domain/path/placementTest';
 import { GAME_CONFIG } from '../domain/srs/config';
@@ -166,6 +170,26 @@ export class StudyRepository {
         return advance.events;
       },
     );
+  }
+
+  /**
+   * The score of a final challenge (GAME_DESIGN.md 5.4): the best one is kept, and a first
+   * success validates the last step with its points, in one write.
+   */
+  async recordFinalChallenge(
+    labelId: string,
+    language: Language,
+    score20: number,
+    today: LocalDay,
+  ): Promise<FinalChallengeFinishedEvent> {
+    const { pathProgress, progress, settings } = this.db;
+    return this.db.transaction('rw', [pathProgress, progress, settings], async () => {
+      const stored = (await pathProgress.get([labelId, language])) ?? { labelId, language };
+      const recorded = recordFinalChallenge(stored, score20, this.rules.path);
+      await pathProgress.put(recorded.progress);
+      await this.applyGameEvents([recorded.event], today);
+      return recorded.event;
+    });
   }
 
   async startSession(session: SessionRecord): Promise<void> {

@@ -290,4 +290,19 @@ describe('StudyRepository and the label paths', () => {
     expect(events).toEqual([]);
     expect(await db.pathProgress.count()).toBe(0);
   });
+
+  it('keeps the best score of the final challenge, with 100 points for a first success', async () => {
+    const first = await repository.recordFinalChallenge('lesson', 'zh', 17, day);
+    const second = await repository.recordFinalChallenge('lesson', 'zh', 12, day);
+
+    expect(first).toMatchObject({ passed: true, firstPass: true });
+    expect(second).toMatchObject({ passed: false, firstPass: false });
+    expect(await lessonPath()).toEqual({
+      labelId: 'lesson',
+      language: 'zh',
+      finalChallengeBest: 17,
+      steps: { finalChallenge: 'validated' },
+    });
+    expect((await db.progress.get(SINGLETON_KEY))?.xp).toBe(100);
+  });
 });
