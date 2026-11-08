@@ -4,6 +4,7 @@ import { GAME_CONFIG } from '../srs/config';
 import { MINI_GAME_CONFIG } from './miniGameConfig';
 import {
   containsTerm,
+  splitAroundTerm,
   isSentenceListenEligible,
   sentenceListenAnswer,
   sentenceListenQuestion,
@@ -129,5 +130,27 @@ describe('sentenceListenQuestion', () => {
         GAME_CONFIG,
       ),
     ).toEqual({ outcome: 'wrong', rating: 'again' });
+  });
+});
+
+describe('splitAroundTerm', () => {
+  it('cuts the sentence around the word, to mark it or leave a gap', () => {
+    expect(splitAroundTerm('我没有时间。', word('时间'))).toEqual({
+      before: '我没有',
+      term: '时间',
+      after: '。',
+    });
+  });
+
+  it('keeps the English form heard, ending and case included', () => {
+    expect(splitAroundTerm('Cats sleep.', en('cat'))).toEqual({
+      before: '',
+      term: 'Cats',
+      after: ' sleep.',
+    });
+  });
+
+  it('gives nothing when the word is not in the sentence', () => {
+    expect(splitAroundTerm('Dogs sleep.', en('cat'))).toBeUndefined();
   });
 });

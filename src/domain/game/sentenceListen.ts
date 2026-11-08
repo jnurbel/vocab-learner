@@ -32,17 +32,31 @@ const MAX_ENGLISH_WORDS = 25;
 const ENGLISH_ENDINGS = ['', 's', 'es', 'ed', 'd', 'ing'];
 const WORD_CHARS = /[\p{L}\p{N}'’]/u;
 
+/** The sentence around the word heard in it. */
+export interface SentenceParts {
+  before: string;
+  /** The word as written in the sentence: an English ending and case included. */
+  term: string;
+  after: string;
+}
+
 /**
- * Whether the sentence holds the word: anywhere in Chinese; in English as a whole word, any case,
+ * Finds the word in the sentence: anywhere in Chinese; in English as a whole word, any case,
  * with a simple ending. The term is compared as text, never turned into a pattern.
  */
-export function containsTerm(sentence: string, card: Card): boolean {
+export function splitAroundTerm(sentence: string, card: Card): SentenceParts | undefined {
   const term = card.term.trim();
   if (term === '') {
-    return false;
+    return undefined;
   }
+  const cut = (start: number, length: number): SentenceParts => ({
+    before: sentence.slice(0, start),
+    term: sentence.slice(start, start + length),
+    after: sentence.slice(start + length),
+  });
   if (card.language === 'zh') {
-    return sentence.includes(term);
+    const start = sentence.indexOf(term);
+    return start === -1 ? undefined : cut(start, term.length);
   }
   const text = sentence.toLowerCase();
   const wanted = term.toLowerCase();
@@ -54,10 +68,15 @@ export function containsTerm(sentence: string, card: Card): boolean {
         rest.startsWith(suffix) && !WORD_CHARS.test(rest.slice(suffix.length, suffix.length + 1)),
     );
     if ((before === '' || !WORD_CHARS.test(before)) && ending !== undefined) {
-      return true;
+      return cut(at, wanted.length + ending.length);
     }
   }
-  return false;
+  return undefined;
+}
+
+/** Whether the sentence holds the word, as splitAroundTerm finds it. */
+export function containsTerm(sentence: string, card: Card): boolean {
+  return splitAroundTerm(sentence, card) !== undefined;
 }
 
 /** The example sentence of a word worth asking, or undefined. */
