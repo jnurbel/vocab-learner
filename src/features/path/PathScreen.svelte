@@ -1,18 +1,7 @@
-<script lang="ts" module>
-  import type { PathStep } from '../../domain/progressRecords';
-
-  /** Why a step's exercise is opened from the path. */
-  export type LaunchPurpose = 'stepSession' | 'placementTest';
-
-  /** Steps played on the app's existing screens. */
-  export type BuiltInStep = Extract<PathStep, 'discover' | 'listen' | 'type' | 'dictation'>;
-
-  /** Steps whose exercises (bridgeMatch, toneEcho, sentenceListen, sentenceShuffle) live elsewhere. */
-  export type ExerciseStep = Extract<PathStep, 'recognize' | 'sentences'>;
-</script>
-
 <script lang="ts">
   import type { Language } from '../../domain/card';
+  import type { PathStep } from '../../domain/progressRecords';
+  import type { BuiltInStep, ExerciseStep, LaunchPurpose } from './pathLaunch';
   import type { StepView } from '../../domain/path/pathStatus';
   import { format, formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
