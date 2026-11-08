@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openWords } from './navigation.ts';
 import { reachFinalChallenge } from './pathSeed.ts';
+import { simulateProgress } from './progressStore.ts';
 
 /**
  * Screenshots of the main screens, light and dark, on a computer and on a phone, written to
@@ -30,7 +31,14 @@ const WORDS = [
  * On a computer, the whole page from the top. On a phone, one screen of 390 × 844 as in
  * docs/ui/mockups/Mobile.dc.html, scrolled to the part shown, so that the bottom bar stays in place.
  */
-async function shoot(page: Page, name: string, device: string, scheme: string, part?: Locator) {
+async function shoot(
+  page: Page,
+  name: string,
+  device: string,
+  scheme: string,
+  part?: Locator,
+  fullPage = device === 'desktop',
+) {
   // Wait for the self-hosted font, so that every screenshot shows Plus Jakarta Sans.
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -46,7 +54,7 @@ async function shoot(page: Page, name: string, device: string, scheme: string, p
   }
   await page.screenshot({
     path: `docs/ui/screenshots/${name}-${device}-${scheme}.png`,
-    fullPage: device === 'desktop',
+    fullPage,
     animations: 'disabled',
   });
 }
@@ -225,9 +233,34 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await shoot(page, 'final-challenge-result', device, scheme, challenge);
       });
 
+      test('the island of the garden at levels 1, 5, 10 and 20', async ({ page }) => {
+        await page.goto('./');
+        await openWords(page);
+        const bulk = page.getByRole('region', { name: 'Saisie en lot' });
+        const words = Array.from({ length: 40 }, (_, index) => `word${String(index)} | sens`);
+        await bulk.getByLabel('Un mot par ligne').fill(words.join('\n'));
+        await bulk.getByRole('button', { name: 'Ajouter 40 mots' }).click();
+        await expect(bulk.getByRole('status')).toHaveText('40 mot(s) ajouté(s).');
+        // Total XP of each level (GAME_DESIGN.md 4.3), with words in flower for the fireflies.
+        const levels = [
+          { level: 1, xp: 0, flowers: 0, lanterns: 0 },
+          { level: 5, xp: 700, flowers: 12, lanterns: 0 },
+          { level: 10, xp: 2700, flowers: 25, lanterns: 5 },
+          { level: 20, xp: 10450, flowers: 30, lanterns: 10 },
+        ];
+        for (const { level, xp, flowers, lanterns } of levels) {
+          await simulateProgress(page, { xp, islandLevelSeen: level, flowers, lanterns });
+          await menu(page).getByRole('button', { name: 'Jardin' }).click();
+          const island = page.getByRole('img', { name: /^Île niveau/ });
+          await expect(island).toHaveAttribute('data-level', String(level));
+          await shoot(page, `island-level-${String(level)}`, device, scheme, island, false);
+        }
+      });
+
       test('session summary, garden and ListenMeaning', async ({ page }) => {
         await installSilentVoice(page);
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await menu(page).getByRole('button', { name: 'Flashcards' }).click();
         const flashcards = page.getByRole('region', { name: 'Flashcards' });

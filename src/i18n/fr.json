@@ -552,6 +552,65 @@
     "thirstLevels": ["Pas soif", "A soif", "Très soif"],
     "noReview": "—"
   },
+  "island": {
+    "label": "Île niveau {level} : {items}.",
+    "labelWithPalette": "Île niveau {level}, palette {palette} : {items}.",
+    "nextItem": "Prochain : {name}, niveau {level}.",
+    "parcels": {
+      "one": "{count} parcelle",
+      "other": "{count} parcelles"
+    },
+    "stream": "ruisseau",
+    "fireflies": {
+      "one": "{count} luciole",
+      "other": "{count} lucioles"
+    },
+    "lanterns": {
+      "one": "{count} lanterne flottante",
+      "other": "{count} lanternes flottantes"
+    },
+    "palettes": {
+      "spring": "printemps",
+      "autumn": "automne",
+      "winter": "hiver",
+      "night": "nuit",
+      "dawn": "aube"
+    },
+    "decors": {
+      "pier": "ponton",
+      "pathLamps": "lampions",
+      "stoneBenches": "bancs de pierre",
+      "pond": "étang",
+      "kite": "cerf-volant",
+      "bamboo": "bambous",
+      "rowboat": "barque",
+      "pavilion": "pavillon",
+      "archBridge": "pont en arc",
+      "beehives": "ruches",
+      "lighthouse": "phare",
+      "pebbleGarden": "jardin de galets",
+      "observatory": "observatoire",
+      "greatTree": "grand arbre",
+      "waterfall": "cascade",
+      "secondIslet": "îlot voisin"
+    },
+    "nextTag": "niveau {level}",
+    "grew": "Ton île a grandi depuis ta dernière visite : niveau {from} → niveau {to}.",
+    "onIslandTitle": "Déjà sur ton île",
+    "streamLine": "Un ruisseau",
+    "parcelsLine": {
+      "one": "{count} parcelle de mots",
+      "other": "{count} parcelles de mots"
+    },
+    "firefliesLine": {
+      "one": "{count} luciole",
+      "other": "{count} lucioles"
+    },
+    "lanternsLine": {
+      "one": "{count} lanterne flottante",
+      "other": "{count} lanternes flottantes"
+    }
+  },
   "listenMeaning": {
     "title": "Mini-jeu : écouter et choisir le sens",
     "intro": "Tu entends un mot, rien n'est écrit. Choisis son sens.",

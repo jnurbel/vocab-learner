@@ -131,6 +131,7 @@ const progressSchema = z.strictObject({
   dailyRewardedCount: boundedRecord(identifier, count).optional(),
   dailyAnswers: count.optional(),
   lastStreakDay: day.optional(),
+  islandLevelSeen: count.optional(),
 });
 
 const settingsSchema = z.strictObject({

@@ -154,6 +154,16 @@ describe('mergeBackupData', () => {
     });
   });
 
+  it('keeps the highest level of the island seen, so that it never grows twice', () => {
+    const merged = mergeBackupData(
+      data({ progress: { islandLevelSeen: 4 } }),
+      data({ progress: { islandLevelSeen: 7 } }),
+      idGenerator(),
+    );
+
+    expect(merged.progress).toEqual({ islandLevelSeen: 7 });
+  });
+
   it('keeps the progress fields that only one side has', () => {
     const merged = mergeBackupData(
       data({ progress: { xp: 10, stamps: 3 } }),

@@ -51,6 +51,38 @@
   --plant-heart: #f6d27a;
   --plant-lantern: #e8a11a;
 
+  /*
+   * Garden island: decorative, everything it shows is also written in words.
+   * The palettes unlocked by the levels replace the water, the grass and the leaves.
+   */
+  --island-water: #d3e8ee;
+  --island-foam: #ffffff;
+  --island-grass: #a7d3a0;
+  --island-parcel: #c3e3b9;
+  --island-leaf: #3f8f5a;
+  --island-cliff: #8a6a4a;
+  --island-path: #e9dcc0;
+  --island-wood: #9a6b43;
+  --island-stone: #b3ada1;
+  --island-roof: #8e2f1c;
+  --island-light: #f6d27a;
+  --island-autumn-water: #d6e3e3;
+  --island-autumn-grass: #dcc48a;
+  --island-autumn-parcel: #ead6a6;
+  --island-autumn-leaf: #c4622d;
+  --island-winter-water: #c3d8e4;
+  --island-winter-grass: #e6edf0;
+  --island-winter-parcel: #f6f9fa;
+  --island-winter-leaf: #5f8a7a;
+  --island-night-water: #2a3f66;
+  --island-night-grass: #557a62;
+  --island-night-parcel: #66896f;
+  --island-night-leaf: #2f5a44;
+  --island-dawn-water: #ddd8ef;
+  --island-dawn-grass: #b9d9a6;
+  --island-dawn-parcel: #f1d9c9;
+  --island-dawn-leaf: #4e9a62;
+
   /* Typography. */
   --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-hanzi: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
@@ -132,6 +164,34 @@
     --plant-flower: #e0607e;
     --plant-heart: #f6d27a;
     --plant-lantern: #f0b23a;
+
+    --island-water: #17323a;
+    --island-foam: #9fc3cc;
+    --island-grass: #3f6b4a;
+    --island-parcel: #4c7a56;
+    --island-leaf: #79c08c;
+    --island-cliff: #5a4632;
+    --island-path: #7a6c52;
+    --island-wood: #a07a52;
+    --island-stone: #7c766c;
+    --island-roof: #c0604a;
+    --island-light: #f6d27a;
+    --island-autumn-water: #1d3036;
+    --island-autumn-grass: #7a6a3c;
+    --island-autumn-parcel: #8a7a4a;
+    --island-autumn-leaf: #d77a45;
+    --island-winter-water: #1c2f3d;
+    --island-winter-grass: #9fadb3;
+    --island-winter-parcel: #b9c5ca;
+    --island-winter-leaf: #4c7468;
+    --island-night-water: #0f1a2e;
+    --island-night-grass: #2d4535;
+    --island-night-parcel: #375441;
+    --island-night-leaf: #6fae84;
+    --island-dawn-water: #2c2a45;
+    --island-dawn-grass: #56764a;
+    --island-dawn-parcel: #7d6460;
+    --island-dawn-leaf: #8fce9c;
 
     --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
     --shadow-raised: 0 2px 4px rgb(0 0 0 / 35%), 0 12px 32px rgb(0 0 0 / 30%);

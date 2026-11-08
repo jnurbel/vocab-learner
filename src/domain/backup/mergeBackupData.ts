@@ -251,6 +251,7 @@ function mergeProgress(
     ...optional('xp', highest(local.xp, incoming.xp)),
     ...optional('level', highest(local.level, incoming.level)),
     ...optional('bestStreak', highest(local.bestStreak, incoming.bestStreak)),
+    ...optional('islandLevelSeen', highest(local.islandLevelSeen, incoming.islandLevelSeen)),
     ...optional('unlocks', unlocks),
   };
 }

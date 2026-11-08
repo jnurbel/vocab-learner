@@ -25,6 +25,12 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: npm run lint
+      - name: Refuse leftover merge conflict markers
+        run: |
+          if git grep -n -E '^(<<<<<<<|>>>>>>>)( |$)' -- . ':!node_modules'; then
+            echo '::error::Merge conflict markers found'
+            exit 1
+          fi
 
   typecheck:
     name: Typecheck (svelte-check + tsc)

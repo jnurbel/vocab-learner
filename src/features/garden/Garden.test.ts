@@ -44,20 +44,23 @@ function setup({
   cards = [weather, cold, snow],
   states = [state('weather'), state('snow', { due: '2026-11-06T08:00:00.000Z', peakStage: 'bud' })],
   xp = 1240,
-}: { cards?: Card[]; states?: ReviewState[]; xp?: number } = {}) {
+  islandLevelSeen,
+}: { cards?: Card[]; states?: ReviewState[]; xp?: number; islandLevelSeen?: number } = {}) {
   const onWater = vi.fn();
   const onMiniGame = vi.fn();
+  const onIslandSeen = vi.fn();
   render(Garden, {
     cards,
     labels: [lesson],
     reviewStates: states,
     moment,
     srs,
-    progress: { xp },
+    progress: islandLevelSeen === undefined ? { xp } : { xp, islandLevelSeen },
     onWater,
     onMiniGame,
+    onIslandSeen,
   });
-  return { onWater, onMiniGame, user: userEvent.setup() };
+  return { onWater, onMiniGame, onIslandSeen, user: userEvent.setup() };
 }
 
 describe('Garden', () => {
@@ -161,6 +164,66 @@ describe('Garden', () => {
 
     expect(screen.getByText('Page 2 / 3')).toBeVisible();
     expect(within(chinese).getByText('词48')).toBeVisible();
+  });
+
+  it('draws the island of the level at the top, described in words', () => {
+    setup({ islandLevelSeen: 6 });
+
+    expect(
+      screen.getByRole('img', {
+        name: 'Île niveau 6, palette automne : 3 parcelles, ponton, lampions, bancs de pierre, étang. Prochain : cerf-volant, niveau 7.',
+      }),
+    ).toBeVisible();
+  });
+
+  it('lists in text what is already on the island', () => {
+    setup({ islandLevelSeen: 6 });
+
+    const items = screen.getByRole('list', { name: 'Déjà sur ton île' });
+    expect(
+      within(items)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      '3 parcelles de mots',
+      'Ponton en bois',
+      'Lampions sur le chemin',
+      'Bancs de pierre',
+      'Palette « automne »',
+      'Étang',
+    ]);
+  });
+
+  it('grows the island from the level last seen, and remembers the new one', () => {
+    const { onIslandSeen } = setup({ islandLevelSeen: 4 });
+
+    expect(screen.getByText(/niveau 4 → niveau 6/)).toBeVisible();
+    expect(onIslandSeen).toHaveBeenCalledWith(6);
+  });
+
+  it('does not save the level seen again when nothing changed', () => {
+    const { onIslandSeen } = setup({ islandLevelSeen: 6 });
+
+    expect(onIslandSeen).not.toHaveBeenCalled();
+  });
+
+  it('shows the stream, the fireflies and the floating lanterns in the list', () => {
+    const many = Array.from({ length: 10 }, (_, index) =>
+      card(`w${String(index)}`, undefined, { term: `词${String(index)}` }),
+    );
+    setup({
+      cards: many,
+      states: many.map(({ id }, index) =>
+        state(id, { peakStage: index < 5 ? 'lantern' : 'flower' }),
+      ),
+      xp: 3250,
+      islandLevelSeen: 11,
+    });
+
+    const items = screen.getByRole('list', { name: 'Déjà sur ton île' });
+    expect(within(items).getByText('Un ruisseau')).toBeVisible();
+    expect(within(items).getByText('1 luciole')).toBeVisible();
+    expect(within(items).getByText('1 lanterne flottante')).toBeVisible();
   });
 
   it('invites to add words when the garden is empty', () => {
