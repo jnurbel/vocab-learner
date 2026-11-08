@@ -218,4 +218,28 @@ describe('ListenMeaning', () => {
       await screen.findByText('Il faut au moins 2 mots dans cette langue pour ce mini-jeu.'),
     ).toBeVisible();
   });
+
+  it('starts at once on the words of a step session, the label giving the distractors', async () => {
+    const store = new FakeStore({ reviewStates: words.map(({ id }) => reviewed(id)) });
+    const speaker = fakeSpeaker();
+    const startSession = vi.fn((selection: ListenMeaningSelection) =>
+      startListenMeaningSession(selection, { store, srs, clock: () => morning, newId: () => 'g1' }),
+    );
+    render(ListenMeaning, {
+      cards: words,
+      speaker,
+      startSession,
+      onSessionEnd: vi.fn(),
+      startWith: { language: 'zh', labelIds: [], targetCardIds: ['w2'] },
+    });
+
+    expect(await screen.findByText('Mini-jeu · 1 / 1')).toBeInTheDocument();
+    expect(startSession).toHaveBeenCalledWith({
+      cards: words,
+      language: 'zh',
+      labelIds: [],
+      targetCardIds: ['w2'],
+    });
+    expect(spokenWord(speaker).id).toBe('w2');
+  });
 });

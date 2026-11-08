@@ -87,6 +87,8 @@ export function renameLabel(
 export interface LabelChanges {
   labels: Label[];
   cardsToUpdate: Card[];
+  /** A merge: the path of the source label is carried over to the target (DESIGN.md 5). */
+  merged?: { sourceId: string; targetId: string };
 }
 
 /** Rewrites the labels of the words carrying `labelId`; the words themselves are never removed. */
@@ -126,6 +128,7 @@ export function mergeLabels(
   return success({
     labels: labels.filter((candidate) => candidate.id !== sourceId),
     cardsToUpdate: relabelCards(cards, sourceId, [targetId], now),
+    merged: { sourceId, targetId },
   });
 }
 

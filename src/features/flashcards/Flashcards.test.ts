@@ -360,4 +360,46 @@ describe('Flashcards', () => {
       expect.objectContaining({ language: 'zh', labelIds: ['animals'] }),
     );
   });
+
+  it('opens straight on the words of a step session, and only on them', async () => {
+    const { startSession } = setup({
+      startWith: { mode: 'review', language: 'zh', labelIds: ['animals'], cardIds: ['dog'] },
+    });
+
+    expect(await screen.findByText('1 / 1')).toBeVisible();
+    expect(startSession).toHaveBeenCalledWith(
+      expect.objectContaining({ cards: [dog], language: 'zh', labelIds: [] }),
+    );
+  });
+
+  it('types the word of a step session without changing the way of answering chosen', async () => {
+    const onAnswerModeChange = vi.fn(() => Promise.resolve());
+    const store = new FakeStore({});
+    const startPractice = vi.fn((selection: FlashcardSelection) =>
+      startPracticeSession(selection, { store, clock: () => morning, newId: () => 'p1' }),
+    );
+    render(Flashcards, {
+      cards: [cat, dog, apple],
+      labels: [animals],
+      startSession: vi.fn(),
+      startPractice,
+      loadOutlook: () => Promise.reject(new Error('not shown')),
+      loadPinyin: () => Promise.reject(new Error('not needed')),
+      speaker: fakeSpeaker(),
+      onSessionEnd: vi.fn(),
+      answerMode: 'selfAssess',
+      onAnswerModeChange,
+      startWith: {
+        mode: 'practice',
+        language: 'zh',
+        labelIds: [],
+        cardIds: ['cat'],
+        answerMode: 'typeWord',
+      },
+    });
+
+    expect(await screen.findByRole('textbox')).toBeVisible();
+    expect(startPractice).toHaveBeenCalledWith(expect.objectContaining({ cards: [cat] }));
+    expect(onAnswerModeChange).not.toHaveBeenCalled();
+  });
 });

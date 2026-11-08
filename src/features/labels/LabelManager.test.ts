@@ -142,6 +142,7 @@ describe('LabelManager', () => {
         { ...cat, labelIds: ['lesson'], updatedAt: now },
         { ...dog, labelIds: ['lesson'], updatedAt: now },
       ],
+      merged: { sourceId: 'animals', targetId: 'lesson' },
     });
   });
 
@@ -274,5 +275,23 @@ describe('LabelManager', () => {
       expect(screen.queryByRole('button', { name: /Épingler/ })).toBeNull();
       expect(screen.queryByLabelText(/Date du contrôle/)).toBeNull();
     });
+  });
+
+  it('opens the path of a pinned label, and only of a pinned one', async () => {
+    const onOpenPath = vi.fn();
+    render(LabelManager, {
+      labels: [{ ...lesson, isFocus: true }, animals],
+      cards: [cat, dog],
+      clock: () => now,
+      onChange: vi.fn(() => Promise.resolve()),
+      onOpenPath,
+    });
+
+    await userEvent
+      .setup()
+      .click(within(rowOf('Leçon 3')).getByRole('button', { name: 'Voir le parcours de Leçon 3' }));
+
+    expect(onOpenPath).toHaveBeenCalledWith(expect.objectContaining({ id: 'lesson' }));
+    expect(within(rowOf('Animaux')).queryByRole('button', { name: /parcours/ })).toBeNull();
   });
 });

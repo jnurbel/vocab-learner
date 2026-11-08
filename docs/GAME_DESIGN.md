@@ -883,6 +883,8 @@ Zones fixes : en haut, phase + progression (« Arrosage · 7/18 »), mini-plante
 | `unlocks` | panneau « Prochains déblocages » : 3 suivants avec condition exacte (« Niveau 9 : barque — encore 340 XP ») |
 | `empty` | île nue, une graine, invitation à ajouter des mots |
 | `listView` | alternative accessible : tableau des mots avec stade, soif, prochaine révision (même information sans dessin) |
+| `island` | île SVG en tête du jardin (0.7.0) : sa taille grandit à chaque niveau jusqu'au niveau 20 (parcelles en plus tous les 4 niveaux, ruisseau au niveau 11, pont en arc au 12) ; chaque déblocage de §4.5 y est posé à une place fixe, le suivant en silhouette pointillée avec « niveau N » ; palette du dernier déblocage de palette ; lucioles (12 dessinées au plus) et lanternes flottantes (8 au plus). Texte alternatif complet et liste « Déjà sur ton île » |
+| `islandGrowth` | à la première ouverture après une montée de niveau : l'île passe de la taille vue la dernière fois (`progress.islandLevelSeen`) à la nouvelle en 800 ms, puis le nouveau décor apparaît (400 ms) ; avec `prefers-reduced-motion`, état final direct. Une seule fois, jamais bloquant |
 
 ---
 

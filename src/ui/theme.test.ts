@@ -18,6 +18,7 @@ const NON_TEXT = 3;
 const PAIRS: readonly (readonly [foreground: string, background: string, minimum: number])[] = [
   // Body text, headings and secondary text on paper, cards and table headers.
   ['ink', 'bg', TEXT],
+  // Also the tag and the dotted outline of the next island decoration, on their light halo.
   ['ink', 'surface', TEXT],
   ['ink', 'surface-2', TEXT],
   ['ink-soft', 'bg', TEXT],
@@ -88,6 +89,23 @@ describe('theme tokens', () => {
       for (const tokens of [themes.light, themes.dark]) {
         expect(tokens.get(foreground), foreground).toMatch(/^#[0-9a-f]{6}$/);
         expect(tokens.get(background), background).toMatch(/^#[0-9a-f]{6}$/);
+      }
+    }
+  });
+
+  it('gives every island colour and palette a light and a dark value', () => {
+    const island = [...themes.light.keys()].filter((name) => name.startsWith('island-'));
+    const palettes = ['', 'autumn-', 'winter-', 'night-', 'dawn-'];
+    for (const palette of palettes) {
+      for (const part of ['water', 'grass', 'parcel', 'leaf']) {
+        expect(island).toContain(`island-${palette}${part}`);
+      }
+    }
+    for (const name of island) {
+      expect(themes.dark.get(name), name).toMatch(/^#[0-9a-f]{6}$/);
+      // The light dots of the fireflies and lamps glow on both themes alike.
+      if (name !== 'island-light') {
+        expect(themes.dark.get(name), name).not.toBe(themes.light.get(name));
       }
     }
   });

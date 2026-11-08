@@ -32,6 +32,19 @@ function view(overrides: Partial<HomeViewInput>) {
 const plain = (id: string): Label => focusLabel(id, undefined, { isFocus: false });
 
 describe('buildHomeView', () => {
+  it('tells which pinned labels are ready for their test, their final challenge passed', () => {
+    const result = view({
+      cards: [...words('lesson', 2), ...words('other', 2)],
+      labels: [focusLabel('lesson'), focusLabel('other')],
+      readyLabelIds: ['lesson'],
+    });
+
+    expect(result.focus.map(({ label, readyForExam }) => [label.id, readyForExam])).toEqual([
+      ['lesson', true],
+      ['other', false],
+    ]);
+  });
+
   it('invites to add words when the language has none', () => {
     const result = view({ cards: words('en', 3, []).map((word) => ({ ...word, language: 'en' })) });
 

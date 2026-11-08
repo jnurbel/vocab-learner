@@ -1,11 +1,12 @@
 import type { Card, Language } from '../card';
 import type { SrsConfig } from '../srs/config';
-import { createRng, type Rng } from '../srs/random';
+import { createRng } from '../srs/random';
 import { ratingFor } from '../srs/rating';
 import type { Outcome, Rating, ReviewState, Stage } from '../srs/reviewState';
 import { difficultyFor } from './adaptiveDifficulty';
 import { pickDistractors, type DistractorPool } from './distractors';
 import type { Difficulty, MiniGameConfig } from './miniGameConfig';
+import { shuffle } from './shuffle';
 
 /** Hear a word, then choose its meaning (GAME_DESIGN.md 6.1). */
 export interface ListenMeaningQuestion {
@@ -87,13 +88,4 @@ export function listenMeaningAnswer(
     outcome,
     rating: ratingFor(outcome, { exercise: 'choice', responseMs, hintsUsed }, config),
   };
-}
-
-function shuffle<T>(items: readonly T[], rng: Rng): T[] {
-  const shuffled = [...items];
-  for (let index = shuffled.length - 1; index > 0; index--) {
-    const other = Math.floor(rng() * (index + 1));
-    [shuffled[index], shuffled[other]] = [shuffled[other] as T, shuffled[index] as T];
-  }
-  return shuffled;
 }

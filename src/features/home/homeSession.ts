@@ -6,6 +6,9 @@ import { countNewWordsIntroduced } from '../../domain/srs/newWordsToday';
 import { studyDay } from '../../domain/srs/studyDay';
 import { newPerDayOf } from '../../domain/studySettings';
 import { RECENT_SESSIONS_MS, type FlashcardStore } from '../flashcards/flashcardSession';
+import { isReadyForExam } from '../../domain/path/finalChallenge';
+import { PATH_CONFIG } from '../../domain/path/pathConfig';
+import type { StudyRepository } from '../../storage/studyRepository';
 import { buildHomeView, type HomeView } from './homeView';
 
 export interface HomeSelection {
@@ -16,6 +19,8 @@ export interface HomeSelection {
 
 export interface HomeDependencies {
   store: Pick<FlashcardStore, 'load'>;
+  /** The label paths, to tell the pinned labels ready for their test; none without it. */
+  paths?: Pick<StudyRepository, 'pathProgress'>;
   srs: SrsDependencies;
   clock: () => Date;
 }
@@ -23,14 +28,21 @@ export interface HomeDependencies {
 /** Reads the stored progress now, and builds the home of the language for the learner's day. */
 export async function loadHomeView(
   selection: HomeSelection,
-  { store, srs, clock }: HomeDependencies,
+  { store, srs, clock, paths }: HomeDependencies,
 ): Promise<HomeView> {
   const now = clock();
   const data = await store.load(new Date(now.getTime() - RECENT_SESSIONS_MS).toISOString());
   const today = studyDay(now, data.progress?.lastActiveDate, srs);
+  const pinned = selection.labels.filter(({ isFocus }) => isFocus);
+  const ready = await Promise.all(
+    pinned.map(async ({ id }) =>
+      isReadyForExam(await paths?.pathProgress(id, selection.language), PATH_CONFIG) ? [id] : [],
+    ),
+  );
   return buildHomeView(
     {
       ...selection,
+      readyLabelIds: ready.flat(),
       states: data.reviewStates,
       today,
       newPerDay: newPerDayOf(data.settings),

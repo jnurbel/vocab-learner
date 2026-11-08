@@ -7,6 +7,7 @@
   import type { LabelChanges } from '../domain/labelOperations';
   import type { ProgressRecord, ReviewStateRecord } from '../domain/progressRecords';
   import { studyDay } from '../domain/srs/studyDay';
+  import { markIslandSeen } from '../domain/game/island';
   import BackupPanel from '../features/backup/BackupPanel.svelte';
   import WordForm from '../features/cards/WordForm.svelte';
   import WordList from '../features/cards/WordList.svelte';
@@ -18,6 +19,20 @@
   import Flashcards from '../features/flashcards/Flashcards.svelte';
   import Garden from '../features/garden/Garden.svelte';
   import ListenMeaning from '../features/miniGame/ListenMeaning.svelte';
+  import BridgeMatch from '../features/miniGame/BridgeMatch.svelte';
+  import MiniGameMenu from '../features/miniGame/MiniGameMenu.svelte';
+  import SentenceListen from '../features/miniGame/SentenceListen.svelte';
+  import SentenceShuffle from '../features/miniGame/SentenceShuffle.svelte';
+  import ToneEcho from '../features/miniGame/ToneEcho.svelte';
+  import {
+    startBridgeMatchSession,
+    type BridgeMatchSelection,
+  } from '../features/miniGame/bridgeMatchSession';
+  import type { MiniGameSelection } from '../features/miniGame/miniGameRecorder';
+  import { startSentenceListenSession } from '../features/miniGame/sentenceListenSession';
+  import { startSentenceShuffleSession } from '../features/miniGame/sentenceShuffleSession';
+  import { startToneEchoSession } from '../features/miniGame/toneEchoSession';
+  import type { MiniGame } from '../domain/game/miniGameCatalog';
   import {
     startListenMeaningSession,
     type ListenMeaningSelection,
@@ -67,6 +82,25 @@
   import Home from '../features/home/Home.svelte';
   import { loadHomeView } from '../features/home/homeSession';
   import type { FlashcardLaunch } from '../features/flashcards/flashcardSession';
+  import type { PathStep } from '../domain/progressRecords';
+  import type { Card as PathCard } from '../domain/card';
+  import PathScreen from '../features/path/PathScreen.svelte';
+  import type { BuiltInStep, ExerciseStep, LaunchPurpose } from '../features/path/pathLaunch';
+  import {
+    beginPlacement,
+    finishPlacement,
+    loadPath,
+    type LoadedPath,
+    type PathStore,
+    type PendingPlacement,
+    type PlacementOutcome,
+  } from '../features/path/pathSession';
+  import type { ListenMeaningLaunch } from '../features/miniGame/listenMeaningSession';
+  import FinalChallenge from '../features/path/FinalChallenge.svelte';
+  import {
+    startFinalChallenge,
+    type FinalChallengeStore,
+  } from '../features/path/finalChallengeSession';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -106,7 +140,7 @@
 
   type MenuPage = 'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
   /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
-  type Page = MenuPage | 'miniGame';
+  type Page = MenuPage | 'miniGame' | 'path' | 'finalChallenge';
   const PAGES: readonly MenuPage[] = [
     'home',
     'words',
@@ -119,6 +153,21 @@
   let page = $state<Page>('home');
   /** A session asked for from the home screen, started as soon as the flashcards open. */
   let flashcardLaunch = $state.raw<FlashcardLaunch>();
+  /** The label path shown, or the one a step session was opened from. */
+  let pathTarget = $state.raw<{ label: Label; language: Language }>();
+  /** True while a step session or a placement test opened from the path is played. */
+  let fromPath = $state(false);
+  /** Steps validated when the session started: the new ones are celebrated on return. */
+  let validatedBefore = $state.raw<readonly PathStep[]>();
+  let placementOutcome = $state.raw<PlacementOutcome>();
+  let pendingPlacement: PendingPlacement | undefined;
+  let lastPath: LoadedPath | undefined;
+  /** Shown on the path while the exercises of a step do not exist yet. */
+  let pathNotice = $state<string>();
+  /** Each visit of the path reads it again. */
+  let pathVisit = $state(0);
+  let listenLaunch = $state.raw<ListenMeaningLaunch>();
+  let dictationLaunch = $state.raw<{ language: Language; words: readonly PathCard[] }>();
   /** The home waits for the first read of the storage. */
   let loaded = $state(false);
 
@@ -250,9 +299,38 @@
     return startListenMeaningSession(selection, { store: flashcardStore, srs, clock: now, newId });
   }
 
+  /** The game open from the list of mini-games; none: the list itself. */
+  let openGame = $state.raw<{
+    game: MiniGame;
+    language: Language;
+    /** Words imposed by a step session of the path. */
+    cardIds?: readonly string[];
+  }>();
+  /** The games of a path step (recognize, sentences) offered on the step's words. */
+  let stepGames = $state.raw<readonly MiniGame[]>();
+  let stepCardIds = $state.raw<readonly string[]>([]);
+  let stepLanguage = $state<Language>('zh');
+
   function openMiniGame() {
+    openGame = undefined;
+    stepGames = undefined;
     page = 'miniGame';
   }
+
+  function backToMiniGames() {
+    openGame = undefined;
+  }
+
+  /** The games share the store of the flashcards: every answer is a change to back up. */
+  const gameDeps = () => ({ store: flashcardStore, srs, clock: now, newId });
+  const startBridgeMatch = (selection: BridgeMatchSelection) =>
+    startBridgeMatchSession(selection, gameDeps());
+  const startToneEcho = (selection: MiniGameSelection) =>
+    startToneEchoSession(selection, gameDeps());
+  const startSentenceListen = (selection: MiniGameSelection) =>
+    startSentenceListenSession(selection, gameDeps());
+  const startSentenceShuffle = (selection: MiniGameSelection) =>
+    startSentenceShuffleSession(selection, gameDeps());
 
   /** Typing suits a computer; on a touch screen, writing on paper is the default. */
   const dictationMode =
@@ -353,6 +431,12 @@
     await writeAutomaticBackup();
   }
 
+  /** The island of the garden was seen at this level: it will not grow again from below. */
+  async function islandSeen(level: number) {
+    await ready(study).recordProgress(({ progress: stored }) => markIslandSeen(stored, level));
+    progress = markIslandSeen(progress ?? {}, level);
+  }
+
   /** After each session, into the chosen folder, if any; never prompts. */
   async function writeAutomaticBackup() {
     if (!directory?.isSupported()) {
@@ -399,7 +483,15 @@
   }
 
   function loadHome(language: Language) {
-    return loadHomeView({ cards, labels, language }, { store: flashcardStore, srs, clock: now });
+    return loadHomeView(
+      { cards, labels, language },
+      {
+        store: flashcardStore,
+        srs,
+        clock: now,
+        paths: { pathProgress: (labelId, shown) => ready(study).pathProgress(labelId, shown) },
+      },
+    );
   }
 
   function launchFlashcards(launch: FlashcardLaunch) {
@@ -432,6 +524,174 @@
     await recordChange();
   }
 
+  /** The path reads its progress through the study storage; a passed test is a change. */
+  const pathStore: PathStore = {
+    load: (since) => ready(study).load(since),
+    pathProgress: (labelId, language) => ready(study).pathProgress(labelId, language),
+    resultsSince: (since) => ready(study).resultsSince(since),
+    applyPlacementTest: async (labelId, language, score, today) => {
+      const events = await ready(study).applyPlacementTest(labelId, language, score, today);
+      await recordChange();
+      return events;
+    },
+  };
+
+  const pathDeps = () => ({ store: pathStore, srs, clock: now, newId });
+
+  const languagesOf = (label: Label): Language[] =>
+    (['zh', 'en'] as const).filter((code) =>
+      cards.some((card) => card.language === code && card.labelIds.includes(label.id)),
+    );
+
+  /** Opens the path of a pinned label, in the given language or its first one with words. */
+  function openPath(label: Label, language?: Language) {
+    pathTarget = { label, language: language ?? languagesOf(label)[0] ?? 'zh' };
+    validatedBefore = undefined;
+    placementOutcome = undefined;
+    pathNotice = undefined;
+    fromPath = false;
+    pathVisit += 1;
+    page = 'path';
+  }
+
+  async function loadPathOf(language: Language): Promise<LoadedPath> {
+    const { label } = ready(pathTarget);
+    lastPath = await loadPath({ cards, label, language }, pathDeps());
+    return lastPath;
+  }
+
+  /** The label and the language of the path shown, the tab chosen included. */
+  function shownPath(): { label: Label; language: Language } {
+    const target = ready(pathTarget);
+    return { label: target.label, language: lastPath?.language ?? target.language };
+  }
+
+  /** Before a step session or a test: what is validated now, and the test under way. */
+  function leavePath(step: PathStep, cardIds: readonly string[], purpose: LaunchPurpose) {
+    const target = shownPath();
+    pathTarget = target;
+    validatedBefore = (lastPath?.view.steps ?? [])
+      .filter(({ status }) => status === 'validated')
+      .map(({ step: validated }) => validated);
+    placementOutcome = undefined;
+    pathNotice = undefined;
+    pendingPlacement =
+      purpose === 'placementTest'
+        ? beginPlacement(
+            { labelId: target.label.id, language: target.language },
+            { step, cardIds: [...cardIds] },
+            now,
+          )
+        : undefined;
+  }
+
+  /** Steps 1, 2, 4 and 5 are played on the existing screens, on the words of the step. */
+  function startStep(step: BuiltInStep, cardIds: readonly string[], purpose: LaunchPurpose) {
+    const { label, language } = shownPath();
+    leavePath(step, cardIds, purpose);
+    fromPath = true;
+    switch (step) {
+      case 'discover':
+        launchFlashcards({ mode: 'review', language, labelIds: [label.id], cardIds });
+        break;
+      case 'listen':
+        listenLaunch = { language, labelIds: [label.id], targetCardIds: cardIds };
+        page = 'miniGame';
+        break;
+      case 'type':
+        launchFlashcards({
+          mode: 'practice',
+          language,
+          labelIds: [],
+          cardIds,
+          answerMode: 'typeWord',
+        });
+        break;
+      case 'dictation':
+        dictationLaunch = { language, words: cards.filter(({ id }) => cardIds.includes(id)) };
+        page = 'dictation';
+        break;
+    }
+  }
+
+  /** Steps 3 and 6 offer their games (GAME_DESIGN.md 5.1) on the words of the step. */
+  function launchExercise(step: ExerciseStep, cardIds: readonly string[], purpose: LaunchPurpose) {
+    const { language } = shownPath();
+    leavePath(step, cardIds, purpose);
+    fromPath = true;
+    stepLanguage = language;
+    stepCardIds = cardIds;
+    stepGames =
+      step === 'recognize' ? ['bridgeMatch', 'toneEcho'] : ['sentenceListen', 'sentenceShuffle'];
+    openGame = undefined;
+    page = 'miniGame';
+  }
+
+  /** The final challenge of the path shown: same storage as the flashcards, plus its score. */
+  const challengeStore: FinalChallengeStore = {
+    load: flashcardStore.load,
+    startSession: flashcardStore.startSession,
+    recordAnswer: flashcardStore.recordAnswer,
+    endSession: flashcardStore.endSession,
+    recordFinalChallenge: async (labelId, language, score20, today) => {
+      const event = await ready(study).recordFinalChallenge(labelId, language, score20, today);
+      await recordChange();
+      return event;
+    },
+  };
+
+  /** The words of the final challenge, taken from the path that opened it. */
+  let challengeWords = $state.raw<readonly PathCard[]>([]);
+
+  function openFinalChallenge(path: LoadedPath) {
+    pathTarget = { label: path.label, language: path.language };
+    challengeWords = path.words;
+    validatedBefore = path.view.steps
+      .filter(({ status }) => status === 'validated')
+      .map(({ step }) => step);
+    placementOutcome = undefined;
+    pathNotice = undefined;
+    page = 'finalChallenge';
+  }
+
+  async function startChallenge() {
+    const { label, language } = ready(pathTarget);
+    return startFinalChallenge(
+      { label, language, cards: challengeWords, audio: await speaker.hasVoice(language) },
+      { store: challengeStore, srs, clock: now, newId, loadPinyin: loadPinyinGenerator },
+    );
+  }
+
+  /** "Revoir ces mots": a free practice on the words missed, then back to the path. */
+  function reviewMissed(words: readonly PathCard[]) {
+    const { language } = ready(pathTarget);
+    fromPath = true;
+    launchFlashcards({
+      mode: 'practice',
+      language,
+      labelIds: [],
+      cardIds: words.map(({ id }) => id),
+    });
+  }
+
+  /** Back from a step session or a test: a test is scored on the answers given since it began. */
+  async function returnToPath() {
+    const pending = pendingPlacement;
+    pendingPlacement = undefined;
+    if (pending !== undefined) {
+      placementOutcome = await finishPlacement(pending, pathDeps());
+    }
+    await reload(storage());
+    fromPath = false;
+    flashcardLaunch = undefined;
+    listenLaunch = undefined;
+    dictationLaunch = undefined;
+    stepGames = undefined;
+    openGame = undefined;
+    pathVisit += 1;
+    page = 'path';
+  }
+
   function startEditing(card: Card) {
     editing = card;
   }
@@ -461,6 +721,11 @@
           aria-current={page === name ? 'page' : undefined}
           onclick={() => {
             flashcardLaunch = undefined;
+            listenLaunch = undefined;
+            dictationLaunch = undefined;
+            stepGames = undefined;
+            openGame = undefined;
+            fromPath = false;
             page = name;
           }}><NavIcon {name} /><span class="menu-text">{fr.nav[name]}</span></button
         >
@@ -498,8 +763,44 @@
       </aside>
     {/if}
 
+    {#if fromPath && page !== 'path'}
+      <div class="path-return">
+        <button type="button" onclick={() => void returnToPath()}>{fr.path.back}</button>
+      </div>
+    {/if}
+
     <div class="content">
-      {#if page === 'backup' && backupService !== undefined}
+      {#if page === 'path' && pathTarget !== undefined}
+        {#if pathNotice !== undefined}
+          <p class="banner" role="status">{pathNotice}</p>
+        {/if}
+        {#key pathVisit}
+          <PathScreen
+            labelName={pathTarget.label.name}
+            languages={languagesOf(pathTarget.label)}
+            language={pathTarget.language}
+            loadPath={loadPathOf}
+            {speaker}
+            {...validatedBefore === undefined ? {} : { validatedBefore }}
+            {...placementOutcome === undefined ? {} : { placement: placementOutcome }}
+            onStartStep={startStep}
+            onLaunchExercise={launchExercise}
+            onFinalChallenge={openFinalChallenge}
+            onAddExamples={() => {
+              page = 'words';
+            }}
+          />
+        {/key}
+      {:else if page === 'finalChallenge' && pathTarget !== undefined}
+        <FinalChallenge
+          labelName={pathTarget.label.name}
+          {speaker}
+          {startChallenge}
+          onReview={reviewMissed}
+          onBack={() => void returnToPath()}
+          onFinished={() => void sessionEnded()}
+        />
+      {:else if page === 'backup' && backupService !== undefined}
         <BackupPanel
           service={backupService}
           {download}
@@ -529,14 +830,90 @@
             page = 'flashcards';
           }}
           onMiniGame={openMiniGame}
+          onIslandSeen={(level: number) => void islandSeen(level)}
         />
       {:else if page === 'miniGame'}
-        <ListenMeaning
-          {cards}
-          {speaker}
-          startSession={startMiniGame}
-          onSessionEnd={() => void sessionEnded()}
-        />
+        {@const speechRate = SPEECH_RATES[voiceSpeed ?? speechSpeedOf(undefined)]}
+        {#if listenLaunch !== undefined}
+          <ListenMeaning
+            {cards}
+            {speaker}
+            startSession={startMiniGame}
+            onSessionEnd={() => void sessionEnded()}
+            startWith={listenLaunch}
+          />
+        {:else if openGame === undefined && stepGames !== undefined}
+          <section class="step-games" aria-label={fr.path.chooseGame}>
+            <p>{fr.path.chooseGame}</p>
+            {#each stepGames as game (game)}
+              <button
+                type="button"
+                onclick={() => (openGame = { game, language: stepLanguage, cardIds: stepCardIds })}
+                >{fr.miniGames.games[game].name}</button
+              >
+            {/each}
+          </section>
+        {:else if openGame === undefined}
+          <MiniGameMenu
+            {cards}
+            {speaker}
+            onOpen={(game: MiniGame, language: Language) => {
+              openGame = { game, language };
+            }}
+          />
+        {:else if openGame.game === 'listenMeaning'}
+          <ListenMeaning
+            {cards}
+            {speaker}
+            startSession={startMiniGame}
+            onSessionEnd={() => void sessionEnded()}
+          />
+          <button type="button" onclick={backToMiniGames}>{fr.miniGames.back}</button>
+        {:else if openGame.game === 'bridgeMatch'}
+          <BridgeMatch
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startBridgeMatch}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'toneEcho'}
+          <ToneEcho
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startToneEcho}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'sentenceListen'}
+          <SentenceListen
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startSentenceListen}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else}
+          <SentenceShuffle
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startSentenceShuffle}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {/if}
       {:else if page === 'flashcards'}
         {#if answerMode !== undefined}
           <Flashcards
@@ -566,6 +943,7 @@
             }}
             onUndoUnpin={undoUnpin}
             onIntensiveChange={changeIntensive}
+            onOpenPath={openPath}
           />
         {/if}
       {:else if page === 'dictation' && voiceSpeed !== undefined}
@@ -578,6 +956,7 @@
           defaultMode={dictationMode}
           defaultSpeed={voiceSpeed}
           onSessionEnd={() => void sessionEnded()}
+          {...dictationLaunch === undefined ? {} : { startWith: dictationLaunch }}
         />
       {:else}
         <WordForm
@@ -626,6 +1005,9 @@
           {masteryOf}
           today={moment.today}
           onChange={changeLabels}
+          onOpenPath={(label: Label) => {
+            openPath(label);
+          }}
         />
       {/if}
     </div>
@@ -760,6 +1142,14 @@
     border: 1px solid var(--line);
     border-left: 4px solid var(--thirst);
     border-radius: var(--radius-md);
+  }
+
+  .path-return {
+    display: flex;
+  }
+
+  .path-return button {
+    min-height: var(--target);
   }
 
   .banner p {

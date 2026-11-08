@@ -48,6 +48,11 @@
     /** Seed of the random order; a new one for each dictation. */
     newSeed?: () => string;
     timers?: PlayerTimers;
+    /**
+     * Starts this dictation at once, as a step session of the path does, on these words in
+     * this order. The voice was unlocked by the click that opened the screen.
+     */
+    startWith?: { language: Language; words: readonly Card[] };
   }
 
   const {
@@ -61,6 +66,7 @@
     defaultSpeed = 'normal',
     newSeed = () => crypto.randomUUID(),
     timers,
+    startWith,
   }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
@@ -132,6 +138,13 @@
   // The voices load as the screen opens, so that they are ready for the click on Start.
   onMount(() => {
     void speaker.hasVoice(language);
+  });
+
+  onMount(() => {
+    if (startWith !== undefined) {
+      language = startWith.language;
+      void start(startWith.words);
+    }
   });
 
   /** Called first in every handler that starts audio: a phone speaks only in a user gesture. */

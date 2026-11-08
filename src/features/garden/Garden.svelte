@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { onMount, untrack } from 'svelte';
   import type { Card, Language } from '../../domain/card';
   import { ECONOMY_CONFIG } from '../../domain/game/economyConfig';
   import { gardenCounts, gardenPage, gardenPlants, type Plant } from '../../domain/game/garden';
+  import { islandGrowthStart, islandScene } from '../../domain/game/island';
   import { levelFor } from '../../domain/game/level';
-  import { achievementsOf, nextLevelUnlocks } from '../../domain/game/unlocks';
+  import {
+    achievementsOf,
+    nextLevelUnlocks,
+    unlocksBetweenLevels,
+  } from '../../domain/game/unlocks';
   import type { Label } from '../../domain/label';
   import type { ProgressRecord } from '../../domain/progressRecords';
   import type { Moment, SrsDependencies } from '../../domain/srs/dependencies';
@@ -12,6 +18,7 @@
   import { STAGES } from '../../domain/srs/stage';
   import { format, formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
+  import Island from '../island/Island.svelte';
   import PlantDrawing from './Plant.svelte';
 
   interface Props {
@@ -24,10 +31,21 @@
     /** Waters the thirsty words: opens the flashcards. */
     onWater: () => void;
     onMiniGame: () => void;
+    /** The island of this level was seen: remembered so that it grows only once. */
+    onIslandSeen?: (level: number) => void;
   }
 
-  const { cards, labels, reviewStates, moment, srs, progress, onWater, onMiniGame }: Props =
-    $props();
+  const {
+    cards,
+    labels,
+    reviewStates,
+    moment,
+    srs,
+    progress,
+    onWater,
+    onMiniGame,
+    onIslandSeen,
+  }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
   /** Enough to fill a screen; more words are paged, so that 500 words stay fluid. */
@@ -48,6 +66,29 @@
       ECONOMY_CONFIG,
     ),
   );
+  // The island grows from the level seen last time, once, when the garden opens.
+  const islandStart = untrack(() => islandGrowthStart(progress, level));
+  const island = $derived(islandScene(level, achievements, ECONOMY_CONFIG).shape);
+  const onIsland = $derived([
+    formatCount(fr.island.parcelsLine, island.parcels),
+    ...unlocksBetweenLevels(0, level, ECONOMY_CONFIG).map(
+      (id) => (fr.game.unlocks as Record<string, string>)[id] ?? id,
+    ),
+    ...(island.stream ? [fr.island.streamLine] : []),
+    ...(achievements.fireflies > 0
+      ? [formatCount(fr.island.firefliesLine, achievements.fireflies)]
+      : []),
+    ...(achievements.floatingLanterns > 0
+      ? [formatCount(fr.island.lanternsLine, achievements.floatingLanterns)]
+      : []),
+  ]);
+
+  onMount(() => {
+    if ((progress?.islandLevelSeen ?? 0) < level) {
+      onIslandSeen?.(level);
+    }
+  });
+
   const listed = $derived(
     labelId === '' ? plants : plants.filter(({ card }) => card.labelIds.includes(labelId)),
   );
@@ -101,6 +142,13 @@
       <button type="button" onclick={onMiniGame}>{fr.garden.miniGame}</button>
     </div>
   </header>
+
+  <Island
+    {level}
+    fromLevel={islandStart}
+    fireflies={achievements.fireflies}
+    floatingLanterns={achievements.floatingLanterns}
+  />
 
   {#if cards.length === 0}
     <p class="empty">{fr.garden.empty}</p>
@@ -217,6 +265,15 @@
         {/each}
       </ul>
       <p class="help">{fr.garden.legendNote}</p>
+    </div>
+
+    <div class="panel">
+      <h3 id="island-items">{fr.island.onIslandTitle}</h3>
+      <ul class="unlocks" aria-labelledby="island-items">
+        {#each onIsland as item (item)}
+          <li>{item}</li>
+        {/each}
+      </ul>
     </div>
 
     <div class="panel">

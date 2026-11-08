@@ -187,6 +187,17 @@ describe('applying an answer (GAME_DESIGN.md 9.2)', () => {
     expect(progress.gameLevels).toEqual({ 'listenMeaning:zh': { level: 2, window: [true] } });
   });
 
+  it.each(['bridgeMatch', 'toneEcho', 'sentenceListen', 'sentenceShuffle'] as const)(
+    'moves the adaptive level of %s too',
+    (exercise) => {
+      const played: GameEvent = { ...answer('c1'), exercise };
+
+      const { progress } = applyEvent({}, played, context);
+
+      expect(progress.gameLevels).toEqual({ [`${exercise}:zh`]: { level: 2, window: [true] } });
+    },
+  );
+
   it('leaves the mini-game levels alone for a flashcard', () => {
     expect(applyEvent({}, answer('c1'), context).progress.gameLevels).toBeUndefined();
   });
@@ -278,6 +289,68 @@ describe('applying a session completed', () => {
     expect(progress.xp ?? 0).toBe(0);
     expect(progress.streakDays ?? 0).toBe(0);
     expect(effects).toEqual([]);
+  });
+});
+
+describe('applying a path step validated', () => {
+  const validated: GameEvent = {
+    type: 'PathStepValidated',
+    labelId: 'lesson',
+    language: 'zh',
+    step: 'listen',
+    via: 'progress',
+  };
+
+  it('awards 50 points, never reduced by the daily goal', () => {
+    const farBeyond: ProgressRecord = { xp: 900, dailyXp: 900, dailyXpDay: today };
+
+    const { progress, effects } = applyEvent(farBeyond, validated, context);
+
+    expect(progress.xp).toBe(950);
+    expect(effects).toContainEqual({
+      type: 'XpAwarded',
+      amount: 50,
+      base: 50,
+      multiplier: 1,
+      reason: 'pathStepValidated',
+    });
+  });
+
+  it('awards the same points for a step validated by a placement test', () => {
+    const placed: GameEvent = { ...validated, via: 'placementTest' };
+
+    expect(applyEvent({}, placed, context).progress.xp).toBe(50);
+  });
+
+  it('never makes the day active: the answers behind it already count', () => {
+    expect(applyEvent({}, validated, context).progress.streakDays ?? 0).toBe(0);
+  });
+});
+
+describe('applying a final challenge finished', () => {
+  const finished: GameEvent = {
+    type: 'FinalChallengeFinished',
+    labelId: 'lesson',
+    language: 'zh',
+    score20: 17,
+    passed: true,
+    firstPass: true,
+  };
+
+  it('awards 100 points for the first success, never reduced by the daily goal', () => {
+    const farBeyond: ProgressRecord = { xp: 900, dailyXp: 900, dailyXpDay: today };
+
+    const { progress, effects } = applyEvent(farBeyond, finished, context);
+
+    expect(progress.xp).toBe(1000);
+    expect(effects).toContainEqual(expect.objectContaining({ reason: 'finalChallengePassed' }));
+  });
+
+  it('awards nothing for a later success nor for a failed attempt', () => {
+    expect(applyEvent({}, { ...finished, firstPass: false }, context).progress.xp ?? 0).toBe(0);
+    expect(
+      applyEvent({}, { ...finished, passed: false, firstPass: false }, context).progress.xp ?? 0,
+    ).toBe(0);
   });
 });
 

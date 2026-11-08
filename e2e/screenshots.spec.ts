@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openWords } from './navigation.ts';
+import { reachFinalChallenge } from './pathSeed.ts';
+import { simulateProgress } from './progressStore.ts';
 
 /**
  * Screenshots of the main screens, light and dark, on a computer and on a phone, written to
@@ -29,7 +31,14 @@ const WORDS = [
  * On a computer, the whole page from the top. On a phone, one screen of 390 × 844 as in
  * docs/ui/mockups/Mobile.dc.html, scrolled to the part shown, so that the bottom bar stays in place.
  */
-async function shoot(page: Page, name: string, device: string, scheme: string, part?: Locator) {
+async function shoot(
+  page: Page,
+  name: string,
+  device: string,
+  scheme: string,
+  part?: Locator,
+  fullPage = device === 'desktop',
+) {
   // Wait for the self-hosted font, so that every screenshot shows Plus Jakarta Sans.
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -45,7 +54,7 @@ async function shoot(page: Page, name: string, device: string, scheme: string, p
   }
   await page.screenshot({
     path: `docs/ui/screenshots/${name}-${device}-${scheme}.png`,
-    fullPage: device === 'desktop',
+    fullPage,
     animations: 'disabled',
   });
 }
@@ -197,9 +206,61 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await shoot(page, 'dictation-answer', device, scheme, dictation.getByRole('status'));
       });
 
+      test('label path and final challenge', async ({ page }) => {
+        await installSilentVoice(page);
+        await page.goto('./');
+        await openWords(page);
+        await addWords(page);
+        await page.getByRole('button', { name: 'Épingler Leçon 7' }).click();
+        await expect(page.getByRole('button', { name: 'Désépingler Leçon 7' })).toBeVisible();
+        await page.getByRole('button', { name: 'Voir le parcours de Leçon 7' }).click();
+        const path = page.getByRole('region', { name: 'Leçon 7' });
+        await expect(path.getByRole('list', { name: 'Étapes du parcours' })).toBeVisible();
+        await shoot(page, 'path', device, scheme, path);
+
+        await reachFinalChallenge(page);
+        await page.getByRole('button', { name: 'Voir le parcours de Leçon 7' }).click();
+        await page.getByRole('button', { name: 'Lancer le défi final' }).click();
+        const challenge = page.getByRole('region', { name: 'Défi final' });
+        await challenge.getByRole('button', { name: 'Commencer' }).click();
+        await expect(challenge.getByText('1/4', { exact: true })).toBeVisible();
+        await shoot(page, 'final-challenge', device, scheme, challenge);
+        for (let question = 1; question <= 4; question += 1) {
+          await expect(challenge.getByText(String(question) + '/4', { exact: true })).toBeVisible();
+          await challenge.getByRole('button', { name: 'Je ne sais pas' }).click();
+        }
+        await expect(challenge.getByRole('heading', { name: /Pas encore prêt/ })).toBeVisible();
+        await shoot(page, 'final-challenge-result', device, scheme, challenge);
+      });
+
+      test('the island of the garden at levels 1, 5, 10 and 20', async ({ page }) => {
+        await page.goto('./');
+        await openWords(page);
+        const bulk = page.getByRole('region', { name: 'Saisie en lot' });
+        const words = Array.from({ length: 40 }, (_, index) => `word${String(index)} | sens`);
+        await bulk.getByLabel('Un mot par ligne').fill(words.join('\n'));
+        await bulk.getByRole('button', { name: 'Ajouter 40 mots' }).click();
+        await expect(bulk.getByRole('status')).toHaveText('40 mot(s) ajouté(s).');
+        // Total XP of each level (GAME_DESIGN.md 4.3), with words in flower for the fireflies.
+        const levels = [
+          { level: 1, xp: 0, flowers: 0, lanterns: 0 },
+          { level: 5, xp: 700, flowers: 12, lanterns: 0 },
+          { level: 10, xp: 2700, flowers: 25, lanterns: 5 },
+          { level: 20, xp: 10450, flowers: 30, lanterns: 10 },
+        ];
+        for (const { level, xp, flowers, lanterns } of levels) {
+          await simulateProgress(page, { xp, islandLevelSeen: level, flowers, lanterns });
+          await menu(page).getByRole('button', { name: 'Jardin' }).click();
+          const island = page.getByRole('img', { name: /^Île niveau/ });
+          await expect(island).toHaveAttribute('data-level', String(level));
+          await shoot(page, `island-level-${String(level)}`, device, scheme, island, false);
+        }
+      });
+
       test('session summary, garden and ListenMeaning', async ({ page }) => {
         await installSilentVoice(page);
         await page.goto('./');
+        await openWords(page);
         await addWords(page);
         await menu(page).getByRole('button', { name: 'Flashcards' }).click();
         const flashcards = page.getByRole('region', { name: 'Flashcards' });
@@ -230,6 +291,7 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         );
 
         await garden.getByRole('button', { name: 'Mini-jeu' }).click();
+        await page.getByRole('button', { name: 'Jouer Écouter et choisir le sens' }).click();
         const game = page.getByRole('region', { name: 'Mini-jeu : écouter et choisir le sens' });
         await game.getByRole('button', { name: 'Commencer le mini-jeu' }).click();
         const options = game.getByRole('group', { name: 'Que veut dire ce mot ?' });
@@ -238,6 +300,86 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await game.getByRole('button', { name: 'Je ne sais pas' }).click();
         await expect(game.getByRole('status')).toBeVisible();
         await shoot(page, 'listen-meaning-wrong', device, scheme, game);
+      });
+
+      test('mini-games: the list, BridgeMatch, ToneEcho, SentenceListen and SentenceShuffle', async ({
+        page,
+      }) => {
+        await installSilentVoice(page);
+        await page.goto('./');
+        await openWords(page);
+        await addWords(page);
+        const form = page.getByRole('form', { name: 'Ajouter un mot' });
+        await form.getByLabel('Mot (hanzi ou anglais)').fill('时间');
+        await expect(form.getByLabel('Pinyin')).toHaveValue('shí jiān');
+        await form.getByLabel('Sens').fill('temps, durée');
+        await form.getByLabel('Exemple (facultatif)').fill('我今天没有时间吃饭。');
+        await form.getByRole('button', { name: 'Ajouter le mot' }).click();
+        await expect(form.getByRole('status')).toHaveText('« 时间 » ajouté.');
+
+        const openGame = async (name: string) => {
+          await menu(page).getByRole('button', { name: 'Jardin' }).click();
+          await page.getByRole('button', { name: 'Mini-jeu' }).click();
+          const list = page.getByRole('region', { name: 'Mini-jeux' });
+          if (name === '') {
+            return list;
+          }
+          await list.getByRole('button', { name: `Jouer ${name}` }).click();
+          return list;
+        };
+
+        const list = await openGame('');
+        await expect(list.getByRole('listitem')).toHaveCount(5);
+        await shoot(page, 'mini-games', device, scheme, list);
+
+        await openGame('Relier les deux rives');
+        const bridge = page.getByRole('region', { name: 'Mini-jeu : relier les deux rives' });
+        await bridge.getByRole('button', { name: 'Commencer' }).click();
+        const words = bridge.getByRole('group', { name: 'Rive des mots' });
+        await words.getByRole('button', { name: '现在' }).click();
+        await bridge
+          .getByRole('group', { name: 'Rive des sens' })
+          .getByRole('button', { name: 'maintenant' })
+          .click();
+        await expect(bridge.getByRole('status')).toContainText('Paire juste');
+        await shoot(page, 'bridge-match', device, scheme, bridge);
+
+        await openGame('Échos des tons');
+        const tones = page.getByRole('region', { name: 'Mini-jeu : échos des tons' });
+        await tones.getByRole('button', { name: 'Commencer' }).click();
+        const field = tones.getByRole('textbox', { name: 'Tons du mot' });
+        const keys = tones.getByRole('group', { name: 'Tons' });
+        await expect(field.or(keys)).toBeVisible();
+        if (await field.isVisible()) {
+          await field.fill('11');
+          await field.press('Enter');
+        } else {
+          await page.keyboard.press('0');
+        }
+        await expect(tones.getByRole('status')).toBeVisible();
+        await shoot(page, 'tone-echo-wrong', device, scheme, tones);
+
+        await openGame('Le mot dans la phrase');
+        const sentence = page.getByRole('region', { name: 'Mini-jeu : le mot dans la phrase' });
+        await sentence.getByRole('button', { name: 'Commencer' }).click();
+        await sentence
+          .getByRole('group', { name: 'Quel mot de ta liste as-tu entendu ?' })
+          .getByRole('button', { name: '时间' })
+          .click();
+        await expect(sentence.getByRole('status')).toContainText('Juste.');
+        await shoot(page, 'sentence-listen', device, scheme, sentence);
+
+        await openGame("Remettre la phrase dans l'ordre");
+        const shuffle = page.getByRole('region', {
+          name: "Mini-jeu : remettre la phrase dans l'ordre",
+        });
+        await shuffle.getByRole('button', { name: 'Commencer' }).click();
+        const reserve = shuffle.getByRole('group', { name: 'Morceaux à placer' });
+        await reserve.getByRole('button').first().click();
+        await expect(
+          shuffle.getByRole('group', { name: 'Ta phrase' }).getByRole('button'),
+        ).toHaveCount(1);
+        await shoot(page, 'sentence-shuffle', device, scheme, shuffle);
       });
     });
   }

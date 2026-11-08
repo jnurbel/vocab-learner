@@ -50,4 +50,25 @@ describe('loadHomeView', () => {
     expect(view.session.newCount).toBe(1);
     expect(view.progress).toBeUndefined();
   });
+
+  it('reads the paths of the pinned labels to tell those ready for their test', async () => {
+    const pinned = {
+      id: 'lesson',
+      name: 'Leçon 7',
+      isFocus: true,
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const paths = {
+      pathProgress: (labelId: string, language: 'zh' | 'en') =>
+        Promise.resolve({ labelId, language, finalChallengeBest: 17 }),
+    };
+
+    const view = await loadHomeView(
+      { cards: [card('a', undefined, { labelIds: ['lesson'] })], labels: [pinned], language: 'zh' },
+      { store: new FakeStore(), srs, clock: () => morning, paths },
+    );
+
+    expect(view.focus[0]?.readyForExam).toBe(true);
+  });
 });

@@ -66,7 +66,7 @@ describe('a ListenMeaning session', () => {
       hintsUsed: 0,
       responseMs: 1000,
     });
-    expect(store.answers[0]?.state.lastRatedDay).toBe('2026-11-06');
+    expect(store.answers[0]?.state?.lastRatedDay).toBe('2026-11-06');
   });
 
   it('rates a wrong choice again, and "Je ne sais pas" too', async () => {
@@ -107,7 +107,7 @@ describe('a ListenMeaning session', () => {
       due,
       lastRatedDay,
     });
-    expect(store.answers[0]?.state.successDays).toBe(before.successDays + 1);
+    expect(store.answers[0]?.state?.successDays).toBe(before.successDays + 1);
     expect(session.rewards()?.breakdown).toMatchObject({ correct: 10 });
   });
 
@@ -143,5 +143,24 @@ describe('a ListenMeaning session', () => {
     const session = await start(new FakeStore(), [defined(words[0], 'word')]);
 
     await expect(session.answer('unknown', { hintsUsed: 0 })).rejects.toThrow('The round is over');
+  });
+
+  it('asks only the target words of a step session, the others serving as distractors', async () => {
+    const store = new FakeStore({ reviewStates: words.map(({ id }) => reviewed(id)) });
+    const session = await startListenMeaningSession(
+      { cards: words, language: 'zh', labelIds: [], targetCardIds: ['w1', 'w3'] },
+      { store, srs, clock: () => morning, newId: () => 'step-1' },
+    );
+
+    const asked: string[] = [];
+    const offered = new Set<string>();
+    while (session.current !== undefined) {
+      asked.push(session.current.target.id);
+      session.current.options.forEach(({ id }) => offered.add(id));
+      await session.answer(session.current.target, { hintsUsed: 0 });
+    }
+
+    expect(asked.sort()).toEqual(['w1', 'w3']);
+    expect([...offered].some((id) => id !== 'w1' && id !== 'w3')).toBe(true);
   });
 });

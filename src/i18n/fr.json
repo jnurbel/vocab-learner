@@ -155,7 +155,9 @@
       "pastDate": "La date du contrôle est déjà passée.",
       "tooFar": "La date du contrôle est à plus d'un an.",
       "labelNotFound": "Ce label n'existe plus."
-    }
+    },
+    "openPath": "Parcours",
+    "openPathLabel": "Voir le parcours de {name}"
   },
   "stages": {
     "seed": "Graine",
@@ -550,6 +552,65 @@
     "thirstLevels": ["Pas soif", "A soif", "Très soif"],
     "noReview": "—"
   },
+  "island": {
+    "label": "Île niveau {level} : {items}.",
+    "labelWithPalette": "Île niveau {level}, palette {palette} : {items}.",
+    "nextItem": "Prochain : {name}, niveau {level}.",
+    "parcels": {
+      "one": "{count} parcelle",
+      "other": "{count} parcelles"
+    },
+    "stream": "ruisseau",
+    "fireflies": {
+      "one": "{count} luciole",
+      "other": "{count} lucioles"
+    },
+    "lanterns": {
+      "one": "{count} lanterne flottante",
+      "other": "{count} lanternes flottantes"
+    },
+    "palettes": {
+      "spring": "printemps",
+      "autumn": "automne",
+      "winter": "hiver",
+      "night": "nuit",
+      "dawn": "aube"
+    },
+    "decors": {
+      "pier": "ponton",
+      "pathLamps": "lampions",
+      "stoneBenches": "bancs de pierre",
+      "pond": "étang",
+      "kite": "cerf-volant",
+      "bamboo": "bambous",
+      "rowboat": "barque",
+      "pavilion": "pavillon",
+      "archBridge": "pont en arc",
+      "beehives": "ruches",
+      "lighthouse": "phare",
+      "pebbleGarden": "jardin de galets",
+      "observatory": "observatoire",
+      "greatTree": "grand arbre",
+      "waterfall": "cascade",
+      "secondIslet": "îlot voisin"
+    },
+    "nextTag": "niveau {level}",
+    "grew": "Ton île a grandi depuis ta dernière visite : niveau {from} → niveau {to}.",
+    "onIslandTitle": "Déjà sur ton île",
+    "streamLine": "Un ruisseau",
+    "parcelsLine": {
+      "one": "{count} parcelle de mots",
+      "other": "{count} parcelles de mots"
+    },
+    "firefliesLine": {
+      "one": "{count} luciole",
+      "other": "{count} lucioles"
+    },
+    "lanternsLine": {
+      "one": "{count} lanterne flottante",
+      "other": "{count} lanternes flottantes"
+    }
+  },
   "listenMeaning": {
     "title": "Mini-jeu : écouter et choisir le sens",
     "intro": "Tu entends un mot, rien n'est écrit. Choisis son sens.",
@@ -585,6 +646,185 @@
     "notEligible": "Il faut au moins 2 mots dans cette langue pour ce mini-jeu.",
     "startFailed": "Le mini-jeu n'a pas pu démarrer.",
     "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "bridgeMatch": {
+    "title": "Mini-jeu : relier les deux rives",
+    "intro": "Relie chaque élément de gauche à celui qui lui correspond à droite : clique sur l'un, puis sur l'autre.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Plateau {board} · {found} / {total} paires",
+    "leftBank": {
+      "term": "Rive des mots",
+      "audio": "Rive des sons"
+    },
+    "rightBank": {
+      "meaning": "Rive des sens",
+      "term": "Rive des mots écrits",
+      "pinyin": "Rive du pinyin"
+    },
+    "sound": "Son {number}",
+    "bridgeLabel": "Pont : {found} planches posées sur {total}",
+    "keysHelp": "Chiffres pour la rive de gauche, lettres pour celle de droite · Espace ou R pour réécouter le son choisi · L pour l'écouter lentement",
+    "match": "Paire juste : {term}, {meaning}. {found} sur {total}.",
+    "mismatch": "Pas une paire : {left} et {right}.",
+    "noVoice": "Pas de voix : les mots sont écrits.",
+    "quit": "Quitter",
+    "summaryTitle": "Pont terminé",
+    "score": "{correct} / {total} paires du premier coup",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "notEligible": "Il faut au moins 3 mots de sens différents.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La paire n'a pas pu être enregistrée. Réessaie."
+  },
+  "toneEcho": {
+    "title": "Mini-jeu : échos des tons",
+    "titleEn": "Mini-jeu : paires proches",
+    "intro": "Écoute bien : retrouve le ton d'une syllabe, les tons d'un mot, ou lequel de deux mots proches tu entends.",
+    "introEn": "Écoute bien : deux mots proches s'affichent, retrouve celui que tu entends.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Échos · {position} / {total}",
+    "replay": "Réécouter",
+    "slow": "Lent",
+    "promptTone": "Quel ton entends-tu ?",
+    "promptPattern": "Tape les tons du mot, par exemple 34 (0 ou 5 pour le ton neutre).",
+    "promptPair": "Lequel entends-tu ?",
+    "tonesLabel": "Tons",
+    "pairLabel": "Les deux mots",
+    "patternLabel": "Tons du mot",
+    "validate": "Valider",
+    "toneNames": {
+      "1": "1er ton",
+      "2": "2e ton",
+      "3": "3e ton",
+      "4": "4e ton",
+      "neutral": "ton neutre"
+    },
+    "curveLabel": "Tons : {tones}",
+    "curveThen": " puis ",
+    "keysHelpTone": "Touches 1 à 4 pour le ton, 5 ou 0 pour le ton neutre · Espace ou R pour réécouter · L pour écouter lentement",
+    "keysHelpPair": "Touches 1 et 2, ou flèches gauche et droite · Espace ou R pour réécouter · L pour écouter lentement",
+    "keysHelpPattern": "Entrée pour valider · flèche haut pour réécouter, flèche bas pour écouter lentement",
+    "right": "Juste.",
+    "wrongHeard": "Tu as entendu {heard}, tu as choisi {chosen}. Écoute les deux.",
+    "wrongTone": "Tu as entendu {heard}, tu as choisi : {chosen}.",
+    "heardTitle": "Le son entendu",
+    "chosenTitle": "Ton choix",
+    "listenChosen": "Écouter mon choix",
+    "sandhi": "En parlant, deux 3e tons de suite deviennent 2e ton puis 3e ton : on tape quand même les tons du dictionnaire.",
+    "noRating": "Le jeu des tons ne change pas la plante du mot : il entraîne l'oreille.",
+    "practiceOnly": "Paire d'entraînement : elle ne compte pas pour tes mots.",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "summaryTitle": "Échos terminés",
+    "score": "{correct} / {total} justes",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "noVoice": "Ce jeu a besoin d'une voix pour cette langue : installe-la dans les réglages de ton appareil.",
+    "notEligible": "Aucun de tes mots n'a de son à travailler ici : il faut du pinyin pour le chinois.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "sentenceListen": {
+    "title": "Mini-jeu : le mot dans la phrase",
+    "intro": "Tu entends une phrase d'exemple de ta liste. Retrouve le mot de ta liste qu'elle contient.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Phrases · {position} / {total}",
+    "prompt": "Écoute la phrase · quel mot de ta liste as-tu entendu ?",
+    "promptWritten": "Quel mot de ta liste manque dans la phrase ?",
+    "optionsLabel": "Quel mot de ta liste as-tu entendu ?",
+    "keysHelp": "Touches 1 à 4 pour choisir · Espace ou R pour réécouter · L pour écouter lentement · 0 pour « Je ne sais pas »",
+    "replay": "Réécouter la phrase",
+    "slow": "Lent",
+    "unknown": "Je ne sais pas",
+    "noVoice": "Pas de voix : la phrase est écrite, avec un trou.",
+    "audioError": "La phrase n'a pas pu être lue : elle est écrite, avec un trou.",
+    "right": "Juste.",
+    "wrong": "C'était {term}",
+    "chose": "Tu as choisi : {term}",
+    "unknownChosen": "Tu as répondu « Je ne sais pas ».",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "summaryTitle": "Phrases écoutées",
+    "score": "{correct} / {total} justes",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "notEligible": "Ajoute des phrases d'exemple qui contiennent tes mots pour jouer à ce jeu.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "sentenceShuffle": {
+    "title": "Mini-jeu : remettre la phrase dans l'ordre",
+    "intro": "Les morceaux d'une phrase d'exemple sont mélangés : remets-les dans l'ordre.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "progress": "Phrase {position} / {total}",
+    "meaning": "Avec le mot {term} : {translation}",
+    "line": "Ta phrase",
+    "lineEmpty": "Touche les morceaux dans l'ordre de la phrase.",
+    "reserve": "Morceaux à placer",
+    "trapHint": "Attention : un morceau n'appartient pas à la phrase.",
+    "keysHelp": "Chiffres pour placer un morceau · Retour arrière pour retirer le dernier · Entrée pour valider",
+    "validate": "Valider",
+    "listen": "Écouter la phrase",
+    "slow": "Lent",
+    "right": "Juste.",
+    "retry": "Pas tout à fait : le début en vert est juste, le reste revient dans la réserve. Essaie encore.",
+    "wrong": "Ta phrase est peut-être correcte aussi ; voici celle de ta liste :",
+    "claimRight": "J'étais juste",
+    "giveUp": "Voir la phrase",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "summaryTitle": "Phrases remises en ordre",
+    "score": "{correct} / {total} du premier coup",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "notEligible": "Ajoute des phrases d'exemple de 3 à 8 morceaux pour jouer à ce jeu.",
+    "startFailed": "Le mini-jeu n'a pas pu démarrer.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie."
+  },
+  "miniGames": {
+    "title": "Mini-jeux",
+    "intro": "Des jeux courts pour reconnaître tes mots à l'oreille, à l'écrit et dans leurs phrases.",
+    "languageLegend": "Langue",
+    "listLabel": "Liste des mini-jeux",
+    "games": {
+      "listenMeaning": {
+        "name": "Écouter et choisir le sens",
+        "description": "Tu entends un mot, tu choisis son sens."
+      },
+      "bridgeMatch": {
+        "name": "Relier les deux rives",
+        "description": "Relie chaque mot, ou son son, à son sens."
+      },
+      "toneEcho": {
+        "name": "Échos des tons",
+        "nameEn": "Paires proches",
+        "description": "Retrouve les tons de ce que tu entends.",
+        "descriptionEn": "Retrouve lequel de deux mots proches tu entends."
+      },
+      "sentenceListen": {
+        "name": "Le mot dans la phrase",
+        "description": "Tu entends une phrase d'exemple, tu retrouves le mot de ta liste."
+      },
+      "sentenceShuffle": {
+        "name": "Remettre la phrase dans l'ordre",
+        "description": "Replace les morceaux d'une phrase d'exemple."
+      }
+    },
+    "eligible": {
+      "one": "{count} mot éligible",
+      "other": "{count} mots éligibles"
+    },
+    "reasons": {
+      "fewWords": "Ajoute d'autres mots dans cette langue.",
+      "noPinyin": "Ajoute le pinyin de tes mots.",
+      "noExamples": "Ajoute des phrases d'exemple."
+    },
+    "play": "Jouer",
+    "back": "Retour aux mini-jeux"
   },
   "home": {
     "title": "Aujourd’hui",
@@ -667,7 +907,10 @@
     "labelsTitle": "Mes labels",
     "labelThirst": "{count} à arroser",
     "labelUpToDate": "À jour",
-    "labelMastery": "{name} : {mastered}/{total} mots maîtrisés"
+    "labelMastery": "{name} : {mastered}/{total} mots maîtrisés",
+    "openPath": "Voir le parcours",
+    "openPathLabel": "Voir le parcours de {name}",
+    "readyForExam": "Prêt pour le contrôle"
   },
   "voice": {
     "blocked": "Le navigateur a bloqué le son : le mot est écrit à la place. Touche « Activer le son » pour l’entendre.",
@@ -696,5 +939,132 @@
       "blocked": "Le navigateur a bloqué le son. Touche à nouveau le bouton.",
       "noVoice": "Pas de voix pour cette langue sur cet appareil."
     }
+  },
+  "path": {
+    "eyebrow": "Parcours",
+    "back": "Retour au parcours",
+    "loading": "Chargement du parcours…",
+    "loadFailed": "Le parcours n’a pas pu se charger. Réessaie.",
+    "languageTabs": "Langue du parcours",
+    "summary": "{validated} / 7 étapes",
+    "stepsLabel": "Étapes du parcours",
+    "steps": {
+      "discover": {
+        "name": "Découvrir",
+        "description": "Flashcards : le son, le mot, le sens."
+      },
+      "listen": {
+        "name": "Écouter",
+        "description": "Tu entends le mot, tu choisis son sens."
+      },
+      "recognize": {
+        "name": "Reconnaître",
+        "description": "Relie les mots et leurs sens, et les tons."
+      },
+      "type": {
+        "name": "Taper",
+        "description": "Tu lis le sens, tu tapes le mot."
+      },
+      "dictation": {
+        "name": "Dictée",
+        "description": "Tu entends le mot, tu l’écris."
+      },
+      "sentences": {
+        "name": "Phrases",
+        "description": "Le mot dans ses phrases d’exemple."
+      },
+      "finalChallenge": {
+        "name": "Défi final",
+        "description": "Simulation du contrôle, notée sur 20."
+      }
+    },
+    "stepTitle": "{number}. {name}",
+    "status": {
+      "locked": "Verrouillée",
+      "current": "À faire",
+      "validated": "Validée",
+      "skipped": "Sautée"
+    },
+    "stepStatusLabel": "{name}, {status}",
+    "wordsDone": "{done}/{total} mots",
+    "bestScore": "Meilleure note : {score}/20",
+    "noScore": "Pas encore tenté",
+    "currentEyebrow": "Étape en cours",
+    "criterion": "Valide l’étape avec {required} mots réussis sur {total}.",
+    "wordsLeft": {
+      "one": "Encore {count} mot à réussir.",
+      "other": "Encore {count} mots à réussir."
+    },
+    "continue": "Continuer l’étape",
+    "placement": "Passer l’étape (test)",
+    "placementHelp": "10 questions : 9 justes valident l’étape. Tes réponses comptent quand même.",
+    "finalChallenge": "Lancer le défi final",
+    "finalChallengeHelp": "Conseillé la veille ou l’avant-veille du contrôle.",
+    "completed": "Parcours terminé. Prêt pour le contrôle.",
+    "sentencesSkipped": "Ajoute des phrases d’exemple pour activer cette étape.",
+    "addExamples": "Ajouter des exemples",
+    "stepValidated": "Étape validée : {name}. +50 XP.",
+    "nextStep": "Prochaine étape : {name}.",
+    "placementPassed": "{correct}/{total} : étape validée.",
+    "placementNotYet": "{correct}/{total} : pas encore. Tes réponses comptent quand même.",
+    "comingSoon": "Cet exercice arrive bientôt. En attendant, avance sur les autres étapes.",
+    "chooseGame": "Choisis un jeu pour cette étape :",
+    "nothingLeft": "Plus aucun mot à travailler aujourd’hui pour cette étape."
+  },
+  "finalChallenge": {
+    "title": "Défi final",
+    "eyebrow": "Défi final · {name} · conditions de contrôle",
+    "intro": {
+      "one": "Conditions de contrôle : {count} question, pas d’indice, pas de correction avant la fin. Environ {minutes} min.",
+      "other": "Conditions de contrôle : {count} questions, pas d’indice, pas de correction avant la fin. Environ {minutes} min."
+    },
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "startFailed": "Le défi n’a pas pu commencer. Réessaie.",
+    "saveFailed": "La réponse n’a pas été enregistrée. Réessaie.",
+    "notEnoughWords": "Il faut au moins 2 mots dans ce label pour le défi final.",
+    "progress": "{position}/{total}",
+    "sections": {
+      "listening": "Compréhension orale",
+      "dictation": "Dictée",
+      "translation": "Traduction"
+    },
+    "listeningPrompt": "Écoute et choisis le sens.",
+    "dictationPrompt": "Écoute et écris le mot.",
+    "translationPrompt": "Écris le mot qui veut dire :",
+    "answerLabel": "Ta réponse",
+    "replay": "Réécouter",
+    "replaysLeft": {
+      "one": "{count} relecture possible",
+      "other": "{count} relectures possibles"
+    },
+    "noReplayLeft": "Plus de relecture",
+    "dontKnow": "Je ne sais pas",
+    "validate": "Valider",
+    "optionsLabel": "Sens proposés",
+    "noVoice": "Pas de voix sur cet appareil : le mot est écrit.",
+    "quit": "Quitter",
+    "quitHelp": "Tes réponses sont enregistrées. Le défi n’est pas noté.",
+    "resultPassed": "Prêt pour le contrôle",
+    "resultNotYet": "Pas encore prêt, mais tout près",
+    "score": "{score}",
+    "outOf": "/ 20",
+    "scoreLabel": "Note : {score} sur 20",
+    "passMark": "Réussite à partir de {pass} / 20",
+    "sectionScore": "{correct} / {total}",
+    "banner": "Parcours terminé : {name}",
+    "best": "Meilleure note : {score}/20",
+    "missedTitle": {
+      "one": "Le mot à revoir",
+      "other": "Les {count} mots à revoir"
+    },
+    "noMistake": "Aucune erreur.",
+    "listen": "Écouter {term}",
+    "review": {
+      "one": "Revoir ce mot (≈ 2 min)",
+      "other": "Revoir ces {count} mots (≈ 2 min)"
+    },
+    "backToPath": "Retour au parcours",
+    "retry": "Recommencer le défi"
   }
 }
