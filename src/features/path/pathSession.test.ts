@@ -108,7 +108,10 @@ describe('a placement test', () => {
       exercise: 'listenMeaning',
       outcome: 'correct',
     }));
-    const from = store(undefined, results);
+    const from = store(
+      { labelId: 'lesson', language: 'zh', steps: { discover: 'validated', listen: 'validated' } },
+      results,
+    );
     from.applyPlacementTest.mockResolvedValue([
       {
         type: 'PathStepValidated',
@@ -147,6 +150,29 @@ describe('a placement test', () => {
       total: 2,
       passed: false,
       validated: false,
+    });
+  });
+
+  it('tells the step validated when the answers of the test already validated it', async () => {
+    const results: SessionResultRecord[] = ['a', 'b', 'c'].map((cardId) => ({
+      cardId,
+      exercise: 'listenMeaning',
+      outcome: 'correct',
+    }));
+    const from = store(
+      { labelId: 'lesson', language: 'zh', steps: { discover: 'validated', listen: 'validated' } },
+      results,
+    );
+    const pending = {
+      labelId: 'lesson',
+      language: 'zh' as const,
+      test: { step: 'listen' as const, cardIds: ['a', 'b', 'c'] },
+      startedAt: '2026-11-07T09:00:00.000Z',
+    };
+
+    expect(await finishPlacement(pending, deps(from))).toMatchObject({
+      passed: true,
+      validated: true,
     });
   });
 });

@@ -58,7 +58,7 @@ export interface PendingPlacement {
 }
 
 export interface PlacementOutcome extends PlacementScore {
-  /** True when the test validated its step. */
+  /** True when the step is validated after the test, by the test or by its answers. */
   validated: boolean;
 }
 
@@ -115,6 +115,8 @@ export async function finishPlacement(
   ]);
   const score = scorePlacementTest(pending.test, results, config);
   const today = studyDay(now, data.progress?.lastActiveDate, srs);
-  const events = await store.applyPlacementTest(pending.labelId, pending.language, score, today);
-  return { ...score, validated: events.some(({ step }) => step === score.step) };
+  await store.applyPlacementTest(pending.labelId, pending.language, score, today);
+  // The answers of the test feed the path too: they may have validated the step already.
+  const path = await store.pathProgress(pending.labelId, pending.language);
+  return { ...score, validated: path?.steps?.[score.step] === 'validated' };
 }
