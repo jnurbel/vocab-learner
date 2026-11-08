@@ -240,6 +240,86 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await expect(game.getByRole('status')).toBeVisible();
         await shoot(page, 'listen-meaning-wrong', device, scheme, game);
       });
+
+      test('mini-games: the list, BridgeMatch, ToneEcho, SentenceListen and SentenceShuffle', async ({
+        page,
+      }) => {
+        await installSilentVoice(page);
+        await page.goto('./');
+        await openWords(page);
+        await addWords(page);
+        const form = page.getByRole('form', { name: 'Ajouter un mot' });
+        await form.getByLabel('Mot (hanzi ou anglais)').fill('时间');
+        await expect(form.getByLabel('Pinyin')).toHaveValue('shí jiān');
+        await form.getByLabel('Sens').fill('temps, durée');
+        await form.getByLabel('Exemple (facultatif)').fill('我今天没有时间吃饭。');
+        await form.getByRole('button', { name: 'Ajouter le mot' }).click();
+        await expect(form.getByRole('status')).toHaveText('« 时间 » ajouté.');
+
+        const openGame = async (name: string) => {
+          await menu(page).getByRole('button', { name: 'Jardin' }).click();
+          await page.getByRole('button', { name: 'Mini-jeu' }).click();
+          const list = page.getByRole('region', { name: 'Mini-jeux' });
+          if (name === '') {
+            return list;
+          }
+          await list.getByRole('button', { name: `Jouer ${name}` }).click();
+          return list;
+        };
+
+        const list = await openGame('');
+        await expect(list.getByRole('listitem')).toHaveCount(5);
+        await shoot(page, 'mini-games', device, scheme, list);
+
+        await openGame('Relier les deux rives');
+        const bridge = page.getByRole('region', { name: 'Mini-jeu : relier les deux rives' });
+        await bridge.getByRole('button', { name: 'Commencer' }).click();
+        const words = bridge.getByRole('group', { name: 'Rive des mots' });
+        await words.getByRole('button', { name: '现在' }).click();
+        await bridge
+          .getByRole('group', { name: 'Rive des sens' })
+          .getByRole('button', { name: 'maintenant' })
+          .click();
+        await expect(bridge.getByRole('status')).toContainText('Paire juste');
+        await shoot(page, 'bridge-match', device, scheme, bridge);
+
+        await openGame('Échos des tons');
+        const tones = page.getByRole('region', { name: 'Mini-jeu : échos des tons' });
+        await tones.getByRole('button', { name: 'Commencer' }).click();
+        const field = tones.getByRole('textbox', { name: 'Tons du mot' });
+        const keys = tones.getByRole('group', { name: 'Tons' });
+        await expect(field.or(keys)).toBeVisible();
+        if (await field.isVisible()) {
+          await field.fill('11');
+          await field.press('Enter');
+        } else {
+          await page.keyboard.press('0');
+        }
+        await expect(tones.getByRole('status')).toBeVisible();
+        await shoot(page, 'tone-echo-wrong', device, scheme, tones);
+
+        await openGame('Le mot dans la phrase');
+        const sentence = page.getByRole('region', { name: 'Mini-jeu : le mot dans la phrase' });
+        await sentence.getByRole('button', { name: 'Commencer' }).click();
+        await sentence
+          .getByRole('group', { name: 'Quel mot de ta liste as-tu entendu ?' })
+          .getByRole('button', { name: '时间' })
+          .click();
+        await expect(sentence.getByRole('status')).toContainText('Juste.');
+        await shoot(page, 'sentence-listen', device, scheme, sentence);
+
+        await openGame("Remettre la phrase dans l'ordre");
+        const shuffle = page.getByRole('region', {
+          name: "Mini-jeu : remettre la phrase dans l'ordre",
+        });
+        await shuffle.getByRole('button', { name: 'Commencer' }).click();
+        const reserve = shuffle.getByRole('group', { name: 'Morceaux à placer' });
+        await reserve.getByRole('button').first().click();
+        await expect(
+          shuffle.getByRole('group', { name: 'Ta phrase' }).getByRole('button'),
+        ).toHaveCount(1);
+        await shoot(page, 'sentence-shuffle', device, scheme, shuffle);
+      });
     });
   }
 }
