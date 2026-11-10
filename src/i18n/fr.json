@@ -1067,5 +1067,23 @@
     },
     "backToPath": "Retour au parcours",
     "retry": "Recommencer le défi"
+  },
+  "pwa": {
+    "offline": "Hors ligne",
+    "offlineTitle": "Pas de réseau : tes mots, les flashcards, les jeux, la dictée et la sauvegarde marchent quand même.",
+    "offlineVoice": {
+      "zh": "Hors ligne : sur ce navigateur, la voix chinoise passe par Internet. Les mots chinois s’affichent donc par écrit. Une voix installée sur l’appareil marche sans réseau (Réglages › Voix).",
+      "en": "Hors ligne : sur ce navigateur, la voix anglaise passe par Internet. Les mots anglais s’affichent donc par écrit. Une voix installée sur l’appareil marche sans réseau (Réglages › Voix).",
+      "both": "Hors ligne : sur ce navigateur, les voix chinoise et anglaise passent par Internet. Les mots s’affichent donc par écrit. Une voix installée sur l’appareil marche sans réseau (Réglages › Voix)."
+    },
+    "updateTitle": "Nouvelle version disponible",
+    "updateText": "Tu utilises la version {version}. La mise à jour recharge l’appli : tes mots et ta progression restent enregistrés.",
+    "update": "Mettre à jour",
+    "updating": "Mise à jour…",
+    "updateLater": "Plus tard",
+    "install": "Installer l’appli",
+    "installHelp": "Elle s’ouvre alors comme une appli, même sans réseau.",
+    "iosTitle": "Installer sur iPhone ou iPad",
+    "iosHelp": "Dans Safari, touche Partager, puis « Sur l’écran d’accueil »."
   }
 }

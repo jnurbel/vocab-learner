@@ -12,6 +12,6 @@ if (!target) {
 }
 
 // The service worker makes the app installable and usable offline; a no-op on the dev server.
-appUpdatesFrom(registerSW);
+const updates = appUpdatesFrom(registerSW);
 
-export default mount(App, { target });
+export default mount(App, { target, props: { updates } });

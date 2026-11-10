@@ -102,6 +102,21 @@
     startFinalChallenge,
     type FinalChallengeStore,
   } from '../features/path/finalChallengeSession';
+  import { installOffer } from '../domain/pwa/installOffer';
+  import { updateBannerVisible } from '../domain/pwa/updateBanner';
+  import InstallOfferView from '../features/pwa/InstallOffer.svelte';
+  import OfflineBadge from '../features/pwa/OfflineBadge.svelte';
+  import UpdateBanner from '../features/pwa/UpdateBanner.svelte';
+  import { noAppUpdates, type AppUpdates } from '../services/pwa/appUpdates';
+  import { watchConnectivity, type ConnectivityHost } from '../services/pwa/connectivity';
+  import {
+    watchInstall,
+    type InstallHost,
+    type InstallState,
+    type InstallWatch,
+  } from '../services/pwa/installPrompt';
+  import { askPersistenceAgain } from '../services/storagePersistence';
+  import { offlineAwareSpeaker, onlineOnlyLanguages } from '../services/tts/offlineSpeaker';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -117,6 +132,14 @@
     /** Picks the automatic backup folder; absent where the browser has no folder access. */
     directoryPicker?: (() => Promise<DirectoryHandleLike>) | undefined;
     now?: () => Date;
+    /** New versions found by the service worker; none without one (dev server, tests). */
+    updates?: AppUpdates;
+    /** Tells whether the device has a network; the browser window by default. */
+    connectivity?: ConnectivityHost;
+    /** Offers to install the app; the browser window by default. */
+    installHost?: InstallHost;
+    /** Asks again to keep the data, once the app is installed. */
+    requestPersistenceAgain?: () => Promise<void>;
   }
 
   /** The browser's voices, shared by the readings and the voice list of the settings. */
@@ -127,13 +150,19 @@
     requestPersistence = persistenceRequester(
       'storage' in navigator ? navigator.storage : undefined,
     ),
-    speaker = browserSpeech,
+    // Offline, an online voice (Edge "Natural", Chrome "Google") is silent: words are written.
+    speaker = offlineAwareSpeaker(browserSpeech, () => navigator.onLine),
     voices = browserSpeech,
     download = (file: BackupFile) => {
       downloadFile(file, browserDownloadEnvironment());
     },
     directoryPicker = directoryPickerOf(window as Parameters<typeof directoryPickerOf>[0]),
     now = () => new Date(),
+    updates = noAppUpdates,
+    connectivity = window,
+    installHost = window,
+    requestPersistenceAgain = () =>
+      askPersistenceAgain('storage' in navigator ? navigator.storage : undefined),
   }: Props = $props();
 
   /** Profiles come later: the pseudonym written into the backup file names. */
@@ -697,6 +726,62 @@
     editing = card;
   }
 
+  /** False when the device has no network: everything local keeps working. */
+  let online = $state(true);
+  /** Languages whose voice needs the network, while offline: their words are written instead. */
+  let offlineVoices = $state.raw<Language[]>([]);
+  let updateReady = $state(false);
+  let updateDismissed = $state(false);
+  let install = $state.raw<InstallState>({ installed: false, promptAvailable: false, ios: false });
+  let installWatch: InstallWatch | undefined;
+  /** Pages where a study session may be under way: an update banner would interrupt it. */
+  const STUDY_PAGES: readonly Page[] = ['flashcards', 'dictation', 'miniGame', 'finalChallenge'];
+  const showUpdate = $derived(
+    updateBannerVisible({
+      updateReady,
+      dismissed: updateDismissed,
+      studying: STUDY_PAGES.includes(page),
+    }),
+  );
+  const offer = $derived(installOffer(install));
+
+  onMount(() => {
+    updates.onUpdateReady(() => {
+      updateReady = true;
+    });
+    installWatch = watchInstall(
+      installHost,
+      (state) => {
+        install = state;
+      },
+      () => void requestPersistenceAgain(),
+    );
+    const stopConnectivity = watchConnectivity(connectivity, (now) => {
+      online = now;
+      void refreshOfflineVoices();
+    });
+    return () => {
+      stopConnectivity();
+      installWatch?.stop();
+    };
+  });
+
+  /** Bumped at each change of network, so that a late answer for an old state is dropped. */
+  let connectivityChange = 0;
+
+  async function refreshOfflineVoices() {
+    connectivityChange += 1;
+    const change = connectivityChange;
+    if (online) {
+      offlineVoices = [];
+      return;
+    }
+    const found = onlineOnlyLanguages(await voices.voiceReport());
+    if (change === connectivityChange) {
+      offlineVoices = found;
+    }
+  }
+
   async function deleteCard(card: Card) {
     const store = storage();
     await store.deleteCard(card.id);
@@ -716,6 +801,7 @@
       <small class="version" title={format(fr.app.versionTitle, { version: appVersion })}
         >v{appVersion}</small
       >
+      <OfflineBadge {online} />
     </header>
 
     <nav aria-label={fr.nav.label} class="menu">
@@ -735,10 +821,29 @@
         >
       {/each}
     </nav>
+
+    <footer class="sidebar-footer">
+      <InstallOfferView {offer} onInstall={() => void installWatch?.install()} />
+    </footer>
   </div>
 
   <main>
     <p class="tagline">{fr.app.tagline}</p>
+
+    {#if showUpdate}
+      <UpdateBanner
+        version={appVersion}
+        onUpdate={() => updates.applyUpdate()}
+        onLater={() => {
+          updateDismissed = true;
+        }}
+      />
+    {/if}
+    {#if !online && offlineVoices.length > 0}
+      <p class="banner" aria-live="polite">
+        {fr.pwa.offlineVoice[offlineVoices.length > 1 ? 'both' : (offlineVoices[0] ?? 'zh')]}
+      </p>
+    {/if}
 
     {#if remindBackup && !reminderHidden && page !== 'backup'}
       <aside class="banner" aria-label={fr.backup.title}>
@@ -1160,6 +1265,17 @@
     display: flex;
   }
 
+  .sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4) 0;
+  }
+
+  .sidebar-footer:empty {
+    display: none;
+  }
+
   .path-return button {
     min-height: var(--target);
   }
@@ -1200,6 +1316,11 @@
     }
 
     .brand {
+      padding: 0;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
       padding: 0;
     }
 
