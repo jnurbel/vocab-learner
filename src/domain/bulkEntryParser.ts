@@ -10,6 +10,8 @@ export interface BulkEntry {
   term: string;
   pinyin?: string;
   translation: string;
+  /** A sentence using the word, e.g. the one of a pasted text where it was found. */
+  example?: string;
 }
 
 export type BulkLineReason =

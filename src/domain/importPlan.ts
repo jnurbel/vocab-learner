@@ -77,12 +77,13 @@ export interface ImportChanges {
 /** Turns a confirmed plan into the cards to save; entries were validated by the parser. */
 export function applyImportPlan(plan: ImportPlan, context: ApplyContext): ImportChanges {
   const cardsToCreate = plan.newWords.map(
-    ({ language, term, pinyin, translation, labelIds }): Card => ({
+    ({ language, term, pinyin, translation, example, labelIds }): Card => ({
       id: context.nextId(),
       language,
       term,
       ...(pinyin === undefined ? {} : { pinyin }),
       translation,
+      ...(example === undefined ? {} : { example }),
       labelIds,
       source: context.source,
       createdAt: context.now,
