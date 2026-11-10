@@ -1081,6 +1081,34 @@
     "retry": "Recommencer le défi"
   },
   "packImport": {
+    "title": "Importer une liste partagée",
+    "intro": "Un camarade ou ton professeur t’a envoyé une liste (fichier .vocab.json) ? Ouvre-la ici : ses mots s’ajoutent aux tiens, sans aucun doublon, et ta progression ne change pas.",
+    "fileInput": "Choisir une liste de mots (.vocab.json)",
+    "errorsTitle": "Cette liste ne peut pas être importée",
+    "previewCaption": "Mots de la liste",
+    "columnTerm": "Mot",
+    "columnTranslation": "Traduction",
+    "columnLabels": "Labels",
+    "columnStatus": "État",
+    "status": {
+      "new": "Nouveau",
+      "relabelled": "Déjà connu : reçoit les labels",
+      "unchanged": "Déjà connu"
+    },
+    "summaryNew": "{count} mot(s) nouveau(x).",
+    "summaryRelabelled": "{count} mot(s) déjà connu(s) recevront les labels de la liste, sans être dupliqués.",
+    "summaryUnchanged": "{count} mot(s) déjà connu(s) avec ces labels : rien ne change.",
+    "createdLabels": "Labels créés : {names}",
+    "reusedLabels": "Labels déjà présents, réutilisés : {names}",
+    "importWords": {
+      "one": "Importer {count} mot",
+      "other": "Importer {count} mots"
+    },
+    "addLabelsOnly": "Ajouter les labels",
+    "cancel": "Annuler",
+    "nothingToDo": "Tous les mots de cette liste sont déjà là, avec leurs labels.",
+    "saved": "{created} mot(s) ajouté(s), {updated} mot(s) déjà connu(s) étiqueté(s).",
+    "saveFailed": "L’import a échoué : rien n’a changé. Réessaie.",
     "issues": {
       "fileTooLarge": "Ce fichier est trop gros pour être une liste de mots (2 Mo au maximum).",
       "unreadableFile": "Ce fichier n’a pas pu être lu. Réessaie ou choisis-en un autre.",
