@@ -219,3 +219,31 @@ describe('App, new version', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe('App, privacy', () => {
+  it('opens the privacy page from the foot of the menu', async () => {
+    const user = userEvent.setup();
+    render(App, base('app-pwa-privacy-menu'));
+
+    const link = within(screen.getByRole('contentinfo')).getByRole('button', {
+      name: fr.privacy.link,
+    });
+    await user.click(link);
+
+    expect(screen.getByRole('region', { name: fr.privacy.title })).toBeVisible();
+    expect(link).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('opens the privacy page from the settings', async () => {
+    const user = userEvent.setup();
+    render(App, base('app-pwa-privacy-settings'));
+    await user.click(screen.getByRole('button', { name: fr.nav.settings }));
+
+    const settings = screen.getByRole('region', { name: fr.privacy.settingsTitle });
+    await user.click(within(settings).getByRole('button', { name: fr.privacy.link }));
+
+    expect(screen.getByRole('region', { name: fr.privacy.title })).toHaveTextContent(
+      `Page valable pour la version ${packageJson.version}.`,
+    );
+  });
+});

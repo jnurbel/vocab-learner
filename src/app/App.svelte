@@ -107,6 +107,7 @@
   import InstallOfferView from '../features/pwa/InstallOffer.svelte';
   import OfflineBadge from '../features/pwa/OfflineBadge.svelte';
   import UpdateBanner from '../features/pwa/UpdateBanner.svelte';
+  import PrivacyPage from '../features/privacy/PrivacyPage.svelte';
   import { noAppUpdates, type AppUpdates } from '../services/pwa/appUpdates';
   import { watchConnectivity, type ConnectivityHost } from '../services/pwa/connectivity';
   import {
@@ -170,7 +171,7 @@
 
   type MenuPage = 'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
   /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
-  type Page = MenuPage | 'miniGame' | 'path' | 'finalChallenge';
+  type Page = MenuPage | 'miniGame' | 'path' | 'finalChallenge' | 'privacy';
   const PAGES: readonly MenuPage[] = [
     'home',
     'words',
@@ -766,6 +767,17 @@
     };
   });
 
+  /** Opened from the settings and from the foot of the menu, as any other page. */
+  function openPrivacy() {
+    flashcardLaunch = undefined;
+    listenLaunch = undefined;
+    dictationLaunch = undefined;
+    stepGames = undefined;
+    openGame = undefined;
+    fromPath = false;
+    page = 'privacy';
+  }
+
   /** Bumped at each change of network, so that a late answer for an old state is dropped. */
   let connectivityChange = 0;
 
@@ -824,6 +836,12 @@
 
     <footer class="sidebar-footer">
       <InstallOfferView {offer} onInstall={() => void installWatch?.install()} />
+      <button
+        type="button"
+        class="footer-link"
+        aria-current={page === 'privacy' ? 'page' : undefined}
+        onclick={openPrivacy}>{fr.privacy.link}</button
+      >
     </footer>
   </div>
 
@@ -927,6 +945,13 @@
         {#if voiceSpeed !== undefined}
           <VoicePanel {speaker} {voices} speed={voiceSpeed} onSpeedChange={changeVoiceSpeed} />
         {/if}
+        <section aria-labelledby="privacy-link-title">
+          <h2 id="privacy-link-title">{fr.privacy.settingsTitle}</h2>
+          <p class="help">{fr.privacy.settingsText}</p>
+          <button type="button" onclick={openPrivacy}>{fr.privacy.link}</button>
+        </section>
+      {:else if page === 'privacy'}
+        <PrivacyPage version={appVersion} site={location.host} />
       {:else if page === 'garden'}
         <Garden
           {cards}
@@ -1272,8 +1297,21 @@
     padding: var(--space-2) var(--space-4) 0;
   }
 
-  .sidebar-footer:empty {
-    display: none;
+  .footer-link {
+    align-self: flex-start;
+    min-height: var(--target);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+    text-decoration: underline;
+  }
+
+  .footer-link:hover,
+  .footer-link[aria-current='page'] {
+    color: var(--jade-strong);
   }
 
   .path-return button {

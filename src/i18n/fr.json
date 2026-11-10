@@ -1085,5 +1085,75 @@
     "installHelp": "Elle s’ouvre alors comme une appli, même sans réseau.",
     "iosTitle": "Installer sur iPhone ou iPad",
     "iosHelp": "Dans Safari, touche Partager, puis « Sur l’écran d’accueil »."
+  },
+  "privacy": {
+    "link": "Confidentialité",
+    "settingsTitle": "Vie privée",
+    "settingsText": "Ce que l’appli garde, où, et ce qu’elle n’envoie pas.",
+    "title": "Confidentialité",
+    "intro": "vocab-learner est fait pour apprendre, pas pour te surveiller. Voici simplement ce que l’appli garde, et ce qu’elle n’envoie pas. Cette page s’adresse à toi et à tes parents.",
+    "sections": {
+      "stored": {
+        "title": "Ce qui est enregistré, et où",
+        "paragraphs": [
+          "Tes mots, tes labels, ta progression (révisions, points, jardin, parcours) et tes réglages.",
+          "Tout reste sur cet appareil, dans le navigateur. Il n’y a pas de serveur vocab-learner : personne d’autre ne peut lire tes données.",
+          "Sur un autre appareil, l’appli est vide : pour y retrouver tes mots, passe par une sauvegarde."
+        ]
+      },
+      "notSent": {
+        "title": "Ce qui n’est jamais envoyé",
+        "paragraphs": [
+          "Pas de compte, pas de mot de passe, pas d’adresse e-mail.",
+          "Pas de pistage, pas de statistiques de visite, pas de cookies, pas de publicité.",
+          "L’appli est hébergée par GitHub (Microsoft). Comme pour tout site, GitHub voit l’adresse internet de l’appareil qui télécharge l’appli. Ensuite, elle marche sans réseau, et rien d’autre n’est envoyé."
+        ]
+      },
+      "voice": {
+        "title": "La voix",
+        "paragraphs": [
+          "Pour lire les mots à voix haute, l’appli utilise les voix du navigateur.",
+          "Certaines voix sont sur l’appareil. D’autres passent par Internet : avec les voix « Google » de Chrome ou les voix « Natural » d’Edge, le mot à lire est envoyé à Google ou à Microsoft. Seul ce mot part, rien d’autre.",
+          "Dans Réglages › Voix, chaque voix est marquée « sur l’appareil » ou « en ligne »."
+        ]
+      },
+      "backup": {
+        "title": "La sauvegarde",
+        "paragraphs": [
+          "« Sauvegarder sur cet appareil » crée un fichier sur l’appareil, souvent dans Téléchargements. Rien n’est envoyé.",
+          "Si tu choisis un dossier synchronisé (OneDrive, Google Drive…), c’est ce service qui garde la copie.",
+          "Le fichier contient tes mots et ta progression : ne le donne qu’à des personnes de confiance."
+        ]
+      },
+      "future": {
+        "title": "Les fonctions en ligne à venir",
+        "paragraphs": [
+          "La lecture d’une photo sur l’appareil (version 0.8.0) se fait sans envoyer la photo.",
+          "La version 0.9.0 proposera de faire lire une photo par Claude, l’intelligence artificielle d’Anthropic. Ce sera une option, désactivée au départ, qui ne s’active qu’avec un code donné par un parent ou un professeur.",
+          "Avant 15 ans, elle demandera l’accord d’un parent. La photo ne sera pas conservée. Cette page dira alors précisément ce qui est envoyé, et à qui."
+        ]
+      },
+      "erase": {
+        "title": "Comment tout effacer",
+        "paragraphs": [
+          "Attention, c’est définitif : fais d’abord une sauvegarde si tu veux garder tes mots.",
+          "Chrome sur Android : ⋮ › Paramètres › Paramètres des sites › Toutes les données des sites › {site} › Effacer.",
+          "Chrome ou Edge sur ordinateur : clique sur l’icône à gauche de l’adresse › Paramètres du site › Effacer les données.",
+          "Safari sur iPhone ou iPad : Réglages › Safari › Avancé › Données des sites web › {site} › Supprimer. Si l’appli est sur l’écran d’accueil, supprime aussi son icône.",
+          "Si l’appli est installée, désinstalle-la aussi. Les fichiers de sauvegarde, eux, se suppriment à la main.",
+          "Ces réglages effacent les données de tout le site {site}, donc aussi celles d’autres applis publiées à la même adresse."
+        ]
+      },
+      "license": {
+        "title": "Licence et contact",
+        "paragraphs": [
+          "vocab-learner est gratuit pour tout usage non commercial (élèves, familles, professeurs, établissements, associations), sous licence PolyForm Noncommercial 1.0.0. La revente ou un usage commercial demande l’accord de l’autrice.",
+          "Les bibliothèques utilisées gardent leur propre licence (fichier THIRD_PARTY_LICENSES du projet)."
+        ]
+      }
+    },
+    "contact": "Une question, un souci ? Écris à l’autrice en ouvrant un ticket (« issue ») sur le projet :",
+    "contactLink": "github.com/jnurbel/vocab-learner",
+    "version": "Page valable pour la version {version}."
   }
 }
