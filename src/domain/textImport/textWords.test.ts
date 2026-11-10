@@ -45,6 +45,19 @@ describe('extractTextWords', () => {
     ]);
   });
 
+  it('leaves out obvious proper nouns: capitalized inside a sentence and never in lower case', () => {
+    const terms = termsOf('Tom likes cats. Yesterday Tom met Anna in Paris. Cats like milk.');
+
+    expect(terms).not.toContain('tom');
+    expect(terms).not.toContain('anna');
+    expect(terms).not.toContain('paris');
+    expect(terms).toEqual(['likes', 'cats', 'yesterday', 'met', 'in', 'like', 'milk']);
+  });
+
+  it('keeps a capitalized word also written in lower case inside a sentence', () => {
+    expect(termsOf('He said: Rain again. I like the rain.')).toContain('rain');
+  });
+
   it('counts how many times each word appears', () => {
     const words = wordsOf('我们吃月饼。月饼很甜。Cake, cake and CAKE.');
 

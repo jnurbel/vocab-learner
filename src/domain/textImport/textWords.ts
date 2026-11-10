@@ -21,17 +21,33 @@ const CHINESE_WORD = /^\p{Script=Han}+$/u;
 /** Latin letters, with inner apostrophes or hyphens (don't, well-known). */
 const ENGLISH_WORD = /^\p{Script=Latin}+(?:['-]\p{Script=Latin}+)*$/u;
 const TYPOGRAPHIC_APOSTROPHE = /[’ʼ]/g;
+const STARTS_UPPER_CASE = /^\p{Lu}/u;
 
-type FoundWord = Pick<TextWord, 'language' | 'term'>;
+interface FoundWord {
+  language: Language;
+  term: string;
+  capitalized: boolean;
+}
+
+/** A word being collected, with what tells a proper noun apart. */
+interface Collected {
+  word: TextWord;
+  seenInLowerCase: boolean;
+  capitalizedInsideSentence: boolean;
+}
 
 /** The word as it would be stored, or undefined for punctuation, numbers and other scripts. */
 function toWord(segment: string): FoundWord | undefined {
   if (CHINESE_WORD.test(segment)) {
-    return { language: 'zh', term: segment };
+    return { language: 'zh', term: segment, capitalized: false };
   }
   const english = segment.replace(TYPOGRAPHIC_APOSTROPHE, "'");
   if (ENGLISH_WORD.test(english)) {
-    return { language: 'en', term: english.toLowerCase() };
+    return {
+      language: 'en',
+      term: english.toLowerCase(),
+      capitalized: STARTS_UPPER_CASE.test(english),
+    };
   }
   return undefined;
 }
@@ -46,25 +62,39 @@ function asExample(sentence: string): string | undefined {
   return codePointLength(sentence) <= CARD_LIMITS.example ? sentence : undefined;
 }
 
+/** Capitalized inside a sentence and never written in lower case: Tom, Paris, NASA. */
+function isObviousProperNoun({ word, seenInLowerCase, capitalizedInsideSentence }: Collected) {
+  return word.language === 'en' && capitalizedInsideSentence && !seenInLowerCase;
+}
+
 /** Extracts the words of a text, each once, in order of first appearance. */
 export function extractTextWords(text: string): Result<TextWord[], TextInputError> {
-  const words = new Map<string, TextWord>();
+  const collected = new Map<string, Collected>();
   for (const { segment } of sentenceSegmenter.segment(text)) {
     const sentence = segment.trim();
-    for (const word of wordsOfSentence(sentence)) {
-      const key = termKey(word.language, word.term);
-      const known = words.get(key);
-      if (known === undefined) {
+    wordsOfSentence(sentence).forEach(({ language, term, capitalized }, position) => {
+      const key = termKey(language, term);
+      let entry = collected.get(key);
+      if (entry === undefined) {
         const example = asExample(sentence);
-        words.set(key, {
-          ...word,
-          occurrences: 1,
-          ...(example === undefined ? {} : { sentence: example }),
-        });
-      } else {
-        known.occurrences += 1;
+        entry = {
+          word: {
+            language,
+            term,
+            occurrences: 0,
+            ...(example === undefined ? {} : { sentence: example }),
+          },
+          seenInLowerCase: false,
+          capitalizedInsideSentence: false,
+        };
+        collected.set(key, entry);
       }
-    }
+      entry.word.occurrences += 1;
+      entry.seenInLowerCase ||= !capitalized;
+      entry.capitalizedInsideSentence ||= capitalized && position > 0;
+    });
   }
-  return success([...words.values()]);
+  return success(
+    [...collected.values()].filter((entry) => !isObviousProperNoun(entry)).map(({ word }) => word),
+  );
 }
