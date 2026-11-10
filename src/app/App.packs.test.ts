@@ -61,4 +61,38 @@ describe('App vocabulary packs', () => {
     });
     expect(file?.text).not.toMatch(/stability|reps|due|xp|createdAt|source|pomme/);
   });
+
+  it('imports a pack received from a classmate: its words arrive with their label, unlearnt', async () => {
+    const user = userEvent.setup();
+    render(App, { databaseName: 'app-test-import-pack' });
+    await user.click(screen.getByRole('button', { name: fr.nav.words }));
+    await addWords(user, 'dog | chien\ncow | vache', 'Ferme', 2);
+    const pack = {
+      format: 'vocab-learner-pack',
+      version: 1,
+      labels: [{ id: 'p1', name: 'Animaux' }],
+      cards: [
+        { language: 'zh', term: '猫', pinyin: 'māo', translation: 'chat', labelIds: ['p1'] },
+        { language: 'en', term: 'dog', translation: 'chien', labelIds: ['p1'] },
+      ],
+    };
+
+    await user.upload(
+      screen.getByLabelText(fr.packImport.fileInput),
+      new File([JSON.stringify(pack)], 'Animaux.vocab.json', { type: 'application/json' }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Importer 1 mot' }));
+
+    const importRegion = screen.getByRole('region', { name: fr.packImport.title });
+    expect(await within(importRegion).findByRole('status')).toHaveTextContent(
+      '1 mot(s) ajouté(s), 1 mot(s) déjà connu(s) étiqueté(s).',
+    );
+    const list = screen.getByRole('table', { name: 'Liste des mots' });
+    expect(within(list).getAllByRole('row')).toHaveLength(4);
+    expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent('Animaux');
+    expect(within(list).getByRole('row', { name: /猫/ })).toHaveTextContent(fr.stages.seed);
+    expect(within(list).getByRole('row', { name: /dog/ })).toHaveTextContent(
+      /Ferme.*Animaux|Animaux.*Ferme/,
+    );
+  });
 });

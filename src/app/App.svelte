@@ -103,6 +103,8 @@
     type FinalChallengeStore,
   } from '../features/path/finalChallengeSession';
   import { createVocabPack, packFileName, serializeVocabPack } from '../domain/packExport';
+  import type { PackImportOutcome } from '../domain/packImport';
+  import PackImport from '../features/packs/PackImport.svelte';
   import {
     browserShareEnvironment,
     shareOrDownload,
@@ -710,6 +712,15 @@
     return share({ fileName, text: serializeVocabPack(pack) });
   }
 
+  /** The words of a pack arrive without progress: the learner starts them from scratch. */
+  async function savePack({ newLabels, changes }: PackImportOutcome) {
+    const store = storage();
+    await store.savePackImport(changes, newLabels);
+    void requestPersistence();
+    await recordChange();
+    await reload(store);
+  }
+
   function startEditing(card: Card) {
     editing = card;
   }
@@ -997,6 +1008,14 @@
           {newId}
           {clock}
           onSave={save}
+        />
+
+        <PackImport
+          existingCards={cards}
+          existingLabels={labels}
+          {newId}
+          {clock}
+          onSave={savePack}
         />
 
         {#if editing !== undefined}
