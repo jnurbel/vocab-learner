@@ -145,3 +145,67 @@ describe('extractTextWords on untrusted input', () => {
     expect(words[0]?.sentence).toBe('Hello world.');
   });
 });
+
+describe('extractTextWords with the corrections of the learner', () => {
+  it('tells which word follows the first appearance of each word, inside its sentence', () => {
+    const words = wordsOf('今天是中秋节。I like ice cream.');
+
+    expect(words.find(({ term }) => term === '中秋')?.followedBy).toBe('节');
+    expect(words.find(({ term }) => term === '节')?.followedBy).toBeUndefined();
+    expect(words.find(({ term }) => term === 'ice')?.followedBy).toBe('cream');
+  });
+
+  it('joins a word with the one that follows it, wherever they meet in the text', () => {
+    const words = extractTextWords('今天是中秋节。中秋节快乐。中秋到了。', [
+      { kind: 'join', first: '中秋', second: '节' },
+    ]);
+
+    expect(words.ok && words.value.find(({ term }) => term === '中秋节')).toMatchObject({
+      occurrences: 2,
+      sentence: '今天是中秋节。',
+    });
+    expect(words.ok && words.value.find(({ term }) => term === '中秋')?.occurrences).toBe(1);
+  });
+
+  it('joins two English words with a space', () => {
+    const words = extractTextWords('I like ice cream, ice cream is good.', [
+      { kind: 'join', first: 'ice', second: 'cream' },
+    ]);
+
+    expect(words.ok && words.value.map(({ term }) => term)).toContain('ice cream');
+    expect(words.ok && words.value.map(({ term }) => term)).not.toContain('cream');
+  });
+
+  it('does not join words separated by punctuation', () => {
+    const words = extractTextWords('Ice, cream.', [
+      { kind: 'join', first: 'ice', second: 'cream' },
+    ]);
+
+    expect(words.ok && words.value.map(({ term }) => term)).toEqual(['ice', 'cream']);
+  });
+
+  it('cuts a Chinese word in two at the chosen character', () => {
+    const words = extractTextWords('今天是中秋节。', [{ kind: 'split', term: '今天是', at: 2 }]);
+
+    expect(words.ok && words.value.map(({ term }) => term)).toEqual(['今天', '是', '中秋', '节']);
+  });
+
+  it('applies the corrections in the order they were made', () => {
+    const words = extractTextWords('今天是中秋节。', [
+      { kind: 'split', term: '今天是', at: 2 },
+      { kind: 'join', first: '是', second: '中秋' },
+      { kind: 'join', first: '是中秋', second: '节' },
+    ]);
+
+    expect(words.ok && words.value.map(({ term }) => term)).toEqual(['今天', '是中秋节']);
+  });
+
+  it('ignores a cut outside the word', () => {
+    const words = extractTextWords('今天是中秋节。', [
+      { kind: 'split', term: '中秋', at: 0 },
+      { kind: 'split', term: '中秋', at: 2 },
+    ]);
+
+    expect(words.ok && words.value.map(({ term }) => term)).toEqual(['今天是', '中秋', '节']);
+  });
+});

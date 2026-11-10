@@ -3,6 +3,12 @@ import { failure, success, type Result } from '../result';
 import { removeInvisibleControls } from '../safeText';
 import { codePointLength } from '../text';
 import { baseFormCandidates } from './englishForms';
+import {
+  adjustRun,
+  type FoundWord,
+  type SegmentAdjustment,
+  type WordRun,
+} from './segmentAdjustments';
 
 /** A word found in a pasted text, proposed for the learner's list. */
 export interface TextWord {
@@ -12,6 +18,8 @@ export interface TextWord {
   occurrences: number;
   /** Other forms of the word met in the text and counted with it (cats, played). */
   forms: string[];
+  /** The word right after its first appearance, in the same sentence: to join them if need be. */
+  followedBy?: string;
   /** The sentence where the word first appears, the example of its card; absent when too long. */
   sentence?: string;
 }
@@ -31,12 +39,6 @@ const CHINESE_WORD = /^\p{Script=Han}+$/u;
 const ENGLISH_WORD = /^\p{Script=Latin}+(?:['-]\p{Script=Latin}+)*$/u;
 const TYPOGRAPHIC_APOSTROPHE = /[’ʼ]/g;
 const STARTS_UPPER_CASE = /^\p{Lu}/u;
-
-interface FoundWord {
-  language: Language;
-  term: string;
-  capitalized: boolean;
-}
 
 /** A word being collected, with what tells a proper noun apart. */
 interface Collected {
@@ -61,10 +63,18 @@ function toWord(segment: string): FoundWord | undefined {
   return undefined;
 }
 
-function wordsOfSentence(sentence: string): FoundWord[] {
-  return [...wordSegmenter.segment(sentence)]
-    .map(({ segment, isWordLike }) => (isWordLike === true ? toWord(segment) : undefined))
-    .filter((word) => word !== undefined);
+/** The runs of words of a sentence: punctuation, numbers and other scripts break a run. */
+function runsOfSentence(sentence: string): WordRun[] {
+  const runs: WordRun[] = [[]];
+  for (const { segment, isWordLike } of wordSegmenter.segment(sentence)) {
+    const word = isWordLike === true ? toWord(segment) : undefined;
+    if (word !== undefined) {
+      runs[runs.length - 1]?.push(word);
+    } else if (segment.trim() !== '') {
+      runs.push([]);
+    }
+  }
+  return runs;
 }
 
 function asExample(sentence: string): string | undefined {
@@ -76,39 +86,54 @@ function isObviousProperNoun({ word, seenInLowerCase, capitalizedInsideSentence 
   return word.language === 'en' && capitalizedInsideSentence && !seenInLowerCase;
 }
 
+/** Starts counting a word at its first appearance, where its example and next word are read. */
+function startCollecting(
+  collected: Map<string, Collected>,
+  { language, term }: FoundWord,
+  context: { sentence: string; followedBy: string | undefined },
+): Collected {
+  const example = asExample(context.sentence);
+  const entry: Collected = {
+    word: {
+      language,
+      term,
+      occurrences: 0,
+      forms: [],
+      ...(context.followedBy === undefined ? {} : { followedBy: context.followedBy }),
+      ...(example === undefined ? {} : { sentence: example }),
+    },
+    seenInLowerCase: false,
+    capitalizedInsideSentence: false,
+  };
+  collected.set(termKey(language, term), entry);
+  return entry;
+}
+
 /**
  * Extracts the words of a text, each once, in order of first appearance. The text is plain text:
  * nothing in it is interpreted, and its invisible controls are dropped.
  */
-export function extractTextWords(text: string): Result<TextWord[], TextInputError> {
+export function extractTextWords(
+  text: string,
+  adjustments: readonly SegmentAdjustment[] = [],
+): Result<TextWord[], TextInputError> {
   if (text.length > TEXT_IMPORT_LIMITS.characters) {
     return failure(['inputTooLong']);
   }
   const collected = new Map<string, Collected>();
   for (const { segment } of sentenceSegmenter.segment(removeInvisibleControls(text))) {
     const sentence = segment.trim();
-    wordsOfSentence(sentence).forEach(({ language, term, capitalized }, position) => {
-      const key = termKey(language, term);
-      let entry = collected.get(key);
-      if (entry === undefined) {
-        const example = asExample(sentence);
-        entry = {
-          word: {
-            language,
-            term,
-            occurrences: 0,
-            forms: [],
-            ...(example === undefined ? {} : { sentence: example }),
-          },
-          seenInLowerCase: false,
-          capitalizedInsideSentence: false,
-        };
-        collected.set(key, entry);
-      }
-      entry.word.occurrences += 1;
-      entry.seenInLowerCase ||= !capitalized;
-      entry.capitalizedInsideSentence ||= capitalized && position > 0;
-    });
+    const runs = runsOfSentence(sentence).map((run) => adjustRun(run, adjustments));
+    runs
+      .flatMap((run) => run.map((word, index) => ({ word, followedBy: run[index + 1]?.term })))
+      .forEach(({ word, followedBy }, position) => {
+        const entry =
+          collected.get(termKey(word.language, word.term)) ??
+          startCollecting(collected, word, { sentence, followedBy });
+        entry.word.occurrences += 1;
+        entry.seenInLowerCase ||= !word.capitalized;
+        entry.capitalizedInsideSentence ||= word.capitalized && position > 0;
+      });
   }
   return success(
     groupEnglishForms(
