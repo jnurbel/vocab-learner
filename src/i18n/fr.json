@@ -1109,5 +1109,14 @@
     "summary": "{added} à ajouter, {known} déjà connu(s)",
     "saved": "{added} mot(s) ajouté(s), {known} mot(s) ne seront plus proposés.",
     "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie."
+  },
+  "importSources": {
+    "title": "Importer autrement",
+    "tabsLabel": "Source des mots",
+    "tabs": {
+      "text": "Depuis un texte",
+      "csv": "Fichier CSV",
+      "photo": "Photo"
+    }
   }
 }

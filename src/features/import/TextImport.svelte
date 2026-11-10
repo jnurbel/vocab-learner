@@ -102,8 +102,13 @@
     }
   });
 
+  /** Without them (storage not ready), the words known already are simply proposed again. */
   async function refreshIgnoredTerms() {
-    ignoredTerms = await loadIgnoredTerms();
+    try {
+      ignoredTerms = await loadIgnoredTerms();
+    } catch {
+      // Keeps the last list read.
+    }
   }
 
   /** The pinyin proposed for a Chinese word until the learner corrects it. */

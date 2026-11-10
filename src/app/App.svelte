@@ -44,6 +44,7 @@
     type FlashcardStore,
   } from '../features/flashcards/flashcardSession';
   import BulkEntry from '../features/import/BulkEntry.svelte';
+  import ImportSources from '../features/import/ImportSources.svelte';
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
   import VoicePanel from '../features/settings/VoicePanel.svelte';
@@ -468,9 +469,9 @@
     await reload(storage());
   }
 
-  async function save({ newLabel, changes }: VocabularySave) {
+  async function save({ newLabel, changes, ignoredTerms }: VocabularySave) {
     const store = storage();
-    await store.saveImport(changes, newLabel);
+    await store.saveImport(changes, newLabel, ignoredTerms);
     void requestPersistence();
     await recordChange();
     await reload(store);
@@ -977,6 +978,16 @@
           existingCards={cards}
           existingLabels={labels}
           loadPinyin={loadPinyinGenerator}
+          {newId}
+          {clock}
+          onSave={save}
+        />
+
+        <ImportSources
+          existingCards={cards}
+          existingLabels={labels}
+          loadPinyin={loadPinyinGenerator}
+          loadIgnoredTerms={() => storage().allIgnoredTerms()}
           {newId}
           {clock}
           onSave={save}

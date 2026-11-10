@@ -22,9 +22,14 @@ function makeCard(term: string, language: Card['language'] = 'zh'): Card {
   };
 }
 
-function setup(options: { cards?: Card[]; ignored?: IgnoredTerm[]; initialText?: string } = {}) {
+function setup(
+  options: { cards?: Card[]; ignored?: IgnoredTerm[] | Error; initialText?: string } = {},
+) {
   const onSave = vi.fn(() => Promise.resolve());
-  const loadIgnoredTerms = vi.fn(() => Promise.resolve(options.ignored ?? []));
+  const { ignored = [] } = options;
+  const loadIgnoredTerms = vi.fn(() =>
+    ignored instanceof Error ? Promise.reject(ignored) : Promise.resolve(ignored),
+  );
   let sequence = 0;
   render(TextImport, {
     existingCards: options.cards ?? [],
@@ -257,6 +262,14 @@ describe('TextImport', () => {
     setup({ initialText: 'The moon is bright.' });
 
     expect(termsShown()).toEqual(['the', 'moon', 'is', 'bright']);
+  });
+
+  it('still proposes the words when the ignored words cannot be read', async () => {
+    const { user } = setup({ ignored: new Error('storage not ready') });
+
+    await pasteText(user, 'The moon is bright.');
+
+    expect(termsShown()).toContain('moon');
   });
 
   it('reports a failed save and keeps the choices', async () => {
