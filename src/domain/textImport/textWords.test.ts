@@ -35,7 +35,37 @@ describe('extractTextWords', () => {
   });
 
   it('leaves out punctuation, numbers and words mixing digits', () => {
-    expect(termsOf('2024年，我 3 次去北京。« Room 101 » 3D!')).toEqual(['年', '我', '次', '去', '北京', 'room']);
+    expect(termsOf('2024年，我 3 次去北京。« Room 101 » 3D!')).toEqual([
+      '年',
+      '我',
+      '次',
+      '去',
+      '北京',
+      'room',
+    ]);
+  });
+
+  it('counts how many times each word appears', () => {
+    const words = wordsOf('我们吃月饼。月饼很甜。Cake, cake and CAKE.');
+
+    expect(words.find(({ term }) => term === '月饼')?.occurrences).toBe(2);
+    expect(words.find(({ term }) => term === '我们')?.occurrences).toBe(1);
+    expect(words.find(({ term }) => term === 'cake')?.occurrences).toBe(3);
+  });
+
+  it('keeps the sentence where the word first appears, trimmed, as its example', () => {
+    const words = wordsOf('我们吃月饼。\n  月饼很甜！ The moon is bright. The moon rises.');
+
+    expect(words.find(({ term }) => term === '月饼')?.sentence).toBe('我们吃月饼。');
+    expect(words.find(({ term }) => term === '很甜')?.sentence).toBe('月饼很甜！');
+    expect(words.find(({ term }) => term === 'moon')?.sentence).toBe('The moon is bright.');
+    expect(words.find(({ term }) => term === 'rises')?.sentence).toBe('The moon rises.');
+  });
+
+  it('leaves the example out when the sentence is longer than a card example may be', () => {
+    const longSentence = `${'very '.repeat(250)}long sentence.`;
+
+    expect(wordsOf(longSentence).find(({ term }) => term === 'long')?.sentence).toBeUndefined();
   });
 
   it('keeps an English contraction as one word, whatever its apostrophe', () => {
