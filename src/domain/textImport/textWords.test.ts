@@ -46,16 +46,43 @@ describe('extractTextWords', () => {
   });
 
   it('leaves out obvious proper nouns: capitalized inside a sentence and never in lower case', () => {
-    const terms = termsOf('Tom likes cats. Yesterday Tom met Anna in Paris. Cats like milk.');
+    const terms = termsOf('Tom likes cats. Yesterday Tom met Anna in Paris. Cats drink milk.');
 
     expect(terms).not.toContain('tom');
     expect(terms).not.toContain('anna');
     expect(terms).not.toContain('paris');
-    expect(terms).toEqual(['likes', 'cats', 'yesterday', 'met', 'in', 'like', 'milk']);
+    expect(terms).toEqual(['likes', 'cats', 'yesterday', 'met', 'in', 'drink', 'milk']);
   });
 
   it('keeps a capitalized word also written in lower case inside a sentence', () => {
     expect(termsOf('He said: Rain again. I like the rain.')).toContain('rain');
+  });
+
+  it('groups the plural, -ed and -ing forms of an English word found in the text under it', () => {
+    const words = wordsOf('The cat sleeps. Two cats play. Cats played and are playing.');
+
+    expect(words.map(({ term }) => term)).toEqual([
+      'the',
+      'cat',
+      'sleeps',
+      'two',
+      'play',
+      'and',
+      'are',
+    ]);
+    expect(words.find(({ term }) => term === 'cat')).toMatchObject({
+      occurrences: 3,
+      forms: ['cats'],
+      sentence: 'The cat sleeps.',
+    });
+    expect(words.find(({ term }) => term === 'play')).toMatchObject({
+      occurrences: 3,
+      forms: ['played', 'playing'],
+    });
+  });
+
+  it('keeps a form as it is when its base word is not in the text', () => {
+    expect(wordsOf('She sleeps.').find(({ term }) => term === 'sleeps')?.forms).toEqual([]);
   });
 
   it('counts how many times each word appears', () => {

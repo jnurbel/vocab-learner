@@ -1,6 +1,7 @@
 import { CARD_LIMITS, termKey, type Language } from '../card';
 import { success, type Result } from '../result';
 import { codePointLength } from '../text';
+import { baseFormCandidates } from './englishForms';
 
 /** A word found in a pasted text, proposed for the learner's list. */
 export interface TextWord {
@@ -8,6 +9,8 @@ export interface TextWord {
   term: string;
   /** How many times the word appears in the text. */
   occurrences: number;
+  /** Other forms of the word met in the text and counted with it (cats, played). */
+  forms: string[];
   /** The sentence where the word first appears, the example of its card; absent when too long. */
   sentence?: string;
 }
@@ -82,6 +85,7 @@ export function extractTextWords(text: string): Result<TextWord[], TextInputErro
             language,
             term,
             occurrences: 0,
+            forms: [],
             ...(example === undefined ? {} : { sentence: example }),
           },
           seenInLowerCase: false,
@@ -95,6 +99,32 @@ export function extractTextWords(text: string): Result<TextWord[], TextInputErro
     });
   }
   return success(
-    [...collected.values()].filter((entry) => !isObviousProperNoun(entry)).map(({ word }) => word),
+    groupEnglishForms(
+      [...collected.values()]
+        .filter((entry) => !isObviousProperNoun(entry))
+        .map(({ word }) => word),
+    ),
   );
+}
+
+/** Counts a form (cats, played) with its base word when the text holds the base too. */
+function groupEnglishForms(words: TextWord[]): TextWord[] {
+  const englishByTerm = new Map(
+    words.filter(({ language }) => language === 'en').map((word) => [word.term, word]),
+  );
+  return words.filter((word) => {
+    const base = word.language === 'en' ? findBase(word.term, englishByTerm) : undefined;
+    if (base === undefined) {
+      return true;
+    }
+    base.occurrences += word.occurrences;
+    base.forms.push(word.term);
+    return false;
+  });
+}
+
+function findBase(term: string, wordsByTerm: ReadonlyMap<string, TextWord>): TextWord | undefined {
+  return baseFormCandidates(term)
+    .map((candidate) => wordsByTerm.get(candidate))
+    .find((base) => base !== undefined);
 }
