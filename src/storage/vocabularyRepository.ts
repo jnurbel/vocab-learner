@@ -2,6 +2,7 @@ import type { Card, Language } from '../domain/card';
 import type { ImportChanges } from '../domain/importPlan';
 import type { Label } from '../domain/label';
 import type { LabelChanges } from '../domain/labelOperations';
+import type { IgnoredTerm } from '../domain/progressRecords';
 import { mergePaths } from '../domain/path/mergePaths';
 import { toCard, toStored, VocabularyDatabase } from './database';
 
@@ -13,15 +14,28 @@ export class VocabularyRepository {
     this.db = new VocabularyDatabase(databaseName);
   }
 
-  /** Saves an import atomically, with the label created on the fly if any. */
-  async saveImport(changes: ImportChanges, newLabel?: Label): Promise<void> {
-    await this.db.transaction('rw', this.db.cards, this.db.labels, async () => {
+  /**
+   * Saves an import atomically, with the label created on the fly if any, and the words the
+   * learner marked "I already know it", never proposed again by the text import.
+   */
+  async saveImport(
+    changes: ImportChanges,
+    newLabel?: Label,
+    ignoredTerms: readonly IgnoredTerm[] = [],
+  ): Promise<void> {
+    const { cards, labels } = this.db;
+    await this.db.transaction('rw', cards, labels, this.db.ignoredTerms, async () => {
       if (newLabel !== undefined) {
         await this.db.labels.add(newLabel);
       }
       await this.db.cards.bulkAdd(changes.cardsToCreate.map(toStored));
       await this.db.cards.bulkPut(changes.cardsToUpdate.map(toStored));
+      await this.db.ignoredTerms.bulkPut([...ignoredTerms]);
     });
+  }
+
+  async allIgnoredTerms(): Promise<IgnoredTerm[]> {
+    return this.db.ignoredTerms.toArray();
   }
 
   async allCards(): Promise<Card[]> {

@@ -253,3 +253,49 @@ describe('VocabularyRepository', () => {
     expect((await repository.allCards()).map(({ term }) => term).sort()).toEqual(['小猫', '猫']);
   });
 });
+
+describe('VocabularyRepository and the words marked "I already know it"', () => {
+  it('has no ignored word at first', async () => {
+    expect(await repository.allIgnoredTerms()).toEqual([]);
+  });
+
+  it('saves the ignored words of an import with its cards and reads them back', async () => {
+    await repository.saveImport(
+      { cardsToCreate: [card('c1', '月饼', [])], cardsToUpdate: [] },
+      undefined,
+      [
+        { language: 'en', term: 'moon' },
+        { language: 'zh', term: '中秋' },
+      ],
+    );
+
+    expect(await repository.allCards()).toHaveLength(1);
+    expect(await repository.allIgnoredTerms()).toEqual(
+      expect.arrayContaining([
+        { language: 'en', term: 'moon' },
+        { language: 'zh', term: '中秋' },
+      ]),
+    );
+  });
+
+  it('keeps a word ignored twice only once', async () => {
+    const noChanges = { cardsToCreate: [], cardsToUpdate: [] };
+    await repository.saveImport(noChanges, undefined, [{ language: 'en', term: 'moon' }]);
+    await repository.saveImport(noChanges, undefined, [{ language: 'en', term: 'moon' }]);
+
+    expect(await repository.allIgnoredTerms()).toEqual([{ language: 'en', term: 'moon' }]);
+  });
+
+  it('keeps no ignored word when the import fails', async () => {
+    await repository.saveImport({ cardsToCreate: [card('c1', '猫', [])], cardsToUpdate: [] });
+
+    await expect(
+      repository.saveImport(
+        { cardsToCreate: [card('c1', '狗', [])], cardsToUpdate: [] },
+        undefined,
+        [{ language: 'en', term: 'moon' }],
+      ),
+    ).rejects.toThrow();
+    expect(await repository.allIgnoredTerms()).toEqual([]);
+  });
+});
