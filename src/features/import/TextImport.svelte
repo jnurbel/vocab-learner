@@ -36,6 +36,7 @@
     initialText?: string;
     /** Makes the ids unique when several imports are on the page. */
     idPrefix?: string;
+    title?: string;
     source?: CardSource;
   }
 
@@ -49,6 +50,7 @@
     onSave,
     initialText = '',
     idPrefix = 'text-import',
+    title = fr.textImport.title,
     source = 'manual',
   }: Props = $props();
   const pinyinSource = new PinyinSource(() => loadPinyin());
@@ -193,7 +195,7 @@
 </script>
 
 <section aria-labelledby="{idPrefix}-title">
-  <h2 id="{idPrefix}-title">{fr.textImport.title}</h2>
+  <h2 id="{idPrefix}-title">{title}</h2>
   <label for="{idPrefix}-input">{fr.textImport.inputLabel}</label>
   <textarea
     id="{idPrefix}-input"

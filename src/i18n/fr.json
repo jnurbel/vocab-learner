@@ -1118,5 +1118,35 @@
       "csv": "Fichier CSV",
       "photo": "Photo"
     }
+  },
+  "photoImport": {
+    "title": "Photo",
+    "honesty": "Marche bien sur du texte imprimé net, mal sur l'écriture à la main.",
+    "privacy": "La photo est lue sur cet appareil : elle n'est envoyée nulle part et n'est jamais conservée.",
+    "fileLabel": "Choisir ou prendre une photo",
+    "previewAlt": "Aperçu de la photo à lire",
+    "modeLegend": "Que montre la photo ?",
+    "modes": {
+      "list": "Une liste de vocabulaire",
+      "text": "Un texte"
+    },
+    "read": "Lire la photo",
+    "progressLabel": "Lecture de la photo",
+    "steps": {
+      "loading": "Chargement du lecteur (la première fois, environ 9 Mo)…",
+      "reading": "Lecture du texte…"
+    },
+    "cancel": "Annuler la lecture",
+    "cancelled": "Lecture annulée.",
+    "errors": {
+      "notAnImage": "Ce fichier n'est pas une image.",
+      "tooLarge": "Cette image est trop lourde : 30 Mo au maximum.",
+      "unreadable": "Cette image n'a pas pu être ouverte.",
+      "failed": "La lecture a échoué. Le premier chargement demande une connexion : vérifie-la, puis réessaie."
+    },
+    "nothingRead": "Aucun texte n'a été lu sur cette photo. Essaie avec une photo nette, bien éclairée et droite.",
+    "listTitle": "Liste lue sur la photo",
+    "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin.",
+    "textTitle": "Texte lu sur la photo"
   }
 }
