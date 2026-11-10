@@ -92,3 +92,11 @@ export function startProfile(
 ): Profile | undefined {
   return profiles.find(({ id }) => id === lastUsedId) ?? profiles[0];
 }
+
+/** Ids name databases: short plain tokens, never the name of the list of profiles itself. */
+const PROFILE_ID = /^[A-Za-z0-9-]{1,64}$/;
+const RESERVED_IDS: ReadonlySet<string> = new Set(['profiles']);
+
+export function isValidProfileId(id: string): boolean {
+  return PROFILE_ID.test(id) && !RESERVED_IDS.has(id);
+}

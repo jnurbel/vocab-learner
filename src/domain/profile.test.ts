@@ -3,6 +3,7 @@ import {
   DEFAULT_PROFILE,
   PROFILE_NAME_MAX_LENGTH,
   checkProfileName,
+  isValidProfileId,
   createProfile,
   profileDatabaseName,
   renameProfile,
@@ -121,4 +122,18 @@ describe('startProfile', () => {
     expect(startProfile([me, brother], undefined)).toBe(me);
     expect(startProfile([me, brother], 'deleted')).toBe(me);
   });
+});
+
+describe('isValidProfileId', () => {
+  it('accepts the first profile and generated identifiers', () => {
+    expect(isValidProfileId('default')).toBe(true);
+    expect(isValidProfileId('0b9f6a1e-3c4d-4e5f-8a9b-0c1d2e3f4a5b')).toBe(true);
+  });
+
+  it.each(['', 'profiles', '../x', 'a b', 'a/b', 'x'.repeat(65), '<script>'])(
+    'refuses an identifier that would not name a database of its own: %j',
+    (id) => {
+      expect(isValidProfileId(id)).toBe(false);
+    },
+  );
 });
