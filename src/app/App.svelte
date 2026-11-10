@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount, type Snippet } from 'svelte';
   import { shouldRemindBackup } from '../domain/backup/backupReminder';
   import { sha256With } from '../domain/backup/sha256';
   import type { Card } from '../domain/card';
@@ -113,8 +113,12 @@
   } from '../services/pack/shareFile';
 
   interface Props {
-    /** One database per profile; profiles come later, so a single default one for now. */
+    /** One database per profile (DESIGN §3). */
     databaseName?: string;
+    /** The pseudonym of the profile, written into the backups and their file names. */
+    profileName?: string;
+    /** Switches, creates and manages the profiles; shown in the header. */
+    profileMenu?: Snippet;
     /** Asks the browser to keep the data; called after every successful save. */
     requestPersistence?: () => Promise<void>;
     /** Reads the words aloud; the browser's voices by default. */
@@ -135,6 +139,8 @@
 
   const {
     databaseName = 'vocab-learner-default',
+    profileName = 'profil',
+    profileMenu,
     requestPersistence = persistenceRequester(
       'storage' in navigator ? navigator.storage : undefined,
     ),
@@ -147,9 +153,6 @@
     now = () => new Date(),
     share = (file: SharedFile) => shareOrDownload(file, browserShareEnvironment(download)),
   }: Props = $props();
-
-  /** Profiles come later: the pseudonym written into the backup file names. */
-  const PROFILE_NAME = 'profil';
 
   type MenuPage = 'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
   /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
@@ -238,11 +241,17 @@
       clock: now,
       newId,
       appVersion,
-      profileName: PROFILE_NAME,
+      // Read at each backup: the profile can be renamed while the app is open.
+      profileName: () => profileName,
     });
     directory = new DirectoryBackup({ store: meta, picker: directoryPicker, clock: now });
     void unpinPastExams(repository).then(() => reload(ready(repository)));
     void refreshBackupState();
+  });
+
+  /** Another profile opens: nothing of this one may still be heard. */
+  onDestroy(() => {
+    speaker.cancel();
   });
 
   /** The day after a test, its label is unpinned (GAME_DESIGN.md 2.6); the home offers the undo. */
@@ -744,6 +753,9 @@
       <small class="version" title={format(fr.app.versionTitle, { version: appVersion })}
         >v{appVersion}</small
       >
+      {#if profileMenu !== undefined}
+        <div class="profile-slot">{@render profileMenu()}</div>
+      {/if}
     </header>
 
     <nav aria-label={fr.nav.label} class="menu">
@@ -1067,6 +1079,15 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .brand {
+    flex-wrap: wrap;
+  }
+
+  .profile-slot {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .version {
