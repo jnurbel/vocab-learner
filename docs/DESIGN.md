@@ -404,8 +404,8 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.8.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité ; **import par photo lu sur l'appareil** (Tesseract.js `chi_sim+eng`, chargé à la première utilisation, aucune donnée ne quitte l'appareil) pour du **texte imprimé** : liste de vocabulaire ou texte, avec le même aperçu que l'import par texte collé (mots nouveaux uniquement) — décision de l'autrice, 2026-11-10 |
 | 0.9.0 | **Import par photo lu par Claude** via le Cloudflare Worker (§7, §8.1, §8.4) — avancé de 1.4.0 (décision de l'autrice, 2026-11-10) : listes et textes, imprimés ou manuscrits, traduction suggérée en contexte ; option activée par le parent, code d'accès familial, consentement, rien de conservé. Prérequis côté autrice : clé API Anthropic avec plafond de dépenses, compte Cloudflare |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
-| 1.1.0 | `ToneEcho`, `SentenceListen`, `BridgeMatch` |
-| 1.2.0 | Atelier de phrases, `SentenceShuffle`, vue parent |
+| 1.1.0 | ~~`ToneEcho`, `SentenceListen`, `BridgeMatch`~~ (livrés en 0.7.0) |
+| 1.2.0 | Atelier de phrases, vue parent (`SentenceShuffle` livré en 0.7.0) |
 | 1.3.0 | Répéter à voix haute (reconnaissance vocale, option), ordre des traits en bonus |
 | 1.4.0 | ~~Import par photo~~ (avancé en 0.8.0 pour la lecture sur l'appareil et en 0.9.0 pour la lecture par Claude) |
 | 1.5.0 | Correction de dictée par photo (réutilise le Worker) |
