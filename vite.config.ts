@@ -2,6 +2,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { tesseractAssets } from './config/tesseractAssets.ts';
 import packageJson from './package.json' with { type: 'json' };
 
 /**
@@ -24,7 +25,7 @@ function devCspRelaxation(): Plugin {
 export default defineConfig({
   // Served from https://<user>.github.io/vocab-learner/
   base: '/vocab-learner/',
-  plugins: [svelte(), svelteTesting(), devCspRelaxation()],
+  plugins: [svelte(), svelteTesting(), devCspRelaxation(), tesseractAssets()],
   // Written into backups, so that a later app knows which version produced a file.
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
