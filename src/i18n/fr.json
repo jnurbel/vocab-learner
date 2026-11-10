@@ -158,7 +158,19 @@
       "labelNotFound": "Ce label n'existe plus."
     },
     "openPath": "Parcours",
-    "openPathLabel": "Voir le parcours de {name}"
+    "openPathLabel": "Voir le parcours de {name}",
+    "share": "Partager",
+    "shareLabel": "Partager {name}",
+    "shared": "Liste partagée : seuls les mots et leurs labels sont dans le fichier, sans ta progression.",
+    "downloaded": "Liste téléchargée : seuls les mots et leurs labels sont dans le fichier, sans ta progression.",
+    "shareFailed": "Le partage a échoué. Réessaie.",
+    "columnShare": "Partage",
+    "chooseForShare": "Choisir {name} pour le partage",
+    "shareChosen": {
+      "one": "Partager la sélection ({count} label)",
+      "other": "Partager la sélection ({count} labels)"
+    },
+    "shareHelp": "Le fichier contient les mots et leurs labels, jamais ta progression."
   },
   "stages": {
     "seed": "Graine",

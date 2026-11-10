@@ -14,11 +14,12 @@ function environment(overrides: Partial<ShareEnvironment> = {}): ShareEnvironmen
 
 describe('shareOrDownload', () => {
   it('shares the pack as a JSON file through the share sheet when the device can', async () => {
-    const env = environment();
+    const share = vi.fn<(data: ShareData) => Promise<void>>(() => Promise.resolve());
+    const env = environment({ share });
 
     await expect(shareOrDownload(file, env)).resolves.toBe('shared');
 
-    const shared = vi.mocked(env.share).mock.calls[0]?.[0];
+    const shared = share.mock.calls[0]?.[0];
     const sharedFile = shared?.files?.[0];
     expect(sharedFile?.name).toBe('Leçon-7.vocab.json');
     expect(sharedFile?.type).toBe('application/json');

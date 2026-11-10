@@ -102,6 +102,13 @@
     startFinalChallenge,
     type FinalChallengeStore,
   } from '../features/path/finalChallengeSession';
+  import { createVocabPack, packFileName, serializeVocabPack } from '../domain/packExport';
+  import {
+    browserShareEnvironment,
+    shareOrDownload,
+    type SharedFile,
+    type ShareOutcome,
+  } from '../services/pack/shareFile';
 
   interface Props {
     /** One database per profile; profiles come later, so a single default one for now. */
@@ -117,6 +124,8 @@
     /** Picks the automatic backup folder; absent where the browser has no folder access. */
     directoryPicker?: (() => Promise<DirectoryHandleLike>) | undefined;
     now?: () => Date;
+    /** Hands a pack over: the share sheet of the device, or a download where there is none. */
+    share?: (file: SharedFile) => Promise<ShareOutcome>;
   }
 
   /** The browser's voices, shared by the readings and the voice list of the settings. */
@@ -134,6 +143,7 @@
     },
     directoryPicker = directoryPickerOf(window as Parameters<typeof directoryPickerOf>[0]),
     now = () => new Date(),
+    share = (file: SharedFile) => shareOrDownload(file, browserShareEnvironment(download)),
   }: Props = $props();
 
   /** Profiles come later: the pseudonym written into the backup file names. */
@@ -693,6 +703,13 @@
     page = 'path';
   }
 
+  /** A pack holds the words of the labels and nothing of the learner (DESIGN §8.3). */
+  function shareLabels(labelIds: readonly string[]): Promise<ShareOutcome> {
+    const pack = createVocabPack(labels, cards, labelIds);
+    const fileName = packFileName(pack.labels.map(({ name }) => name));
+    return share({ fileName, text: serializeVocabPack(pack) });
+  }
+
   function startEditing(card: Card) {
     editing = card;
   }
@@ -1012,6 +1029,7 @@
           onOpenPath={(label: Label) => {
             openPath(label);
           }}
+          onShare={shareLabels}
         />
       {/if}
     </div>
