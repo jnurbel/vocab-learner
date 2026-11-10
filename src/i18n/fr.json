@@ -1067,5 +1067,47 @@
     },
     "backToPath": "Retour au parcours",
     "retry": "Recommencer le défi"
+  },
+  "textImport": {
+    "title": "Depuis un texte",
+    "inputLabel": "Texte à analyser",
+    "inputHelp": "Colle un article, un texte du manuel ou des paroles : seuls les mots qui ne sont pas encore dans ta liste sont proposés. Le texte reste sur cet appareil.",
+    "hideCommonWords": "Masquer les mots très courants (的, 了, the, a…)",
+    "inputErrors": {
+      "inputTooLong": "Le texte est trop long : 20 000 caractères au maximum."
+    },
+    "noNewWords": "Aucun mot nouveau dans ce texte.",
+    "newWordCount": {
+      "one": "1 mot nouveau",
+      "other": "{count} mots nouveaux"
+    },
+    "previewCaption": "Mots nouveaux du texte, à compléter avant l’ajout",
+    "columns": {
+      "term": "Mot",
+      "occurrences": "Fois",
+      "pinyin": "Pinyin",
+      "translation": "Sens",
+      "sentence": "Phrase du texte",
+      "decision": "Choix"
+    },
+    "forms": "aussi : {forms}",
+    "pinyinLabel": "Pinyin de {term}",
+    "translationLabel": "Sens de {term}",
+    "decisionLabel": "Choix pour {term}",
+    "decisions": {
+      "add": "Ajouter",
+      "known": "Je le connais déjà",
+      "skip": "Ignorer pour cette fois"
+    },
+    "join": "Joindre {first} et {second}",
+    "joinShort": "+ {second}",
+    "split": "Couper en {first} | {second}",
+    "errorsTitle": "Mots à compléter",
+    "errorLine": "{term} : {reason}",
+    "labelsLegend": "Labels à poser sur les mots ajoutés",
+    "save": "Enregistrer mes choix",
+    "summary": "{added} à ajouter, {known} déjà connu(s)",
+    "saved": "{added} mot(s) ajouté(s), {known} mot(s) ne seront plus proposés.",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie."
   }
 }
