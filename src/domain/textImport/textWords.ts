@@ -35,8 +35,10 @@ const sentenceSegmenter = new Intl.Segmenter('zh', { granularity: 'sentence' });
 const wordSegmenter = new Intl.Segmenter('zh', { granularity: 'word' });
 
 const CHINESE_WORD = /^\p{Script=Han}+$/u;
-/** Latin letters, with inner apostrophes or hyphens (don't, well-known). */
-const ENGLISH_WORD = /^\p{Script=Latin}+(?:['-]\p{Script=Latin}+)*$/u;
+/** Latin letters and apostrophes or hyphens (don't, well-known)... */
+const ENGLISH_CHARACTERS = /^[\p{Script=Latin}'-]+$/u;
+/** ...which never start or end a word, nor follow each other. */
+const MISPLACED_SEPARATOR = /^['-]|['-]$|['-]{2}/;
 const TYPOGRAPHIC_APOSTROPHE = /[’ʼ]/g;
 const STARTS_UPPER_CASE = /^\p{Lu}/u;
 
@@ -53,7 +55,7 @@ function toWord(segment: string): FoundWord | undefined {
     return { language: 'zh', term: segment, capitalized: false };
   }
   const english = segment.replace(TYPOGRAPHIC_APOSTROPHE, "'");
-  if (ENGLISH_WORD.test(english)) {
+  if (ENGLISH_CHARACTERS.test(english) && !MISPLACED_SEPARATOR.test(english)) {
     return {
       language: 'en',
       term: english.toLowerCase(),

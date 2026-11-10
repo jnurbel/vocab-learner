@@ -139,7 +139,9 @@ describe('extractTextWords on untrusted input', () => {
   });
 
   it('removes control characters and bidi overrides from the words and the example', () => {
-    const words = wordsOf('Hel‮lo wor\u0000ld‏.');
+    const rightToLeftOverride = String.fromCodePoint(0x202e);
+    const rightToLeftMark = String.fromCodePoint(0x200f);
+    const words = wordsOf(`Hel${rightToLeftOverride}lo wor\u0000ld${rightToLeftMark}.`);
 
     expect(words.map(({ term }) => term)).toEqual(['hello', 'world']);
     expect(words[0]?.sentence).toBe('Hello world.');
