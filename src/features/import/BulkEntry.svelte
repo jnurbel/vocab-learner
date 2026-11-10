@@ -8,7 +8,7 @@
     type BulkEntry,
     type BulkLineError,
   } from '../../domain/bulkEntryParser';
-  import type { Card } from '../../domain/card';
+  import type { Card, CardSource } from '../../domain/card';
   import { applyImportPlan, planImport } from '../../domain/importPlan';
   import type { Label } from '../../domain/label';
   import { resolveLabelChoice } from '../../domain/labelOperations';
@@ -26,9 +26,26 @@
     newId: () => string;
     clock: () => string;
     onSave: (save: VocabularySave) => Promise<void>;
+    /** A list read by another import (a photo), to start from. */
+    initialText?: string;
+    /** Makes the ids unique when several entries are on the page. */
+    idPrefix?: string;
+    title?: string;
+    source?: CardSource;
   }
 
-  const { existingCards, existingLabels, loadPinyin, newId, clock, onSave }: Props = $props();
+  const {
+    existingCards,
+    existingLabels,
+    loadPinyin,
+    newId,
+    clock,
+    onSave,
+    initialText = '',
+    idPrefix = 'bulk-entry',
+    title = fr.bulkEntry.title,
+    source = 'manual',
+  }: Props = $props();
   const pinyinSource = new PinyinSource(() => loadPinyin());
 
   /** Stands for the label being typed until it receives a real id on save. */
@@ -36,7 +53,9 @@
   const EDITABLE_COLUMNS = ['term', 'pinyin', 'translation'] as const;
   type EditableColumn = (typeof EDITABLE_COLUMNS)[number];
 
-  let text = $state('');
+  // The list given by a photo is only a starting point: the learner edits it from there.
+  // svelte-ignore state_referenced_locally
+  let text = $state(initialText);
   /** Corrections made in the preview, by line number; they apply to the text as pasted. */
   const edits = new SvelteMap<number, EntryEdit>();
   let chosenLabelIds = $state<string[]>([]);
@@ -148,7 +167,7 @@
       return;
     }
     const plan = planImport(batch, existingCards, choice.value.labelIds);
-    const changes = applyImportPlan(plan, { nextId: newId, now, source: 'manual' });
+    const changes = applyImportPlan(plan, { nextId: newId, now, source });
     try {
       await onSave({ newLabel: choice.value.newLabel, changes });
       status = {
@@ -164,18 +183,18 @@
   }
 </script>
 
-<section aria-labelledby="bulk-entry-title">
-  <h2 id="bulk-entry-title">{fr.bulkEntry.title}</h2>
-  <label for="bulk-entry-input">{fr.bulkEntry.inputLabel}</label>
+<section aria-labelledby="{idPrefix}-title">
+  <h2 id="{idPrefix}-title">{title}</h2>
+  <label for="{idPrefix}-input">{fr.bulkEntry.inputLabel}</label>
   <textarea
-    id="bulk-entry-input"
+    id="{idPrefix}-input"
     rows="8"
-    aria-describedby="bulk-entry-help"
+    aria-describedby="{idPrefix}-help"
     bind:value={text}
     oninput={() => {
       edits.clear();
     }}></textarea>
-  <p id="bulk-entry-help" class="help">{fr.bulkEntry.inputHelp}</p>
+  <p id="{idPrefix}-help" class="help">{fr.bulkEntry.inputHelp}</p>
 
   {#if !parsed.ok}
     <p role="alert" class="error">{fr.bulkEntry.inputErrors[parsed.errors[0] ?? 'inputTooLong']}</p>
@@ -241,8 +260,8 @@
   {/if}
 
   {#if preview && preview.errors.length > 0}
-    <h3 id="bulk-entry-errors">{fr.bulkEntry.errorsTitle}</h3>
-    <ul aria-labelledby="bulk-entry-errors" class="error errors">
+    <h3 id="{idPrefix}-errors">{fr.bulkEntry.errorsTitle}</h3>
+    <ul aria-labelledby="{idPrefix}-errors" class="error errors">
       {#each preview.errors as error (error.lineNumber)}
         <li>{describe(error)}</li>
       {/each}
@@ -251,7 +270,7 @@
 
   <LabelPicker
     legend={fr.bulkEntry.labelsLegend}
-    idPrefix="bulk-entry"
+    {idPrefix}
     labels={existingLabels}
     bind:chosenLabelIds
     bind:labelName
