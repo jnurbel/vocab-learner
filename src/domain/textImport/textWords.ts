@@ -1,5 +1,6 @@
 import { CARD_LIMITS, termKey, type Language } from '../card';
-import { success, type Result } from '../result';
+import { failure, success, type Result } from '../result';
+import { removeInvisibleControls } from '../safeText';
 import { codePointLength } from '../text';
 import { baseFormCandidates } from './englishForms';
 
@@ -16,6 +17,11 @@ export interface TextWord {
 }
 
 export type TextInputError = 'inputTooLong';
+
+/** Bounds on an untrusted pasted text, checked before any work. */
+export const TEXT_IMPORT_LIMITS = {
+  characters: 20_000,
+} as const;
 
 const sentenceSegmenter = new Intl.Segmenter('zh', { granularity: 'sentence' });
 const wordSegmenter = new Intl.Segmenter('zh', { granularity: 'word' });
@@ -70,10 +76,16 @@ function isObviousProperNoun({ word, seenInLowerCase, capitalizedInsideSentence 
   return word.language === 'en' && capitalizedInsideSentence && !seenInLowerCase;
 }
 
-/** Extracts the words of a text, each once, in order of first appearance. */
+/**
+ * Extracts the words of a text, each once, in order of first appearance. The text is plain text:
+ * nothing in it is interpreted, and its invisible controls are dropped.
+ */
 export function extractTextWords(text: string): Result<TextWord[], TextInputError> {
+  if (text.length > TEXT_IMPORT_LIMITS.characters) {
+    return failure(['inputTooLong']);
+  }
   const collected = new Map<string, Collected>();
-  for (const { segment } of sentenceSegmenter.segment(text)) {
+  for (const { segment } of sentenceSegmenter.segment(removeInvisibleControls(text))) {
     const sentence = segment.trim();
     wordsOfSentence(sentence).forEach(({ language, term, capitalized }, position) => {
       const key = termKey(language, term);

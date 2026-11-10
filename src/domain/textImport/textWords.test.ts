@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractTextWords, type TextWord } from './textWords';
+import { extractTextWords, TEXT_IMPORT_LIMITS, type TextWord } from './textWords';
 
 function termsOf(text: string): string[] {
   const extracted = extractTextWords(text);
@@ -113,5 +113,35 @@ describe('extractTextWords', () => {
 
     expect(terms.filter((term) => term === "don't")).toHaveLength(1);
     expect(terms).not.toContain('don’t');
+  });
+});
+
+describe('extractTextWords on untrusted input', () => {
+  it('refuses a text longer than 20 000 characters before any work', () => {
+    expect(extractTextWords('a'.repeat(TEXT_IMPORT_LIMITS.characters + 1))).toEqual({
+      ok: false,
+      errors: ['inputTooLong'],
+    });
+  });
+
+  it('accepts a text of exactly 20 000 characters', () => {
+    expect(extractTextWords('a '.repeat(TEXT_IMPORT_LIMITS.characters / 2)).ok).toBe(true);
+  });
+
+  it('finds no word in a blank text', () => {
+    expect(extractTextWords('  \n\t ')).toEqual({ ok: true, value: [] });
+  });
+
+  it('reads markup as plain text: tags give no words of their own, nothing is interpreted', () => {
+    const terms = termsOf('<img src=x onerror="alert(1)"> hello <script>steal()</script>');
+
+    expect(terms).toEqual(['img', 'src', 'x', 'onerror', 'alert', 'hello', 'script', 'steal']);
+  });
+
+  it('removes control characters and bidi overrides from the words and the example', () => {
+    const words = wordsOf('Hel‮lo wor\u0000ld‏.');
+
+    expect(words.map(({ term }) => term)).toEqual(['hello', 'world']);
+    expect(words[0]?.sentence).toBe('Hello world.');
   });
 });
