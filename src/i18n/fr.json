@@ -1125,5 +1125,42 @@
       "more": "Et {count} autre(s) problème(s).",
       "generic": "Ce fichier ne peut pas être importé : ce n’est pas une liste de mots valide."
     }
+  },
+  "profiles": {
+    "toggle": "Profil : {name}",
+    "title": "Profils",
+    "help": "Chaque profil a ses propres mots, sa progression, son île et ses réglages. Choisis un pseudo : ton vrai nom n’est pas nécessaire.",
+    "listLabel": "Profils de cet appareil",
+    "current": "Profil ouvert",
+    "open": "Ouvrir",
+    "openLabel": "Ouvrir le profil {name}",
+    "rename": "Renommer",
+    "renameLabel": "Renommer le profil {name}",
+    "renameInput": "Nouveau pseudo pour {name}",
+    "renameSave": "Enregistrer",
+    "cancel": "Annuler",
+    "createTitle": "Nouveau profil",
+    "createInput": "Pseudo du nouveau profil",
+    "createHelp": "Un pseudo de 30 caractères au plus, sans ton nom de famille.",
+    "create": "Créer le profil",
+    "created": "Profil « {name} » créé.",
+    "renamed": "Profil renommé : « {name} ».",
+    "deleted": "Profil « {name} » supprimé.",
+    "failed": "L’opération a échoué : rien n’a changé. Réessaie.",
+    "delete": "Supprimer",
+    "deleteLabel": "Supprimer le profil {name}",
+    "confirmDelete": "Supprimer le profil « {name} » ? Ses mots, sa progression, son île et ses réglages seront effacés de cet appareil.",
+    "backupFirst": "Télécharger sa sauvegarde d’abord",
+    "backupDone": "Sauvegarde de « {name} » téléchargée.",
+    "continueDelete": "Continuer",
+    "confirmDeleteFinal": "Dernière vérification : la suppression de « {name} » est définitive.",
+    "deleteForever": "Supprimer définitivement {name}",
+    "errors": {
+      "required": "Le pseudo est vide.",
+      "tooLong": "Le pseudo est trop long (30 caractères au plus).",
+      "invalidCharacters": "Le pseudo contient des caractères invisibles ou un retour à la ligne.",
+      "nameTaken": "Un autre profil porte déjà ce pseudo.",
+      "profileNotFound": "Ce profil n’existe plus."
+    }
   }
 }
