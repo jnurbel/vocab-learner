@@ -1079,5 +1079,23 @@
     },
     "backToPath": "Retour au parcours",
     "retry": "Recommencer le défi"
+  },
+  "packImport": {
+    "issues": {
+      "fileTooLarge": "Ce fichier est trop gros pour être une liste de mots (2 Mo au maximum).",
+      "unreadableFile": "Ce fichier n’a pas pu être lu. Réessaie ou choisis-en un autre.",
+      "invalidJson": "Ce fichier est abîmé ou n’est pas une liste de mots : son contenu est illisible.",
+      "notAPack": "Ce fichier n’est pas une liste de mots de vocab-learner.",
+      "unexpectedData": "Le fichier contient des données inattendues : il est refusé.",
+      "tooMany": "Le fichier contient trop de mots ou de labels (5 000 mots et 500 labels au maximum).",
+      "invalidValue": "{place} : une donnée est vide, trop longue ou contient des caractères interdits.",
+      "duplicateWord": "{place} : ce mot est déjà dans le fichier.",
+      "duplicateLabel": "{place} : deux labels ont le même identifiant.",
+      "unknownLabel": "{place} : ce mot fait référence à un label absent du fichier.",
+      "word": "Mot n° {number}",
+      "label": "Label n° {number}",
+      "more": "Et {count} autre(s) problème(s).",
+      "generic": "Ce fichier ne peut pas être importé : ce n’est pas une liste de mots valide."
+    }
   }
 }
