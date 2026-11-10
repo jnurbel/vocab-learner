@@ -3,8 +3,12 @@
   import type { Label } from '../../domain/label';
   import type { PinyinGenerator } from '../../domain/pinyinGeneration';
   import type { IgnoredTerm } from '../../domain/progressRecords';
+  import type { Result } from '../../domain/result';
   import fr from '../../i18n/fr.json';
+  import type { TextRecognizer } from '../../services/ocr/textRecognizer';
+  import type { PhotoError } from '../../services/photo/preparePhoto';
   import type { VocabularySave } from '../vocabularySave';
+  import PhotoImport from './PhotoImport.svelte';
   import TextImport from './TextImport.svelte';
 
   interface Props {
@@ -15,9 +19,11 @@
     newId: () => string;
     clock: () => string;
     onSave: (save: VocabularySave) => Promise<void>;
+    loadRecognizer: () => Promise<TextRecognizer>;
+    preparePhoto: (file: File) => Promise<Result<Blob, PhotoError>>;
   }
 
-  const props: Props = $props();
+  const { loadRecognizer, preparePhoto, ...importProps }: Props = $props();
 
   const SOURCES = ['text', 'csv', 'photo'] as const;
   type Source = (typeof SOURCES)[number];
@@ -69,7 +75,9 @@
 
   <div role="tabpanel" id="import-panel-{selected}" aria-labelledby="import-tab-{selected}">
     {#if selected === 'text'}
-      <TextImport {...props} />
+      <TextImport {...importProps} />
+    {:else if selected === 'photo'}
+      <PhotoImport {...importProps} {loadRecognizer} {preparePhoto} />
     {/if}
   </div>
 </section>

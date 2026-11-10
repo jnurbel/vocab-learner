@@ -45,6 +45,9 @@
   } from '../features/flashcards/flashcardSession';
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import ImportSources from '../features/import/ImportSources.svelte';
+  import { loadTextRecognizer } from '../services/ocr/ocrLoader';
+  import { browserPhotoEnvironment } from '../services/photo/browserPhotoEnvironment';
+  import { preparePhoto } from '../services/photo/preparePhoto';
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
   import VoicePanel from '../features/settings/VoicePanel.svelte';
@@ -991,6 +994,8 @@
           {newId}
           {clock}
           onSave={save}
+          loadRecognizer={loadTextRecognizer}
+          preparePhoto={(file: File) => preparePhoto(file, browserPhotoEnvironment)}
         />
 
         {#if editing !== undefined}

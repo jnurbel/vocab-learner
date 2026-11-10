@@ -5,18 +5,19 @@ import { PHOTO_MAX_BYTES, preparePhoto, type PhotoEnvironment } from './prepareP
 function fakeEnvironment(size: ImageSize, options: { unreadable?: boolean } = {}) {
   const drawn: ImageSize[] = [];
   const close = vi.fn();
+  const decode = vi.fn(() =>
+    options.unreadable === true
+      ? Promise.reject(new Error('cannot decode'))
+      : Promise.resolve({ ...size, close }),
+  );
   const environment: PhotoEnvironment = {
-    decode: vi.fn(() =>
-      options.unreadable === true
-        ? Promise.reject(new Error('cannot decode'))
-        : Promise.resolve({ ...size, close }),
-    ),
+    decode,
     redraw: vi.fn((_image, target: ImageSize) => {
       drawn.push(target);
       return Promise.resolve(new Blob(['pixels only'], { type: 'image/jpeg' }));
     }),
   };
-  return { environment, drawn, close };
+  return { environment, decode, drawn, close };
 }
 
 const photo = (type = 'image/jpeg', size = 10) => new Blob(['x'.repeat(size)], { type });
@@ -40,23 +41,23 @@ describe('preparePhoto', () => {
   });
 
   it('refuses a file that is not an image, without reading it', async () => {
-    const { environment } = fakeEnvironment({ width: 100, height: 100 });
+    const { environment, decode } = fakeEnvironment({ width: 100, height: 100 });
 
     expect(await preparePhoto(photo('text/html'), environment)).toEqual({
       ok: false,
       errors: ['notAnImage'],
     });
-    expect(environment.decode).not.toHaveBeenCalled();
+    expect(decode).not.toHaveBeenCalled();
   });
 
   it('refuses a file larger than the limit, without reading it', async () => {
-    const { environment } = fakeEnvironment({ width: 100, height: 100 });
+    const { environment, decode } = fakeEnvironment({ width: 100, height: 100 });
 
     expect(await preparePhoto(photo('image/png', PHOTO_MAX_BYTES + 1), environment)).toEqual({
       ok: false,
       errors: ['tooLarge'],
     });
-    expect(environment.decode).not.toHaveBeenCalled();
+    expect(decode).not.toHaveBeenCalled();
   });
 
   it('reports an image that the browser cannot read', async () => {

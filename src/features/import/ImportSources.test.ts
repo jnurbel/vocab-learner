@@ -13,6 +13,8 @@ function setup() {
     newId: () => 'id',
     clock: () => '2026-11-10T12:00:00.000Z',
     onSave: vi.fn(() => Promise.resolve()),
+    loadRecognizer: () => Promise.reject(new Error('not used')),
+    preparePhoto: () => Promise.reject(new Error('not used')),
   });
   return userEvent.setup();
 }
@@ -45,6 +47,16 @@ describe('ImportSources', () => {
     expect(screen.getByRole('tab', { name: fr.importSources.tabs.text })).toHaveFocus();
     await user.keyboard('{End}');
     expect(screen.getByRole('tab', { name: fr.importSources.tabs.photo })).toHaveFocus();
+  });
+
+  it('offers to read a photo in its own tab', async () => {
+    const user = setup();
+
+    await user.click(screen.getByRole('tab', { name: fr.importSources.tabs.photo }));
+
+    expect(screen.getByRole('tabpanel', { name: fr.importSources.tabs.photo })).toContainElement(
+      screen.getByLabelText(fr.photoImport.fileLabel),
+    );
   });
 
   it('keeps only the selected tab in the tab order', () => {
