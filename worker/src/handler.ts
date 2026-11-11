@@ -1,3 +1,4 @@
+import { authorizedCodeHash } from './accessCode.ts';
 import { announcesTooLargeBody, readBoundedText } from './body.ts';
 import { allowedOrigins, corsHeaders, preflightResponse } from './cors.ts';
 import { errorResponse } from './http.ts';
@@ -6,6 +7,8 @@ import { errorResponse } from './http.ts';
 export interface Env {
   /** Comma-separated list of the web origins allowed to call the Worker. */
   ALLOWED_ORIGINS?: string;
+  /** Secret: comma-separated SHA-256 hex hashes of the family access codes. */
+  ACCESS_CODE_HASHES?: string;
 }
 
 /** Collaborators injected by the Worker entry point, faked in the tests. */
@@ -34,6 +37,13 @@ export async function handleRequest(request: Request, env: Env, _deps: Deps): Pr
   const body = await readBoundedText(request);
   if (body === null) {
     return errorResponse('too_large', cors);
+  }
+  const codeHash = await authorizedCodeHash(
+    request.headers.get('Authorization'),
+    env.ACCESS_CODE_HASHES,
+  );
+  if (codeHash === null) {
+    return errorResponse('unauthorized', cors);
   }
   return new Response(null, { status: 501 });
 }

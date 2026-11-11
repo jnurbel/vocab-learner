@@ -1,7 +1,9 @@
 /** Error codes of the photo API contract (docs/PHOTO_API.md). */
-export type ErrorCode = 'forbidden_origin' | 'not_found' | 'method_not_allowed' | 'too_large';
+export type ErrorCode =
+  'unauthorized' | 'forbidden_origin' | 'not_found' | 'method_not_allowed' | 'too_large';
 
 const ERROR_STATUS: Record<ErrorCode, number> = {
+  unauthorized: 401,
   forbidden_origin: 403,
   not_found: 404,
   method_not_allowed: 405,
