@@ -951,7 +951,7 @@
           <button type="button" onclick={openPrivacy}>{fr.privacy.link}</button>
         </section>
       {:else if page === 'privacy'}
-        <PrivacyPage version={appVersion} site={location.host} />
+        <PrivacyPage version={appVersion} site={location.hostname} />
       {:else if page === 'garden'}
         <Garden
           {cards}
