@@ -299,3 +299,17 @@ describe('VocabularyRepository and the words marked "I already know it"', () => 
     expect(await repository.allIgnoredTerms()).toEqual([]);
   });
 });
+
+describe('VocabularyRepository and the labels created by a file import', () => {
+  it('saves several new labels with the words of the import', async () => {
+    await repository.saveImport(
+      { cardsToCreate: [card('c1', '猫', ['l1', 'l2'])], cardsToUpdate: [] },
+      [label('l1', 'Leçon 1'), label('l2', 'Animaux')],
+    );
+
+    expect((await repository.allLabels()).map(({ name }) => name).sort()).toEqual([
+      'Animaux',
+      'Leçon 1',
+    ]);
+  });
+});
