@@ -1,3 +1,4 @@
+import { announcesTooLargeBody, readBoundedText } from './body.ts';
 import { allowedOrigins, corsHeaders, preflightResponse } from './cors.ts';
 import { errorResponse } from './http.ts';
 
@@ -27,5 +28,12 @@ export async function handleRequest(request: Request, env: Env, _deps: Deps): Pr
   if (request.method !== 'POST') {
     return errorResponse('method_not_allowed', { ...cors, Allow: 'POST, OPTIONS' });
   }
-  return Promise.resolve(new Response(null, { status: 501 }));
+  if (announcesTooLargeBody(request)) {
+    return errorResponse('too_large', cors);
+  }
+  const body = await readBoundedText(request);
+  if (body === null) {
+    return errorResponse('too_large', cors);
+  }
+  return new Response(null, { status: 501 });
 }
