@@ -4,7 +4,7 @@ import { checkLabelName, createLabel, type Label, type LabelError } from './labe
 import { failure, success, type Result } from './result';
 
 /** Two label names are the same when they differ only by case, spaces or Unicode form. */
-function labelNameKey(name: string): string {
+export function labelNameKey(name: string): string {
   return name.trim().normalize('NFC').toLowerCase();
 }
 

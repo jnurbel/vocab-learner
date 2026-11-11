@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount, type Snippet } from 'svelte';
   import { shouldRemindBackup } from '../domain/backup/backupReminder';
   import { sha256With } from '../domain/backup/sha256';
   import type { Card } from '../domain/card';
@@ -118,10 +118,23 @@
   } from '../services/pwa/installPrompt';
   import { askPersistenceAgain } from '../services/storagePersistence';
   import { offlineAwareSpeaker, onlineOnlyLanguages } from '../services/tts/offlineSpeaker';
+  import { createVocabPack, packFileName, serializeVocabPack } from '../domain/packExport';
+  import type { PackImportOutcome } from '../domain/packImport';
+  import PackImport from '../features/packs/PackImport.svelte';
+  import {
+    browserShareEnvironment,
+    shareOrDownload,
+    type SharedFile,
+    type ShareOutcome,
+  } from '../services/pack/shareFile';
 
   interface Props {
-    /** One database per profile; profiles come later, so a single default one for now. */
+    /** One database per profile (DESIGN §3). */
     databaseName?: string;
+    /** The pseudonym of the profile, written into the backups and their file names. */
+    profileName?: string;
+    /** Switches, creates and manages the profiles; shown in the header. */
+    profileMenu?: Snippet;
     /** Asks the browser to keep the data; called after every successful save. */
     requestPersistence?: () => Promise<void>;
     /** Reads the words aloud; the browser's voices by default. */
@@ -141,6 +154,8 @@
     installHost?: InstallHost;
     /** Asks again to keep the data, once the app is installed. */
     requestPersistenceAgain?: () => Promise<void>;
+    /** Hands a pack over: the share sheet of the device, or a download where there is none. */
+    share?: (file: SharedFile) => Promise<ShareOutcome>;
   }
 
   /** The browser's voices, shared by the readings and the voice list of the settings. */
@@ -148,6 +163,8 @@
 
   const {
     databaseName = 'vocab-learner-default',
+    profileName = 'profil',
+    profileMenu,
     requestPersistence = persistenceRequester(
       'storage' in navigator ? navigator.storage : undefined,
     ),
@@ -164,10 +181,8 @@
     installHost = window,
     requestPersistenceAgain = () =>
       askPersistenceAgain('storage' in navigator ? navigator.storage : undefined),
+    share = (file: SharedFile) => shareOrDownload(file, browserShareEnvironment(download)),
   }: Props = $props();
-
-  /** Profiles come later: the pseudonym written into the backup file names. */
-  const PROFILE_NAME = 'profil';
 
   type MenuPage = 'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
   /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
@@ -256,11 +271,17 @@
       clock: now,
       newId,
       appVersion,
-      profileName: PROFILE_NAME,
+      // Read at each backup: the profile can be renamed while the app is open.
+      profileName: () => profileName,
     });
     directory = new DirectoryBackup({ store: meta, picker: directoryPicker, clock: now });
     void unpinPastExams(repository).then(() => reload(ready(repository)));
     void refreshBackupState();
+  });
+
+  /** Another profile opens: nothing of this one may still be heard. */
+  onDestroy(() => {
+    speaker.cancel();
   });
 
   /** The day after a test, its label is unpinned (GAME_DESIGN.md 2.6); the home offers the undo. */
@@ -723,6 +744,22 @@
     page = 'path';
   }
 
+  /** A pack holds the words of the labels and nothing of the learner (DESIGN §8.3). */
+  function shareLabels(labelIds: readonly string[]): Promise<ShareOutcome> {
+    const pack = createVocabPack(labels, cards, labelIds);
+    const fileName = packFileName(pack.labels.map(({ name }) => name));
+    return share({ fileName, text: serializeVocabPack(pack) });
+  }
+
+  /** The words of a pack arrive without progress: the learner starts them from scratch. */
+  async function savePack({ newLabels, changes }: PackImportOutcome) {
+    const store = storage();
+    await store.savePackImport(changes, newLabels);
+    void requestPersistence();
+    await recordChange();
+    await reload(store);
+  }
+
   function startEditing(card: Card) {
     editing = card;
   }
@@ -814,6 +851,9 @@
         >v{appVersion}</small
       >
       <OfflineBadge {online} />
+      {#if profileMenu !== undefined}
+        <div class="profile-slot">{@render profileMenu()}</div>
+      {/if}
     </header>
 
     <nav aria-label={fr.nav.label} class="menu">
@@ -1112,6 +1152,14 @@
           onSave={save}
         />
 
+        <PackImport
+          existingCards={cards}
+          existingLabels={labels}
+          {newId}
+          {clock}
+          onSave={savePack}
+        />
+
         {#if editing !== undefined}
           {#key editing.id}
             <WordForm
@@ -1142,6 +1190,7 @@
           onOpenPath={(label: Label) => {
             openPath(label);
           }}
+          onShare={shareLabels}
         />
       {/if}
     </div>
@@ -1160,6 +1209,15 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .brand {
+    flex-wrap: wrap;
+  }
+
+  .profile-slot {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .version {

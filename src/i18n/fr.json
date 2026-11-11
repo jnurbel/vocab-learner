@@ -158,7 +158,19 @@
       "labelNotFound": "Ce label n'existe plus."
     },
     "openPath": "Parcours",
-    "openPathLabel": "Voir le parcours de {name}"
+    "openPathLabel": "Voir le parcours de {name}",
+    "share": "Partager",
+    "shareLabel": "Partager {name}",
+    "shared": "Liste partagée : seuls les mots et leurs labels sont dans le fichier, sans ta progression.",
+    "downloaded": "Liste téléchargée : seuls les mots et leurs labels sont dans le fichier, sans ta progression.",
+    "shareFailed": "Le partage a échoué. Réessaie.",
+    "columnShare": "Partage",
+    "chooseForShare": "Choisir {name} pour le partage",
+    "shareChosen": {
+      "one": "Partager la sélection ({count} label)",
+      "other": "Partager la sélection ({count} labels)"
+    },
+    "shareHelp": "Le fichier contient les mots et leurs labels, jamais ta progression."
   },
   "stages": {
     "seed": "Graine",
@@ -1155,5 +1167,88 @@
     "contact": "Une question, un souci ? Écris à l’autrice en ouvrant un ticket (« issue ») sur le projet :",
     "contactLink": "github.com/jnurbel/vocab-learner",
     "version": "Page valable pour la version {version}."
+  },
+  "packImport": {
+    "title": "Importer une liste partagée",
+    "intro": "Un camarade ou ton professeur t’a envoyé une liste (fichier .vocab.json) ? Ouvre-la ici : ses mots s’ajoutent aux tiens, sans aucun doublon, et ta progression ne change pas.",
+    "fileInput": "Choisir une liste de mots (.vocab.json)",
+    "errorsTitle": "Cette liste ne peut pas être importée",
+    "previewCaption": "Mots de la liste",
+    "columnTerm": "Mot",
+    "columnTranslation": "Traduction",
+    "columnLabels": "Labels",
+    "columnStatus": "État",
+    "status": {
+      "new": "Nouveau",
+      "relabelled": "Déjà connu : reçoit les labels",
+      "unchanged": "Déjà connu"
+    },
+    "summaryNew": "{count} mot(s) nouveau(x).",
+    "summaryRelabelled": "{count} mot(s) déjà connu(s) recevront les labels de la liste, sans être dupliqués.",
+    "summaryUnchanged": "{count} mot(s) déjà connu(s) avec ces labels : rien ne change.",
+    "createdLabels": "Labels créés : {names}",
+    "reusedLabels": "Labels déjà présents, réutilisés : {names}",
+    "importWords": {
+      "one": "Importer {count} mot",
+      "other": "Importer {count} mots"
+    },
+    "addLabelsOnly": "Ajouter les labels",
+    "cancel": "Annuler",
+    "nothingToDo": "Tous les mots de cette liste sont déjà là, avec leurs labels.",
+    "saved": "{created} mot(s) ajouté(s), {updated} mot(s) déjà connu(s) étiqueté(s).",
+    "saveFailed": "L’import a échoué : rien n’a changé. Réessaie.",
+    "issues": {
+      "fileTooLarge": "Ce fichier est trop gros pour être une liste de mots (2 Mo au maximum).",
+      "unreadableFile": "Ce fichier n’a pas pu être lu. Réessaie ou choisis-en un autre.",
+      "invalidJson": "Ce fichier est abîmé ou n’est pas une liste de mots : son contenu est illisible.",
+      "notAPack": "Ce fichier n’est pas une liste de mots de vocab-learner.",
+      "unexpectedData": "Le fichier contient des données inattendues : il est refusé.",
+      "tooMany": "Le fichier contient trop de mots ou de labels (5 000 mots et 500 labels au maximum).",
+      "invalidValue": "{place} : une donnée est vide, trop longue ou contient des caractères interdits.",
+      "duplicateWord": "{place} : ce mot est déjà dans le fichier.",
+      "duplicateLabel": "{place} : deux labels ont le même identifiant.",
+      "unknownLabel": "{place} : ce mot fait référence à un label absent du fichier.",
+      "word": "Mot n° {number}",
+      "label": "Label n° {number}",
+      "more": "Et {count} autre(s) problème(s).",
+      "generic": "Ce fichier ne peut pas être importé : ce n’est pas une liste de mots valide."
+    }
+  },
+  "profiles": {
+    "toggle": "Profil : {name}",
+    "title": "Profils",
+    "help": "Chaque profil a ses propres mots, sa progression, son île et ses réglages. Choisis un pseudo : ton vrai nom n’est pas nécessaire.",
+    "listLabel": "Profils de cet appareil",
+    "current": "Profil ouvert",
+    "open": "Ouvrir",
+    "openLabel": "Ouvrir le profil {name}",
+    "rename": "Renommer",
+    "renameLabel": "Renommer le profil {name}",
+    "renameInput": "Nouveau pseudo pour {name}",
+    "renameSave": "Enregistrer",
+    "cancel": "Annuler",
+    "createTitle": "Nouveau profil",
+    "createInput": "Pseudo du nouveau profil",
+    "createHelp": "Un pseudo de 30 caractères au plus, sans ton nom de famille.",
+    "create": "Créer le profil",
+    "created": "Profil « {name} » créé.",
+    "renamed": "Profil renommé : « {name} ».",
+    "deleted": "Profil « {name} » supprimé.",
+    "failed": "L’opération a échoué : rien n’a changé. Réessaie.",
+    "delete": "Supprimer",
+    "deleteLabel": "Supprimer le profil {name}",
+    "confirmDelete": "Supprimer le profil « {name} » ? Ses mots, sa progression, son île et ses réglages seront effacés de cet appareil.",
+    "backupFirst": "Télécharger sa sauvegarde d’abord",
+    "backupDone": "Sauvegarde de « {name} » téléchargée.",
+    "continueDelete": "Continuer",
+    "confirmDeleteFinal": "Dernière vérification : la suppression de « {name} » est définitive.",
+    "deleteForever": "Supprimer définitivement {name}",
+    "errors": {
+      "required": "Le pseudo est vide.",
+      "tooLong": "Le pseudo est trop long (30 caractères au plus).",
+      "invalidCharacters": "Le pseudo contient des caractères invisibles ou un retour à la ligne.",
+      "nameTaken": "Un autre profil porte déjà ce pseudo.",
+      "profileNotFound": "Ce profil n’existe plus."
+    }
   }
 }

@@ -139,3 +139,25 @@ async function backupOf(data: ReturnType<typeof sampleData>) {
   }
   return read.value.backup;
 }
+
+describe('BackupService with profiles', () => {
+  it('names each backup after the pseudonym the profile has at that time', async () => {
+    let pseudonym = 'Léa';
+    const renamable = new BackupService({
+      repository,
+      sha256,
+      clock: () => moment,
+      newId: () => 'unused',
+      appVersion: '0.8.0',
+      profileName: () => pseudonym,
+    });
+
+    const before = await renamable.createBackupFile();
+    pseudonym = 'Léa la grande';
+    const after = await renamable.createBackupFile();
+
+    expect(before.fileName).toBe('vocab-learner-Léa-2026-11-05.vocab-backup.json');
+    expect(after.fileName).toBe('vocab-learner-Léa-la-grande-2026-11-05.vocab-backup.json');
+    expect(JSON.parse(after.text)).toMatchObject({ profileName: 'Léa la grande' });
+  });
+});

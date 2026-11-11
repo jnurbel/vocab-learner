@@ -3,7 +3,7 @@ import { registerSW } from 'virtual:pwa-register';
 import './ui/theme.css';
 import './app/app.css';
 import './ui/components.css';
-import App from './app/App.svelte';
+import ProfileRoot from './app/ProfileRoot.svelte';
 import { appUpdatesFrom } from './services/pwa/appUpdates';
 
 const target = document.getElementById('app');
@@ -14,4 +14,5 @@ if (!target) {
 // The service worker makes the app installable and usable offline; a no-op on the dev server.
 const updates = appUpdatesFrom(registerSW);
 
-export default mount(App, { target, props: { updates } });
+// Each profile opens its own app, on its own database (DESIGN §3).
+export default mount(ProfileRoot, { target, props: { updates } });

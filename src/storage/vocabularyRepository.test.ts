@@ -253,3 +253,32 @@ describe('VocabularyRepository', () => {
     expect((await repository.allCards()).map(({ term }) => term).sort()).toEqual(['小猫', '猫']);
   });
 });
+
+describe('VocabularyRepository pack import', () => {
+  it('saves every label of a pack together with its words', async () => {
+    const animals = label('animals', 'Animaux');
+    const lesson = label('lesson', 'Leçon 7');
+    const cat = card('c1', '猫', ['animals', 'lesson']);
+
+    await repository.savePackImport({ cardsToCreate: [cat], cardsToUpdate: [] }, [animals, lesson]);
+
+    expect(await repository.allLabels()).toEqual([animals, lesson]);
+    expect(await repository.allCards()).toEqual([cat]);
+  });
+
+  it('keeps neither the labels nor the words when a pack import fails', async () => {
+    await repository.saveImport({
+      cardsToCreate: [card('c1', 'apple', [], 'en')],
+      cardsToUpdate: [],
+    });
+
+    await expect(
+      repository.savePackImport(
+        { cardsToCreate: [card('c2', 'APPLE', ['fruits'], 'en')], cardsToUpdate: [] },
+        [label('fruits', 'Fruits')],
+      ),
+    ).rejects.toThrow();
+    expect(await repository.allLabels()).toEqual([]);
+    expect(await repository.allCards()).toHaveLength(1);
+  });
+});
