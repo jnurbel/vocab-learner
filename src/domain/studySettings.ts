@@ -42,3 +42,11 @@ export function answerModeOf(settings: SettingsRecord | undefined): AnswerMode {
   const chosen = settings?.answerMode;
   return isAnswerMode(chosen) ? chosen : DEFAULT_ANSWER_MODE;
 }
+
+/**
+ * Whether the photo import always shows the zones it found (columns and rows) before the words:
+ * an expert setting, off unless the learner turned it on.
+ */
+export function photoZonesAlwaysOf(settings: SettingsRecord | undefined): boolean {
+  return settings?.photoZonesAlways === true;
+}
