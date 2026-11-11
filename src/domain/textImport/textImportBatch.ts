@@ -1,5 +1,6 @@
 import { checkEntry, collectEntries, type BulkEntries } from '../bulkEntryParser';
 import { termKey } from '../card';
+import { normalizeSenses } from '../meaning/senses';
 import type { IgnoredTerm } from '../progressRecords';
 import type { TextWord } from './textWords';
 
@@ -42,7 +43,7 @@ export function textImportBatch(
     const entry = checkEntry(index + 1, {
       term: word.term,
       pinyin: choice.pinyin ?? '',
-      translation: choice.translation ?? '',
+      translation: normalizeSenses(choice.translation ?? ''),
     });
     return entry.ok && word.sentence !== undefined
       ? [{ ...entry, value: { ...entry.value, example: word.sentence } }]
