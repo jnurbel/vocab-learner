@@ -152,3 +152,25 @@ describe('WordList', () => {
     expect(within(row).getByText('yè')).toHaveClass('tone-4');
   });
 });
+
+describe('WordList export', () => {
+  it('exports the words shown, after the filters, as a CSV file', async () => {
+    const user = userEvent.setup();
+    const onExportCsv = vi.fn();
+    render(WordList, { cards, labels, onExportCsv });
+
+    await user.selectOptions(screen.getByLabelText(fr.wordList.labelFilter), 'Animaux');
+    await user.click(screen.getByRole('button', { name: fr.csvImport.exportButton }));
+
+    expect(onExportCsv).toHaveBeenCalledWith([
+      expect.objectContaining({ term: '猫' }),
+      expect.objectContaining({ term: 'dog' }),
+    ]);
+  });
+
+  it('offers no export where none is wired', () => {
+    render(WordList, { cards, labels });
+
+    expect(screen.queryByRole('button', { name: fr.csvImport.exportButton })).toBeNull();
+  });
+});

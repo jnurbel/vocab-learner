@@ -144,4 +144,29 @@ describe('applyImportPlan', () => {
     expect(pear).not.toHaveProperty('pinyin');
     expect(pear?.source).toBe('csv');
   });
+
+  it('gives a new word the example read with it, such as the sentence of a pasted text', () => {
+    const plan = planImport(
+      {
+        entries: [
+          {
+            lineNumber: 1,
+            language: 'en',
+            term: 'moon',
+            translation: 'lune',
+            example: 'The moon is bright.',
+          },
+          { lineNumber: 2, language: 'en', term: 'star', translation: 'étoile' },
+        ],
+        errors: [],
+      },
+      [],
+      [],
+    );
+
+    const [moon, star] = applyImportPlan(plan, { nextId, now, source: 'manual' }).cardsToCreate;
+
+    expect(moon?.example).toBe('The moon is bright.');
+    expect(star).not.toHaveProperty('example');
+  });
 });

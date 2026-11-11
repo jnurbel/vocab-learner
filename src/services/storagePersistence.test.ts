@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { persistenceRequester, type PersistableStorage } from './storagePersistence';
+import {
+  askPersistenceAgain,
+  persistenceRequester,
+  type PersistableStorage,
+} from './storagePersistence';
 
 function fakeStorage(overrides: Partial<PersistableStorage> = {}) {
   return {
@@ -45,5 +49,16 @@ describe('persistenceRequester', () => {
 
   it('does nothing when the browser has no storage manager', async () => {
     await expect(persistenceRequester(undefined)()).resolves.toBeUndefined();
+  });
+});
+
+describe('askPersistenceAgain', () => {
+  it('asks again once installed, even after an earlier request', async () => {
+    const storage = fakeStorage();
+    await persistenceRequester(storage)();
+
+    await askPersistenceAgain(storage);
+
+    expect(storage.persist).toHaveBeenCalledTimes(2);
   });
 });

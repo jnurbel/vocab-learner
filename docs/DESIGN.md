@@ -401,12 +401,13 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.5.0 | **Thème visuel « Encre & Jade »** (publié seul, 2026-11-07) d'après les maquettes ([docs/ui](ui/README.md)) : jetons CSS clair/sombre testés (AA), police d'interface auto-hébergée, menu latéral PC / barre basse mobile, reprise des écrans existants |
 | 0.6.0 | **Labels à travailler + objectif contrôle + jauge de maîtrise** (nouvel accueil), jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
 | 0.7.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
-| 0.8.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité |
+| 0.8.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité ; **import par photo lu sur l'appareil** (Tesseract.js `chi_sim+eng`, chargé à la première utilisation, aucune donnée ne quitte l'appareil) pour du **texte imprimé** : liste de vocabulaire ou texte, avec le même aperçu que l'import par texte collé (mots nouveaux uniquement) — décision de l'autrice, 2026-11-10 |
+| 0.9.0 | **Import par photo lu par Claude** via le Cloudflare Worker (§7, §8.1, §8.4) — avancé de 1.4.0 (décision de l'autrice, 2026-11-10) : listes et textes, imprimés ou manuscrits, traduction suggérée en contexte ; option activée par le parent, code d'accès familial, consentement, rien de conservé. Prérequis côté autrice : clé API Anthropic avec plafond de dépenses, compte Cloudflare |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
-| 1.1.0 | `ToneEcho`, `SentenceListen`, `BridgeMatch` |
-| 1.2.0 | Atelier de phrases, `SentenceShuffle`, vue parent |
+| 1.1.0 | ~~`ToneEcho`, `SentenceListen`, `BridgeMatch`~~ (livrés en 0.7.0) |
+| 1.2.0 | Atelier de phrases, vue parent (`SentenceShuffle` livré en 0.7.0) |
 | 1.3.0 | Répéter à voix haute (reconnaissance vocale, option), ordre des traits en bonus |
-| 1.4.0 | Worker vision + **import par photo** : liste de vocabulaire (§8.1) et texte (§8.4), traduction suggérée en contexte |
+| 1.4.0 | ~~Import par photo~~ (avancé en 0.8.0 pour la lecture sur l'appareil et en 0.9.0 pour la lecture par Claude) |
 | 1.5.0 | Correction de dictée par photo (réutilise le Worker) |
 | 1.6.0 | Synchro chiffrée |
 | 1.7.0 | **Suivi professeur, étape 1** : rapport de progression partageable + tableau de bord professeur local (§9 ter) |

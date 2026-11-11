@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount, type Snippet } from 'svelte';
   import { shouldRemindBackup } from '../domain/backup/backupReminder';
   import { sha256With } from '../domain/backup/sha256';
   import type { Card } from '../domain/card';
@@ -44,6 +44,11 @@
     type FlashcardStore,
   } from '../features/flashcards/flashcardSession';
   import BulkEntry from '../features/import/BulkEntry.svelte';
+  import ImportSources from '../features/import/ImportSources.svelte';
+  import { vocabularyToCsv } from '../domain/csv/vocabularyCsv';
+  import { loadTextRecognizer } from '../services/ocr/ocrLoader';
+  import { browserPhotoEnvironment } from '../services/photo/browserPhotoEnvironment';
+  import { preparePhoto } from '../services/photo/preparePhoto';
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
   import VoicePanel from '../features/settings/VoicePanel.svelte';
@@ -74,6 +79,7 @@
   import { StudyRepository } from '../storage/studyRepository';
   import { VocabularyRepository } from '../storage/vocabularyRepository';
   import { appVersion } from './appVersion';
+  import { format } from '../i18n/format';
   import NavIcon from '../ui/NavIcon.svelte';
   import { srs } from './srs';
   import { EXAM_CONFIG } from '../domain/exam/examConfig';
@@ -101,10 +107,39 @@
     startFinalChallenge,
     type FinalChallengeStore,
   } from '../features/path/finalChallengeSession';
+  import { installOffer } from '../domain/pwa/installOffer';
+  import { updateBannerVisible } from '../domain/pwa/updateBanner';
+  import InstallOfferView from '../features/pwa/InstallOffer.svelte';
+  import OfflineBadge from '../features/pwa/OfflineBadge.svelte';
+  import UpdateBanner from '../features/pwa/UpdateBanner.svelte';
+  import PrivacyPage from '../features/privacy/PrivacyPage.svelte';
+  import { noAppUpdates, type AppUpdates } from '../services/pwa/appUpdates';
+  import { watchConnectivity, type ConnectivityHost } from '../services/pwa/connectivity';
+  import {
+    watchInstall,
+    type InstallHost,
+    type InstallState,
+    type InstallWatch,
+  } from '../services/pwa/installPrompt';
+  import { askPersistenceAgain } from '../services/storagePersistence';
+  import { offlineAwareSpeaker, onlineOnlyLanguages } from '../services/tts/offlineSpeaker';
+  import { createVocabPack, packFileName, serializeVocabPack } from '../domain/packExport';
+  import type { PackImportOutcome } from '../domain/packImport';
+  import PackImport from '../features/packs/PackImport.svelte';
+  import {
+    browserShareEnvironment,
+    shareOrDownload,
+    type SharedFile,
+    type ShareOutcome,
+  } from '../services/pack/shareFile';
 
   interface Props {
-    /** One database per profile; profiles come later, so a single default one for now. */
+    /** One database per profile (DESIGN §3). */
     databaseName?: string;
+    /** The pseudonym of the profile, written into the backups and their file names. */
+    profileName?: string;
+    /** Switches, creates and manages the profiles; shown in the header. */
+    profileMenu?: Snippet;
     /** Asks the browser to keep the data; called after every successful save. */
     requestPersistence?: () => Promise<void>;
     /** Reads the words aloud; the browser's voices by default. */
@@ -116,6 +151,16 @@
     /** Picks the automatic backup folder; absent where the browser has no folder access. */
     directoryPicker?: (() => Promise<DirectoryHandleLike>) | undefined;
     now?: () => Date;
+    /** New versions found by the service worker; none without one (dev server, tests). */
+    updates?: AppUpdates;
+    /** Tells whether the device has a network; the browser window by default. */
+    connectivity?: ConnectivityHost;
+    /** Offers to install the app; the browser window by default. */
+    installHost?: InstallHost;
+    /** Asks again to keep the data, once the app is installed. */
+    requestPersistenceAgain?: () => Promise<void>;
+    /** Hands a pack over: the share sheet of the device, or a download where there is none. */
+    share?: (file: SharedFile) => Promise<ShareOutcome>;
   }
 
   /** The browser's voices, shared by the readings and the voice list of the settings. */
@@ -123,24 +168,30 @@
 
   const {
     databaseName = 'vocab-learner-default',
+    profileName = 'profil',
+    profileMenu,
     requestPersistence = persistenceRequester(
       'storage' in navigator ? navigator.storage : undefined,
     ),
-    speaker = browserSpeech,
+    // Offline, an online voice (Edge "Natural", Chrome "Google") is silent: words are written.
+    speaker = offlineAwareSpeaker(browserSpeech, () => navigator.onLine),
     voices = browserSpeech,
     download = (file: BackupFile) => {
       downloadFile(file, browserDownloadEnvironment());
     },
     directoryPicker = directoryPickerOf(window as Parameters<typeof directoryPickerOf>[0]),
     now = () => new Date(),
+    updates = noAppUpdates,
+    connectivity = window,
+    installHost = window,
+    requestPersistenceAgain = () =>
+      askPersistenceAgain('storage' in navigator ? navigator.storage : undefined),
+    share = (file: SharedFile) => shareOrDownload(file, browserShareEnvironment(download)),
   }: Props = $props();
-
-  /** Profiles come later: the pseudonym written into the backup file names. */
-  const PROFILE_NAME = 'profil';
 
   type MenuPage = 'home' | 'words' | 'garden' | 'flashcards' | 'dictation' | 'backup' | 'settings';
   /** 'miniGame' is opened from the garden or the flashcards, not from the menu. */
-  type Page = MenuPage | 'miniGame' | 'path' | 'finalChallenge';
+  type Page = MenuPage | 'miniGame' | 'path' | 'finalChallenge' | 'privacy';
   const PAGES: readonly MenuPage[] = [
     'home',
     'words',
@@ -225,11 +276,17 @@
       clock: now,
       newId,
       appVersion,
-      profileName: PROFILE_NAME,
+      // Read at each backup: the profile can be renamed while the app is open.
+      profileName: () => profileName,
     });
     directory = new DirectoryBackup({ store: meta, picker: directoryPicker, clock: now });
     void unpinPastExams(repository).then(() => reload(ready(repository)));
     void refreshBackupState();
+  });
+
+  /** Another profile opens: nothing of this one may still be heard. */
+  onDestroy(() => {
+    speaker.cancel();
   });
 
   /** The day after a test, its label is unpinned (GAME_DESIGN.md 2.6); the home offers the undo. */
@@ -467,12 +524,25 @@
     await reload(storage());
   }
 
-  async function save({ newLabel, changes }: VocabularySave) {
+  async function save({ newLabel, newLabels = [], changes, ignoredTerms }: VocabularySave) {
     const store = storage();
-    await store.saveImport(changes, newLabel);
+    const created = newLabel === undefined ? newLabels : [newLabel, ...newLabels];
+    await store.saveImport(changes, created, ignoredTerms);
     void requestPersistence();
     await recordChange();
     await reload(store);
+  }
+
+  /** The words shown in the list, as a CSV file for Excel, saved on this device. */
+  function exportCsv(shown: readonly Card[]) {
+    downloadFile(
+      {
+        fileName: format(fr.csvImport.exportFileName, { date: clock().slice(0, 10) }),
+        text: vocabularyToCsv(shown, labels),
+      },
+      browserDownloadEnvironment(),
+      'text/csv;charset=utf-8',
+    );
   }
 
   async function changeLabels(changes: LabelChanges) {
@@ -692,8 +762,91 @@
     page = 'path';
   }
 
+  /** A pack holds the words of the labels and nothing of the learner (DESIGN §8.3). */
+  function shareLabels(labelIds: readonly string[]): Promise<ShareOutcome> {
+    const pack = createVocabPack(labels, cards, labelIds);
+    const fileName = packFileName(pack.labels.map(({ name }) => name));
+    return share({ fileName, text: serializeVocabPack(pack) });
+  }
+
+  /** The words of a pack arrive without progress: the learner starts them from scratch. */
+  async function savePack({ newLabels, changes }: PackImportOutcome) {
+    const store = storage();
+    await store.savePackImport(changes, newLabels);
+    void requestPersistence();
+    await recordChange();
+    await reload(store);
+  }
+
   function startEditing(card: Card) {
     editing = card;
+  }
+
+  /** False when the device has no network: everything local keeps working. */
+  let online = $state(true);
+  /** Languages whose voice needs the network, while offline: their words are written instead. */
+  let offlineVoices = $state.raw<Language[]>([]);
+  let updateReady = $state(false);
+  let updateDismissed = $state(false);
+  let install = $state.raw<InstallState>({ installed: false, promptAvailable: false, ios: false });
+  let installWatch: InstallWatch | undefined;
+  /** Pages where a study session may be under way: an update banner would interrupt it. */
+  const STUDY_PAGES: readonly Page[] = ['flashcards', 'dictation', 'miniGame', 'finalChallenge'];
+  const showUpdate = $derived(
+    updateBannerVisible({
+      updateReady,
+      dismissed: updateDismissed,
+      studying: STUDY_PAGES.includes(page),
+    }),
+  );
+  const offer = $derived(installOffer(install));
+
+  onMount(() => {
+    updates.onUpdateReady(() => {
+      updateReady = true;
+    });
+    installWatch = watchInstall(
+      installHost,
+      (state) => {
+        install = state;
+      },
+      () => void requestPersistenceAgain(),
+    );
+    const stopConnectivity = watchConnectivity(connectivity, (now) => {
+      online = now;
+      void refreshOfflineVoices();
+    });
+    return () => {
+      stopConnectivity();
+      installWatch?.stop();
+    };
+  });
+
+  /** Opened from the settings and from the foot of the menu, as any other page. */
+  function openPrivacy() {
+    flashcardLaunch = undefined;
+    listenLaunch = undefined;
+    dictationLaunch = undefined;
+    stepGames = undefined;
+    openGame = undefined;
+    fromPath = false;
+    page = 'privacy';
+  }
+
+  /** Bumped at each change of network, so that a late answer for an old state is dropped. */
+  let connectivityChange = 0;
+
+  async function refreshOfflineVoices() {
+    connectivityChange += 1;
+    const change = connectivityChange;
+    if (online) {
+      offlineVoices = [];
+      return;
+    }
+    const found = onlineOnlyLanguages(await voices.voiceReport());
+    if (change === connectivityChange) {
+      offlineVoices = found;
+    }
   }
 
   async function deleteCard(card: Card) {
@@ -712,6 +865,13 @@
     <header class="brand">
       <span class="logo" lang="zh-CN" aria-hidden="true">词</span>
       <h1>{fr.app.title}</h1>
+      <small class="version" title={format(fr.app.versionTitle, { version: appVersion })}
+        >v{appVersion}</small
+      >
+      <OfflineBadge {online} />
+      {#if profileMenu !== undefined}
+        <div class="profile-slot">{@render profileMenu()}</div>
+      {/if}
     </header>
 
     <nav aria-label={fr.nav.label} class="menu">
@@ -731,10 +891,35 @@
         >
       {/each}
     </nav>
+
+    <footer class="sidebar-footer">
+      <InstallOfferView {offer} onInstall={() => void installWatch?.install()} />
+      <button
+        type="button"
+        class="footer-link"
+        aria-current={page === 'privacy' ? 'page' : undefined}
+        onclick={openPrivacy}>{fr.privacy.link}</button
+      >
+    </footer>
   </div>
 
   <main>
     <p class="tagline">{fr.app.tagline}</p>
+
+    {#if showUpdate}
+      <UpdateBanner
+        version={appVersion}
+        onUpdate={() => updates.applyUpdate()}
+        onLater={() => {
+          updateDismissed = true;
+        }}
+      />
+    {/if}
+    {#if !online && offlineVoices.length > 0}
+      <p class="banner" aria-live="polite">
+        {fr.pwa.offlineVoice[offlineVoices.length > 1 ? 'both' : (offlineVoices[0] ?? 'zh')]}
+      </p>
+    {/if}
 
     {#if remindBackup && !reminderHidden && page !== 'backup'}
       <aside class="banner" aria-label={fr.backup.title}>
@@ -818,6 +1003,13 @@
         {#if voiceSpeed !== undefined}
           <VoicePanel {speaker} {voices} speed={voiceSpeed} onSpeedChange={changeVoiceSpeed} />
         {/if}
+        <section aria-labelledby="privacy-link-title">
+          <h2 id="privacy-link-title">{fr.privacy.settingsTitle}</h2>
+          <p class="help">{fr.privacy.settingsText}</p>
+          <button type="button" onclick={openPrivacy}>{fr.privacy.link}</button>
+        </section>
+      {:else if page === 'privacy'}
+        <PrivacyPage version={appVersion} site={location.hostname} />
       {:else if page === 'garden'}
         <Garden
           {cards}
@@ -978,6 +1170,26 @@
           onSave={save}
         />
 
+        <PackImport
+          existingCards={cards}
+          existingLabels={labels}
+          {newId}
+          {clock}
+          onSave={savePack}
+        />
+
+        <ImportSources
+          existingCards={cards}
+          existingLabels={labels}
+          loadPinyin={loadPinyinGenerator}
+          loadIgnoredTerms={() => storage().allIgnoredTerms()}
+          {newId}
+          {clock}
+          onSave={save}
+          loadRecognizer={loadTextRecognizer}
+          preparePhoto={(file: File) => preparePhoto(file, browserPhotoEnvironment)}
+        />
+
         {#if editing !== undefined}
           {#key editing.id}
             <WordForm
@@ -996,7 +1208,14 @@
           {/key}
         {/if}
 
-        <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
+        <WordList
+          {cards}
+          {labels}
+          {progressOf}
+          onEdit={startEditing}
+          onDelete={deleteCard}
+          onExportCsv={exportCsv}
+        />
 
         <LabelManager
           {labels}
@@ -1008,6 +1227,7 @@
           onOpenPath={(label: Label) => {
             openPath(label);
           }}
+          onShare={shareLabels}
         />
       {/if}
     </div>
@@ -1026,6 +1246,23 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .brand {
+    flex-wrap: wrap;
+  }
+
+  .profile-slot {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .version {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    white-space: nowrap;
   }
 
   .logo {
@@ -1148,6 +1385,30 @@
     display: flex;
   }
 
+  .sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4) 0;
+  }
+
+  .footer-link {
+    align-self: flex-start;
+    min-height: var(--target);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+    text-decoration: underline;
+  }
+
+  .footer-link:hover,
+  .footer-link[aria-current='page'] {
+    color: var(--jade-strong);
+  }
+
   .path-return button {
     min-height: var(--target);
   }
@@ -1188,6 +1449,11 @@
     }
 
     .brand {
+      padding: 0;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
       padding: 0;
     }
 

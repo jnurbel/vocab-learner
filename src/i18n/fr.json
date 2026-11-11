@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "vocab-learner",
-    "tagline": "Maîtrise le vocabulaire de ta leçon, en chinois et en anglais."
+    "tagline": "Maîtrise le vocabulaire de ta leçon, en chinois et en anglais.",
+    "versionTitle": "Version {version}"
   },
   "wordForm": {
     "title": "Ajouter un mot",
@@ -59,6 +60,8 @@
       "termTooLong": "mot trop long",
       "pinyinTooLong": "pinyin trop long",
       "translationTooLong": "sens trop long",
+      "exampleTooLong": "exemple trop long",
+      "labelTooLong": "nom de label trop long",
       "duplicateInBatch": "déjà saisi ligne {first}"
     },
     "inputErrors": {
@@ -157,7 +160,19 @@
       "labelNotFound": "Ce label n'existe plus."
     },
     "openPath": "Parcours",
-    "openPathLabel": "Voir le parcours de {name}"
+    "openPathLabel": "Voir le parcours de {name}",
+    "share": "Partager",
+    "shareLabel": "Partager {name}",
+    "shared": "Liste partagée : seuls les mots et leurs labels sont dans le fichier, sans ta progression.",
+    "downloaded": "Liste téléchargée : seuls les mots et leurs labels sont dans le fichier, sans ta progression.",
+    "shareFailed": "Le partage a échoué. Réessaie.",
+    "columnShare": "Partage",
+    "chooseForShare": "Choisir {name} pour le partage",
+    "shareChosen": {
+      "one": "Partager la sélection ({count} label)",
+      "other": "Partager la sélection ({count} labels)"
+    },
+    "shareHelp": "Le fichier contient les mots et leurs labels, jamais ta progression."
   },
   "stages": {
     "seed": "Graine",
@@ -1066,5 +1081,291 @@
     },
     "backToPath": "Retour au parcours",
     "retry": "Recommencer le défi"
+  },
+  "pwa": {
+    "offline": "Hors ligne",
+    "offlineTitle": "Pas de réseau : tes mots, les flashcards, les jeux, la dictée et la sauvegarde marchent quand même.",
+    "offlineVoice": {
+      "zh": "Hors ligne : sur ce navigateur, la voix chinoise passe par Internet. Les mots chinois s’affichent donc par écrit. Une voix installée sur l’appareil marche sans réseau (Réglages › Voix).",
+      "en": "Hors ligne : sur ce navigateur, la voix anglaise passe par Internet. Les mots anglais s’affichent donc par écrit. Une voix installée sur l’appareil marche sans réseau (Réglages › Voix).",
+      "both": "Hors ligne : sur ce navigateur, les voix chinoise et anglaise passent par Internet. Les mots s’affichent donc par écrit. Une voix installée sur l’appareil marche sans réseau (Réglages › Voix)."
+    },
+    "updateTitle": "Nouvelle version disponible",
+    "updateText": "Tu utilises la version {version}. La mise à jour recharge l’appli : tes mots et ta progression restent enregistrés.",
+    "update": "Mettre à jour",
+    "updating": "Mise à jour…",
+    "updateLater": "Plus tard",
+    "install": "Installer l’appli",
+    "installHelp": "Elle s’ouvre alors comme une appli, même sans réseau.",
+    "iosTitle": "Installer sur iPhone ou iPad",
+    "iosHelp": "Dans Safari, touche Partager, puis « Sur l’écran d’accueil »."
+  },
+  "privacy": {
+    "link": "Confidentialité",
+    "settingsTitle": "Vie privée",
+    "settingsText": "Ce que l’appli garde, où, et ce qu’elle n’envoie pas.",
+    "title": "Confidentialité",
+    "intro": "vocab-learner est fait pour apprendre, pas pour te surveiller. Voici simplement ce que l’appli garde, et ce qu’elle n’envoie pas. Cette page s’adresse à toi et à tes parents.",
+    "sections": {
+      "stored": {
+        "title": "Ce qui est enregistré, et où",
+        "paragraphs": [
+          "Tes mots, tes labels, ta progression (révisions, points, jardin, parcours) et tes réglages.",
+          "Tout reste sur cet appareil, dans le navigateur. Il n’y a pas de serveur vocab-learner : personne d’autre ne peut lire tes données.",
+          "Sur un autre appareil, l’appli est vide : pour y retrouver tes mots, passe par une sauvegarde."
+        ]
+      },
+      "notSent": {
+        "title": "Ce qui n’est jamais envoyé",
+        "paragraphs": [
+          "Pas de compte, pas de mot de passe, pas d’adresse e-mail.",
+          "Pas de pistage, pas de statistiques de visite, pas de cookies, pas de publicité.",
+          "L’appli est hébergée par GitHub (Microsoft). Comme pour tout site, GitHub voit l’adresse internet de l’appareil qui télécharge l’appli. Ensuite, elle marche sans réseau, et rien d’autre n’est envoyé."
+        ]
+      },
+      "voice": {
+        "title": "La voix",
+        "paragraphs": [
+          "Pour lire les mots à voix haute, l’appli utilise les voix du navigateur.",
+          "Certaines voix sont sur l’appareil. D’autres passent par Internet : avec les voix « Google » de Chrome ou les voix « Natural » d’Edge, le mot à lire est envoyé à Google ou à Microsoft. Seul ce mot part, rien d’autre.",
+          "Dans Réglages › Voix, chaque voix est marquée « sur l’appareil » ou « en ligne »."
+        ]
+      },
+      "backup": {
+        "title": "La sauvegarde",
+        "paragraphs": [
+          "« Sauvegarder sur cet appareil » crée un fichier sur l’appareil, souvent dans Téléchargements. Rien n’est envoyé.",
+          "Si tu choisis un dossier synchronisé (OneDrive, Google Drive…), c’est ce service qui garde la copie.",
+          "Le fichier contient tes mots et ta progression : ne le donne qu’à des personnes de confiance."
+        ]
+      },
+      "future": {
+        "title": "Les fonctions en ligne à venir",
+        "paragraphs": [
+          "La lecture d’une photo se fait sur l’appareil : la photo n’est ni envoyée ni conservée. Au premier usage, l’appli télécharge depuis son propre site son lecteur de texte (environ 9 Mo) et le garde dans le navigateur, pour lire les photos suivantes même sans réseau.",
+          "La version 0.9.0 proposera de faire lire une photo par Claude, l’intelligence artificielle d’Anthropic. Ce sera une option, désactivée au départ, qui ne s’active qu’avec un code donné par un parent ou un professeur.",
+          "Avant 15 ans, elle demandera l’accord d’un parent. La photo ne sera pas conservée. Cette page dira alors précisément ce qui est envoyé, et à qui."
+        ]
+      },
+      "erase": {
+        "title": "Comment tout effacer",
+        "paragraphs": [
+          "Attention, c’est définitif : fais d’abord une sauvegarde si tu veux garder tes mots.",
+          "Chrome sur Android : ⋮ › Paramètres › Paramètres des sites › Toutes les données des sites › {site} › Effacer.",
+          "Chrome ou Edge sur ordinateur : clique sur l’icône à gauche de l’adresse › Paramètres du site › Effacer les données.",
+          "Safari sur iPhone ou iPad : Réglages › Safari › Avancé › Données des sites web › {site} › Supprimer. Si l’appli est sur l’écran d’accueil, supprime aussi son icône.",
+          "Si l’appli est installée, désinstalle-la aussi. Les fichiers de sauvegarde, eux, se suppriment à la main.",
+          "Ces réglages effacent les données de tout le site {site}, donc aussi celles d’autres applis publiées à la même adresse."
+        ]
+      },
+      "license": {
+        "title": "Licence et contact",
+        "paragraphs": [
+          "vocab-learner est gratuit pour tout usage non commercial (élèves, familles, professeurs, établissements, associations), sous licence PolyForm Noncommercial 1.0.0. La revente ou un usage commercial demande l’accord de l’autrice.",
+          "Les bibliothèques utilisées gardent leur propre licence (fichier THIRD_PARTY_LICENSES du projet)."
+        ]
+      }
+    },
+    "contact": "Une question, un souci ? Écris à l’autrice en ouvrant un ticket (« issue ») sur le projet :",
+    "contactLink": "github.com/jnurbel/vocab-learner",
+    "version": "Page valable pour la version {version}."
+  },
+  "packImport": {
+    "title": "Importer une liste partagée",
+    "intro": "Un camarade ou ton professeur t’a envoyé une liste (fichier .vocab.json) ? Ouvre-la ici : ses mots s’ajoutent aux tiens, sans aucun doublon, et ta progression ne change pas.",
+    "fileInput": "Choisir une liste de mots (.vocab.json)",
+    "errorsTitle": "Cette liste ne peut pas être importée",
+    "previewCaption": "Mots de la liste",
+    "columnTerm": "Mot",
+    "columnTranslation": "Traduction",
+    "columnLabels": "Labels",
+    "columnStatus": "État",
+    "status": {
+      "new": "Nouveau",
+      "relabelled": "Déjà connu : reçoit les labels",
+      "unchanged": "Déjà connu"
+    },
+    "summaryNew": "{count} mot(s) nouveau(x).",
+    "summaryRelabelled": "{count} mot(s) déjà connu(s) recevront les labels de la liste, sans être dupliqués.",
+    "summaryUnchanged": "{count} mot(s) déjà connu(s) avec ces labels : rien ne change.",
+    "createdLabels": "Labels créés : {names}",
+    "reusedLabels": "Labels déjà présents, réutilisés : {names}",
+    "importWords": {
+      "one": "Importer {count} mot",
+      "other": "Importer {count} mots"
+    },
+    "addLabelsOnly": "Ajouter les labels",
+    "cancel": "Annuler",
+    "nothingToDo": "Tous les mots de cette liste sont déjà là, avec leurs labels.",
+    "saved": "{created} mot(s) ajouté(s), {updated} mot(s) déjà connu(s) étiqueté(s).",
+    "saveFailed": "L’import a échoué : rien n’a changé. Réessaie.",
+    "issues": {
+      "fileTooLarge": "Ce fichier est trop gros pour être une liste de mots (2 Mo au maximum).",
+      "unreadableFile": "Ce fichier n’a pas pu être lu. Réessaie ou choisis-en un autre.",
+      "invalidJson": "Ce fichier est abîmé ou n’est pas une liste de mots : son contenu est illisible.",
+      "notAPack": "Ce fichier n’est pas une liste de mots de vocab-learner.",
+      "unexpectedData": "Le fichier contient des données inattendues : il est refusé.",
+      "tooMany": "Le fichier contient trop de mots ou de labels (5 000 mots et 500 labels au maximum).",
+      "invalidValue": "{place} : une donnée est vide, trop longue ou contient des caractères interdits.",
+      "duplicateWord": "{place} : ce mot est déjà dans le fichier.",
+      "duplicateLabel": "{place} : deux labels ont le même identifiant.",
+      "unknownLabel": "{place} : ce mot fait référence à un label absent du fichier.",
+      "word": "Mot n° {number}",
+      "label": "Label n° {number}",
+      "more": "Et {count} autre(s) problème(s).",
+      "generic": "Ce fichier ne peut pas être importé : ce n’est pas une liste de mots valide."
+    }
+  },
+  "profiles": {
+    "toggle": "Profil : {name}",
+    "title": "Profils",
+    "help": "Chaque profil a ses propres mots, sa progression, son île et ses réglages. Choisis un pseudo : ton vrai nom n’est pas nécessaire.",
+    "listLabel": "Profils de cet appareil",
+    "current": "Profil ouvert",
+    "open": "Ouvrir",
+    "openLabel": "Ouvrir le profil {name}",
+    "rename": "Renommer",
+    "renameLabel": "Renommer le profil {name}",
+    "renameInput": "Nouveau pseudo pour {name}",
+    "renameSave": "Enregistrer",
+    "cancel": "Annuler",
+    "createTitle": "Nouveau profil",
+    "createInput": "Pseudo du nouveau profil",
+    "createHelp": "Un pseudo de 30 caractères au plus, sans ton nom de famille.",
+    "create": "Créer le profil",
+    "created": "Profil « {name} » créé.",
+    "renamed": "Profil renommé : « {name} ».",
+    "deleted": "Profil « {name} » supprimé.",
+    "failed": "L’opération a échoué : rien n’a changé. Réessaie.",
+    "delete": "Supprimer",
+    "deleteLabel": "Supprimer le profil {name}",
+    "confirmDelete": "Supprimer le profil « {name} » ? Ses mots, sa progression, son île et ses réglages seront effacés de cet appareil.",
+    "backupFirst": "Télécharger sa sauvegarde d’abord",
+    "backupDone": "Sauvegarde de « {name} » téléchargée.",
+    "continueDelete": "Continuer",
+    "confirmDeleteFinal": "Dernière vérification : la suppression de « {name} » est définitive.",
+    "deleteForever": "Supprimer définitivement {name}",
+    "errors": {
+      "required": "Le pseudo est vide.",
+      "tooLong": "Le pseudo est trop long (30 caractères au plus).",
+      "invalidCharacters": "Le pseudo contient des caractères invisibles ou un retour à la ligne.",
+      "nameTaken": "Un autre profil porte déjà ce pseudo.",
+      "profileNotFound": "Ce profil n’existe plus."
+    }
+  },
+  "textImport": {
+    "title": "Depuis un texte",
+    "inputLabel": "Texte à analyser",
+    "inputHelp": "Colle un article, un texte du manuel ou des paroles : seuls les mots qui ne sont pas encore dans ta liste sont proposés. Le texte reste sur cet appareil.",
+    "hideCommonWords": "Masquer les mots très courants (的, 了, the, a…)",
+    "inputErrors": {
+      "inputTooLong": "Le texte est trop long : 20 000 caractères au maximum."
+    },
+    "noNewWords": "Aucun mot nouveau dans ce texte.",
+    "newWordCount": {
+      "one": "1 mot nouveau",
+      "other": "{count} mots nouveaux"
+    },
+    "previewCaption": "Mots nouveaux du texte, à compléter avant l’ajout",
+    "columns": {
+      "term": "Mot",
+      "occurrences": "Fois",
+      "pinyin": "Pinyin",
+      "translation": "Sens",
+      "sentence": "Phrase du texte",
+      "decision": "Choix"
+    },
+    "forms": "aussi : {forms}",
+    "pinyinLabel": "Pinyin de {term}",
+    "translationLabel": "Sens de {term}",
+    "decisionLabel": "Choix pour {term}",
+    "decisions": {
+      "add": "Ajouter",
+      "known": "Je le connais déjà",
+      "skip": "Ignorer pour cette fois"
+    },
+    "join": "Joindre {first} et {second}",
+    "joinShort": "+ {second}",
+    "split": "Couper en {first} | {second}",
+    "errorsTitle": "Mots à compléter",
+    "errorLine": "{term} : {reason}",
+    "labelsLegend": "Labels à poser sur les mots ajoutés",
+    "save": "Enregistrer mes choix",
+    "summary": "{added} à ajouter, {known} déjà connu(s)",
+    "saved": "{added} mot(s) ajouté(s), {known} mot(s) ne seront plus proposés.",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie."
+  },
+  "importSources": {
+    "title": "Importer autrement",
+    "tabsLabel": "Source des mots",
+    "tabs": {
+      "text": "Depuis un texte",
+      "csv": "Fichier CSV",
+      "photo": "Photo"
+    }
+  },
+  "photoImport": {
+    "title": "Photo",
+    "honesty": "Marche bien sur du texte imprimé net, mal sur l'écriture à la main.",
+    "privacy": "La photo est lue sur cet appareil : elle n'est envoyée nulle part et n'est jamais conservée.",
+    "fileLabel": "Choisir ou prendre une photo",
+    "previewAlt": "Aperçu de la photo à lire",
+    "modeLegend": "Que montre la photo ?",
+    "modes": {
+      "list": "Une liste de vocabulaire",
+      "text": "Un texte"
+    },
+    "read": "Lire la photo",
+    "progressLabel": "Lecture de la photo",
+    "steps": {
+      "loading": "Chargement du lecteur (la première fois, environ 9 Mo)…",
+      "reading": "Lecture du texte…"
+    },
+    "cancel": "Annuler la lecture",
+    "cancelled": "Lecture annulée.",
+    "errors": {
+      "notAnImage": "Ce fichier n'est pas une image.",
+      "tooLarge": "Cette image est trop lourde : 30 Mo au maximum.",
+      "unreadable": "Cette image n'a pas pu être ouverte.",
+      "failed": "La lecture a échoué. Le premier chargement demande une connexion : vérifie-la, puis réessaie."
+    },
+    "nothingRead": "Aucun texte n'a été lu sur cette photo. Essaie avec une photo nette, bien éclairée et droite.",
+    "listTitle": "Liste lue sur la photo",
+    "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin.",
+    "textTitle": "Texte lu sur la photo"
+  },
+  "csvImport": {
+    "title": "Fichier CSV",
+    "fileLabel": "Choisir un fichier CSV",
+    "help": "Colonnes : terme ; pinyin ; sens ; exemple ; labels (séparés par des virgules). La première ligne peut être un en-tête. Le fichier est lu sur cet appareil.",
+    "inputErrors": {
+      "inputTooLong": "Le fichier est trop gros : 1 000 000 caractères au maximum.",
+      "tooManyLines": "Trop de lignes : 5 000 mots au maximum par fichier.",
+      "unclosedQuote": "Le fichier est mal formé : un guillemet n'est pas refermé.",
+      "misplacedQuote": "Le fichier est mal formé : du texte suit un guillemet fermant.",
+      "unreadable": "Ce fichier n'a pas pu être lu."
+    },
+    "previewCaption": "Aperçu du fichier",
+    "columns": {
+      "line": "Ligne",
+      "term": "Mot",
+      "pinyin": "Pinyin",
+      "translation": "Sens",
+      "example": "Exemple",
+      "labels": "Labels",
+      "status": "État"
+    },
+    "status": {
+      "new": "Nouveau",
+      "existing": "Existe déjà"
+    },
+    "labelsLegend": "Labels à poser sur tous les mots du fichier",
+    "errorsTitle": "Lignes à corriger",
+    "errorLine": "Ligne {line} : {reason}",
+    "save": "Importer le fichier",
+    "saved": "{created} mot(s) ajouté(s), {updated} mot(s) existant(s) complété(s).",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie.",
+    "exportButton": "Exporter ces mots en CSV",
+    "exportFileName": "vocab-learner-mots-{date}.csv"
   }
 }

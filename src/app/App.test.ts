@@ -40,6 +40,17 @@ async function studyOneCard(user: User) {
 }
 
 describe('App', () => {
+  it('shows the version of the app next to its name, on every page', () => {
+    render(App, { databaseName: 'app-test-version' });
+
+    const brand = screen.getByRole('banner');
+    expect(within(brand).getByText(`v${packageJson.version}`)).toBeVisible();
+    expect(within(brand).getByText(`v${packageJson.version}`)).toHaveAttribute(
+      'title',
+      `Version ${packageJson.version}`,
+    );
+  });
+
   it('opens on the home screen, the first entry of the menu', async () => {
     render(App, { databaseName: 'app-test-home' });
 
@@ -90,6 +101,41 @@ describe('App', () => {
     expect(
       await screen.findByText(fr.bulkEntry.existingWords.replace('{count}', '1')),
     ).toBeVisible();
+  });
+
+  it('adds a word from a pasted text, and never proposes again a word known already', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(App, { databaseName: 'app-test-text-import' });
+    await openWords();
+    const textImport = screen.getByRole('region', { name: fr.textImport.title });
+
+    await user.click(within(textImport).getByLabelText(fr.textImport.inputLabel));
+    await user.paste('The moon is bright.');
+    await user.type(within(textImport).getByLabelText('Sens de moon'), 'lune');
+    await user.click(
+      within(within(textImport).getByRole('radiogroup', { name: 'Choix pour bright' })).getByRole(
+        'radio',
+        { name: fr.textImport.decisions.known },
+      ),
+    );
+    await user.click(within(textImport).getByRole('button', { name: fr.textImport.save }));
+    await within(textImport).findByRole('status');
+    unmount();
+
+    render(App, { databaseName: 'app-test-text-import' });
+    await openWords();
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /moon/ })).toHaveTextContent('lune');
+    const again = screen.getByRole('region', { name: fr.textImport.title });
+    await user.click(within(again).getByLabelText(fr.textImport.inputLabel));
+    await user.paste('The moon is bright. The sun is hot.');
+
+    const preview = await within(again).findByRole('table', { name: fr.textImport.previewCaption });
+    await vi.waitFor(() => {
+      expect(within(preview).queryByText('bright')).toBeNull();
+    });
+    expect(within(preview).queryByText('moon')).toBeNull();
+    expect(within(preview).getByText('sun')).toBeVisible();
   });
 
   it('lists the saved words with their new label, still there after a restart', async () => {

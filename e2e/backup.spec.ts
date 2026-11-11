@@ -61,7 +61,8 @@ test('a learner backs up, loses the data, and finds the words and progress back'
   await expect(page.getByRole('heading', { name: 'Session terminée' })).toBeVisible();
 
   const backup = await saveBackup(page);
-  expect(backup.name).toMatch(/^vocab-learner-profil-\d{4}-\d{2}-\d{2}\.vocab-backup\.json$/);
+  // The words saved before profiles existed belong to the first profile, "Moi".
+  expect(backup.name).toMatch(/^vocab-learner-Moi-\d{4}-\d{2}-\d{2}\.vocab-backup\.json$/);
   expect(JSON.parse(backup.text)).toMatchObject({ format: 'vocab-learner-backup' });
   await expect(page.getByRole('status')).toContainText('Sauvegarde téléchargée');
 

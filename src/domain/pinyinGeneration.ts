@@ -4,10 +4,10 @@ import type { BulkEntry } from './bulkEntryParser';
 export type PinyinGenerator = (hanzi: string) => string;
 
 /** Fills in the pinyin of Chinese words that have none; the user can still correct it. */
-export function completeMissingPinyin(
-  entries: readonly BulkEntry[],
+export function completeMissingPinyin<Entry extends BulkEntry>(
+  entries: readonly Entry[],
   generate: PinyinGenerator,
-): BulkEntry[] {
+): Entry[] {
   return entries.map((entry) => {
     if (entry.language !== 'zh' || entry.pinyin !== undefined) {
       return entry;
