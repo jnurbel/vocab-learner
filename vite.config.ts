@@ -69,7 +69,7 @@ function progressiveWebApp() {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // Served from https://<user>.github.io/vocab-learner/
   base: '/vocab-learner/',
   plugins: [svelte(), svelteTesting(), devCspRelaxation(), progressiveWebApp(), paddleAssets()],
@@ -96,7 +96,10 @@ export default defineConfig({
     sourcemap: false,
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    // Timings run alone and uninstrumented (npm run test:perf): coverage and the other tests
+    // running alongside would measure the machine rather than the code.
+    include: mode === 'perf' ? ['src/**/*.perf.test.ts'] : ['src/**/*.test.ts'],
+    exclude: mode === 'perf' ? [] : ['src/**/*.perf.test.ts'],
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
     restoreMocks: true,
@@ -135,4 +138,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

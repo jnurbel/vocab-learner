@@ -1,36 +1,9 @@
 import frenchWords from 'an-array-of-french-words/index.json';
 import { describe, expect, it } from 'vitest';
 import { createFrenchSpelling, MAX_CORRECTED_LENGTH } from './frenchSpelling';
-import { NOTEBOOK_BLOCKS } from './notebookPhoto.fixtures';
+import { NOTEBOOK_MEANINGS } from './frenchSpelling.fixtures';
 
 const correct = createFrenchSpelling(frenchWords);
-
-/** The meanings written by hand on the notebook page, as the Latin model read them. */
-const NOTEBOOK_MEANINGS: readonly (readonly [read: string, written: string])[] = [
-  ['enfantunique', 'enfant unique'],
-  ['controlercontrgle', 'contrôler contrôle'],
-  ['aug menter angmentation', 'augmenter augmentation'],
-  ['vitesle', 'vitesse'],
-  ['gouvecnement', 'gouvernement'],
-  ['famille', 'famille'],
-  ['géneralement, woyen', 'généralement, moyen'],
-  ['chouchouter', 'chouchouter'],
-  ['à parct...', 'à part'],
-  ['grand-père', 'grand-père'],
-  ['emperceur', 'empereur'],
-  ['ecaractere', 'caractère'],
-  ['goiste', 'égoïste'],
-  ['tempérament', 'tempérament'],
-  ['bésité', 'obésité'],
-  ['tendre la maint', 'tendre la main'],
-  ['shabiller', "s'habiller"],
-  ['prire etsoeut', 'frère et soeur'],
-  ["S'ocayer/ prendre soin", "s'occuper / prendre soin"],
-  ['dire merci', 'dire merci'],
-  ['politique', 'politique'],
-  ['société', 'société'],
-  ['partager', 'partager'],
-];
 
 describe('createFrenchSpelling', () => {
   it('keeps a word spelt right, sure of it', () => {
@@ -119,18 +92,5 @@ describe('createFrenchSpelling', () => {
 
     expect(right.length).toBeGreaterThanOrEqual(17);
     expect(wronglyChanged).toEqual([]);
-  });
-
-  it('corrects the 30 meanings of a page in less than 300 ms', () => {
-    const meanings = [
-      ...NOTEBOOK_MEANINGS.map(([read]) => read),
-      ...NOTEBOOK_BLOCKS.slice(0, 7).map(({ latin }) => latin.text),
-    ];
-    const start = performance.now();
-
-    meanings.forEach((meaning) => correct(meaning));
-
-    expect(meanings).toHaveLength(30);
-    expect(performance.now() - start).toBeLessThan(300);
   });
 });
