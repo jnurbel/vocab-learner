@@ -197,3 +197,15 @@ export function photoWordsBatch(words: readonly PhotoWord[]): BulkEntries {
     [],
   );
 }
+
+/** Gives their pinyin to the Chinese words still without one, unless the learner typed it. */
+export function fillMissingPinyin(
+  words: readonly PhotoWord[],
+  generate: PinyinGenerator,
+): PhotoWord[] {
+  return words.map((word) =>
+    word.pinyinTyped || word.pinyin !== ''
+      ? word
+      : { ...word, pinyin: pinyinOf(word.term, generate) },
+  );
+}

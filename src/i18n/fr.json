@@ -235,7 +235,9 @@
     "newPerDay": "Mots nouveaux par jour",
     "newPerDayHelp": "Avant un contrôle, augmente ce nombre. Plus de mots nouveaux = séances plus longues les jours suivants.",
     "saved": "Réglage enregistré : il s'applique à la prochaine séance.",
-    "saveFailed": "Le réglage n'a pas pu être enregistré. Réessaie."
+    "saveFailed": "Le réglage n'a pas pu être enregistré. Réessaie.",
+    "photoZonesAlways": "Toujours afficher les zones avant la lecture (mode expert)",
+    "photoZonesAlwaysHelp": "Pour l'import par photo : montre les colonnes et les lignes trouvées, à ajuster, avant la liste des mots."
   },
   "flashcards": {
     "title": "Flashcards",
@@ -564,7 +566,11 @@
       "thirst": "Soif",
       "nextReview": "Prochaine révision"
     },
-    "thirstLevels": ["Pas soif", "A soif", "Très soif"],
+    "thirstLevels": [
+      "Pas soif",
+      "A soif",
+      "Très soif"
+    ],
     "noReview": "—"
   },
   "island": {
@@ -1306,8 +1312,8 @@
   },
   "photoImport": {
     "title": "Photo",
-    "honesty": "Pour du texte imprimé net, sans tableau : une page de manuel, un article. L'écriture à la main n'est pas lue : une liste écrite à la main se tape dans la saisie en lot ou s'importe en fichier CSV.",
-    "privacy": "La photo est lue sur cet appareil : elle n'est envoyée nulle part et n'est jamais conservée.",
+    "honesty": "Une liste de vocabulaire, même en tableau et écrite en partie à la main, ou une page de texte. La lecture n'est jamais parfaite : chaque ligne s'affiche à côté de sa photo pour la vérifier et la corriger avant l'ajout.",
+    "privacy": "La photo est lue sur cet appareil : elle n'est envoyée nulle part et n'est jamais conservée. La première fois, le lecteur se télécharge depuis le site de l'appli (environ 48 Mo), puis il reste dans le navigateur.",
     "fileLabel": "Choisir ou prendre une photo",
     "previewAlt": "Aperçu de la photo à lire",
     "modeLegend": "Que montre la photo ?",
@@ -1318,8 +1324,9 @@
     "read": "Lire la photo",
     "progressLabel": "Lecture de la photo",
     "steps": {
-      "loading": "Chargement du lecteur (la première fois, environ 9 Mo)…",
-      "reading": "Lecture du texte…"
+      "loading": "Téléchargement du lecteur (la première fois, environ 48 Mo)…",
+      "reading": "Lecture de la photo…",
+      "correcting": "Correction des mots…"
     },
     "cancel": "Annuler la lecture",
     "cancelled": "Lecture annulée.",
@@ -1329,10 +1336,10 @@
       "unreadable": "Cette image n'a pas pu être ouverte.",
       "failed": "La lecture a échoué. Le premier chargement demande une connexion : vérifie-la, puis réessaie."
     },
-    "nothingRead": "Rien n'a pu être lu de façon sûre sur cette photo. Le lecteur ne lit que du texte imprimé net, sans tableau ni écriture à la main. Essaie une photo droite et bien éclairée, ou, pour une liste écrite à la main, tape-la dans la saisie en lot ou importe un fichier CSV.",
-    "listTitle": "Liste lue sur la photo",
-    "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin.",
-    "textTitle": "Texte lu sur la photo"
+    "nothingRead": "Rien n'a pu être lu sur cette photo. Essaie une photo droite, nette et bien éclairée, ou tape la liste dans la saisie en lot.",
+    "listTitle": "Mots lus sur la photo",
+    "textTitle": "Texte lu sur la photo",
+    "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin."
   },
   "csvImport": {
     "title": "Fichier CSV",
@@ -1367,5 +1374,53 @@
     "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie.",
     "exportButton": "Exporter ces mots en CSV",
     "exportFileName": "vocab-learner-mots-{date}.csv"
+  },
+  "photoWords": {
+    "caption": "Mots lus sur la photo, à vérifier et corriger avant l’ajout",
+    "columnPhoto": "Photo",
+    "columnLine": "Ligne",
+    "columnActions": "Actions",
+    "thumbnailAlt": "Ligne {line} de la photo",
+    "noThumbnail": "Ajoutée",
+    "toCheck": "À vérifier",
+    "toCheckCount": "{count} case(s) à vérifier, surlignée(s).",
+    "allChecked": "Toutes les lignes semblent justes : vérifie-les quand même d’un coup d’œil.",
+    "nextToCheck": "Ligne suivante à vérifier",
+    "nowChecking": "Ligne {line} à vérifier.",
+    "notebook": "Ton cahier : {pinyin}",
+    "notebookHelp": "Le pinyin est calculé depuis les caractères ; celui de ton cahier diffère.",
+    "merge": "Fusionner la ligne {line} avec la suivante",
+    "addAfter": "Ajouter une ligne après la ligne {line}",
+    "remove": "Supprimer la ligne {line}",
+    "addAtEnd": "Ajouter une ligne oubliée",
+    "removed": "Ligne supprimée.",
+    "merged": "Lignes fusionnées.",
+    "added": "Ligne ajoutée : tape le mot et son sens.",
+    "manyToCheck": "Beaucoup de cases sont à vérifier : les colonnes ou les lignes de la photo ont peut-être été mal repérées. Tu peux ajuster les zones.",
+    "adjustZones": "Ajuster les zones (mode expert)",
+    "empty": "Aucun mot à ajouter."
+  },
+  "photoZones": {
+    "title": "Zones de la photo",
+    "help": "Les traits séparent les colonnes et les lignes du tableau. Déplace-les au doigt, à la souris ou avec les flèches du clavier, puis relis la photo.",
+    "photoLabel": "Photo avec les zones trouvées",
+    "columnSeparator": "Séparateur de colonnes {index}",
+    "rowSeparator": "Séparateur de lignes {index}",
+    "columnRole": "Contenu de la colonne {index}",
+    "roles": {
+      "hanzi": "Chinois",
+      "english": "Anglais",
+      "pinyin": "Pinyin",
+      "meaning": "Français",
+      "ignore": "Ignorer"
+    },
+    "addColumn": "Ajouter un séparateur de colonnes",
+    "addRow": "Ajouter un séparateur de lignes",
+    "removeSelected": "Supprimer le séparateur choisi",
+    "selected": "{separator} choisi. Flèches pour le déplacer, Suppr pour le supprimer.",
+    "moved": "{separator} déplacé.",
+    "reread": "Relire avec ces zones",
+    "confirm": "Les zones sont bonnes",
+    "back": "Revenir aux mots sans changer les zones"
   }
 }

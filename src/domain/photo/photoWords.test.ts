@@ -3,6 +3,7 @@ import type { PhotoRow } from './photoTable';
 import {
   addWord,
   editWord,
+  fillMissingPinyin,
   mergeWithNext,
   nextToCheck,
   notebookNote,
@@ -265,5 +266,15 @@ describe('photoWordsBatch', () => {
     );
 
     expect(batch.entries[0]?.pinyin).toBe('kòngzhì');
+  });
+});
+
+describe('fillMissingPinyin', () => {
+  it('gives a pinyin to the Chinese words read before the generator was loaded', () => {
+    const read = toPhotoWords([row('控制', 'contrôler'), row('wheel', 'roue')], [], undefined);
+    const typed = editWord(read, read[0]?.id ?? '', { pinyin: '' }, undefined);
+
+    expect(fillMissingPinyin(read, generate).map(({ pinyin }) => pinyin)).toEqual(['kòngzhì', '']);
+    expect(fillMissingPinyin(typed, generate)[0]?.pinyin).toBe('');
   });
 });
