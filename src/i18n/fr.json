@@ -1150,5 +1150,39 @@
     "listTitle": "Liste lue sur la photo",
     "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin.",
     "textTitle": "Texte lu sur la photo"
+  },
+  "csvImport": {
+    "title": "Fichier CSV",
+    "fileLabel": "Choisir un fichier CSV",
+    "help": "Colonnes : terme ; pinyin ; sens ; exemple ; labels (séparés par des virgules). La première ligne peut être un en-tête. Le fichier est lu sur cet appareil.",
+    "inputErrors": {
+      "inputTooLong": "Le fichier est trop gros : 1 000 000 caractères au maximum.",
+      "tooManyLines": "Trop de lignes : 5 000 mots au maximum par fichier.",
+      "unclosedQuote": "Le fichier est mal formé : un guillemet n'est pas refermé.",
+      "misplacedQuote": "Le fichier est mal formé : du texte suit un guillemet fermant.",
+      "unreadable": "Ce fichier n'a pas pu être lu."
+    },
+    "previewCaption": "Aperçu du fichier",
+    "columns": {
+      "line": "Ligne",
+      "term": "Mot",
+      "pinyin": "Pinyin",
+      "translation": "Sens",
+      "example": "Exemple",
+      "labels": "Labels",
+      "status": "État"
+    },
+    "status": {
+      "new": "Nouveau",
+      "existing": "Existe déjà"
+    },
+    "labelsLegend": "Labels à poser sur tous les mots du fichier",
+    "errorsTitle": "Lignes à corriger",
+    "errorLine": "Ligne {line} : {reason}",
+    "save": "Importer le fichier",
+    "saved": "{created} mot(s) ajouté(s), {updated} mot(s) existant(s) complété(s).",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie.",
+    "exportButton": "Exporter ces mots en CSV",
+    "exportFileName": "vocab-learner-mots-{date}.csv"
   }
 }
