@@ -257,6 +257,28 @@ describe('parseBackup', () => {
       });
     });
 
+    it('keeps the expert setting of the photo import', async () => {
+      const data = sampleData();
+      data.settings = { ...data.settings, photoZonesAlways: true };
+      const backup = await createBackup(data, metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
+    it('refuses an expert setting of the photo import that is not a yes or a no', async () => {
+      const text = await resealed((document) => {
+        member(data(document), 'settings')['photoZonesAlways'] = 'always';
+      });
+
+      expect(await parseBackup(text, sha256)).toEqual({
+        ok: false,
+        errors: [{ path: 'data.settings.photoZonesAlways', code: 'invalid_type' }],
+      });
+    });
+
     it('refuses an unknown way of answering the flashcards', async () => {
       const text = await resealed((document) => {
         member(data(document), 'settings')['answerMode'] = '<img src=x>';

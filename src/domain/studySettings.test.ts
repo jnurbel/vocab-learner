@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { SettingsRecord } from './progressRecords';
-import { ANSWER_MODES, answerModeOf, NEW_PER_DAY_CHOICES, newPerDayOf } from './studySettings';
+import {
+  ANSWER_MODES,
+  answerModeOf,
+  NEW_PER_DAY_CHOICES,
+  newPerDayOf,
+  photoZonesAlwaysOf,
+} from './studySettings';
 
 describe('newPerDayOf', () => {
   it('introduces 5 new words a day when the learner never changed it', () => {
@@ -46,5 +52,19 @@ describe('answerModeOf', () => {
     for (const answerMode of ['typeEverything', '', 'toString', '__proto__', 3, null]) {
       expect(answerModeOf({ answerMode } as unknown as SettingsRecord)).toBe('selfAssess');
     }
+  });
+});
+
+describe('photoZonesAlwaysOf', () => {
+  it('goes from the photo straight to the words, unless the learner asked for the zones', () => {
+    expect(photoZonesAlwaysOf(undefined)).toBe(false);
+    expect(photoZonesAlwaysOf({})).toBe(false);
+    expect(photoZonesAlwaysOf({ photoZonesAlways: true })).toBe(true);
+  });
+
+  it('ignores a tampered stored value', () => {
+    expect(photoZonesAlwaysOf({ photoZonesAlways: 'yes' } as unknown as SettingsRecord)).toBe(
+      false,
+    );
   });
 });

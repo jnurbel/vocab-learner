@@ -3,8 +3,11 @@ export interface ImageSize {
   height: number;
 }
 
-/** Enough for printed text to be read, and far lighter than a phone photo. */
-export const PHOTO_MAX_SIDE = 1500;
+/**
+ * Enough for handwritten hanzi to be read (a notebook page read 22 of 23 words at this size,
+ * 20 at 1 500 pixels), and lighter than a phone photo.
+ */
+export const PHOTO_MAX_SIDE = 2500;
 
 /** The size of an image reduced, never enlarged, so that its longer side fits `maxSide`. */
 export function fitWithin({ width, height }: ImageSize, maxSide: number): ImageSize {

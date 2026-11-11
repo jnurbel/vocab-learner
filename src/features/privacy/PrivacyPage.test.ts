@@ -25,6 +25,7 @@ describe('PrivacyPage', () => {
       'Ce qui n’est jamais envoyé',
       'La voix',
       'La sauvegarde',
+      'La lecture d’une photo',
       'Les fonctions en ligne à venir',
       'Comment tout effacer',
       'Licence et contact',
@@ -48,11 +49,21 @@ describe('PrivacyPage', () => {
     expect(section('La voix')).toHaveTextContent('envoyé à Google ou à Microsoft');
   });
 
+  it('says that a photo is read on the device, with a reader downloaded once from the app', () => {
+    renderPage();
+
+    const photo = section('La lecture d’une photo');
+    expect(photo).toHaveTextContent('la photo n’est ni envoyée ni conservée');
+    expect(photo).toHaveTextContent('depuis le site de l’appli');
+    expect(photo).toHaveTextContent('environ 48 Mo');
+  });
+
   it('announces the optional photo reading by Claude, with the consent of a parent under 15', () => {
     renderPage();
 
     const future = section('Les fonctions en ligne à venir');
     expect(future).toHaveTextContent('Claude');
+    expect(future).toHaveTextContent('0.10.0');
     expect(future).toHaveTextContent('Avant 15 ans, elle demandera l’accord d’un parent.');
   });
 

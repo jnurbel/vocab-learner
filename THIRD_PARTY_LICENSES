@@ -11,9 +11,11 @@ Their licenses are reproduced below, as their authors require.
 | ts-fsrs | 5.4.2 | MIT | https://github.com/open-spaced-repetition/ts-fsrs |
 | Plus Jakarta Sans (font, via @fontsource/plus-jakarta-sans) | 5.3.0 | OFL-1.1 | https://github.com/tokotype/PlusJakartaSans |
 | Workbox (workbox-window in the app, workbox runtime in the service worker, via vite-plugin-pwa) | 7.4.1 | MIT | https://github.com/GoogleChrome/workbox |
-| tesseract.js | 7.0.0 | Apache-2.0 | https://github.com/naptha/tesseract.js |
-| tesseract.js-core (WebAssembly build of Tesseract OCR) | 7.0.0 | Apache-2.0 | https://github.com/naptha/tesseract.js-core |
-| Tesseract language models chi_sim and eng (tessdata_best, integer), via @tesseract.js-data 1.0.0 (MIT packaging) | 4.0.0 | Apache-2.0 | https://github.com/tesseract-ocr/tessdata_best |
+| ppu-paddle-ocr (web build) | 6.7.0 | MIT | https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr |
+| ppu-ocv (canvas part, used by ppu-paddle-ocr) | 4.0.0 | MIT | https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv |
+| onnxruntime-web and onnxruntime-common (WebAssembly build of ONNX Runtime) | 1.31.1 | MIT | https://github.com/microsoft/onnxruntime |
+| PaddleOCR PP-OCRv5 mobile models: text detection, Chinese and Latin recognition, and their dictionaries (ONNX, from snowfluke/ppu-paddle-ocr-models at revision 3cbb268) | PP-OCRv5 | Apache-2.0 | https://github.com/PaddlePaddle/PaddleOCR |
+| an-array-of-french-words (French word list, derived from the Letterpress word list, CC0-1.0) | 2.0.0 | MIT | https://github.com/words/an-array-of-french-words |
 
 ## pinyin-pro
 
@@ -446,12 +448,96 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-## tesseract.js, tesseract.js-core and the Tesseract language models
+```
 
-tesseract.js (Copyright (c) 2016 Naptha), tesseract.js-core and the language models of
-tesseract-ocr/tessdata_best are licensed under the Apache License, Version 2.0, reproduced below.
-The packaging of the models by @tesseract.js-data is MIT licensed. These files are served by the
-app itself (dist/tesseract/) and only downloaded when a first photo is read.
+## ppu-paddle-ocr and ppu-ocv
+
+```text
+MIT License
+
+Copyright (c) 2025 PT. Perkasa Pilar Utama
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## onnxruntime-web and onnxruntime-common
+
+```text
+MIT License
+
+Copyright (c) Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## an-array-of-french-words
+
+The word list is derived from the Letterpress word list (https://github.com/lorenbrichter/Words),
+dedicated to the public domain under CC0-1.0. The package is MIT licensed:
+
+```text
+(The MIT License)
+
+Copyright (c) 2016 Zeke Sikelianos <zeke@sikelianos.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## PaddleOCR models
+
+The PP-OCRv5 mobile models of PaddleOCR (Copyright (c) 2016 PaddlePaddle Authors), converted to
+ONNX by snowfluke/ppu-paddle-ocr-models, are licensed under the Apache License, Version 2.0,
+reproduced below. They are not modified; they are served by the app itself (dist/paddle/) and
+only downloaded when a first photo is read.
 
 ```text
 Apache License

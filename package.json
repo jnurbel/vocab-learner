@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:perf": "vitest run --mode perf",
     "test:e2e": "playwright test",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
@@ -33,6 +34,7 @@
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
+    "an-array-of-french-words": "2.0.0",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-security": "^4.2.1",
@@ -52,11 +54,10 @@
     "workbox-window": "7.4.1"
   },
   "dependencies": {
-    "@tesseract.js-data/chi_sim": "1.0.0",
-    "@tesseract.js-data/eng": "1.0.0",
     "dexie": "^4.4.7",
+    "onnxruntime-web": "1.31.1",
     "pinyin-pro": "^3.29.5",
-    "tesseract.js": "7.0.0",
+    "ppu-paddle-ocr": "6.7.0",
     "ts-fsrs": "^5.4.2",
     "zod": "^4.6.7"
   }

@@ -1,3 +1,4 @@
+import './zodSetup';
 import { mount } from 'svelte';
 import { registerSW } from 'virtual:pwa-register';
 import './ui/theme.css';

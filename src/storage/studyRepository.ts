@@ -251,6 +251,11 @@ export class StudyRepository {
     await this.updateSettings({ answerMode });
   }
 
+  /** The expert setting of the photo import: always show the zones before the words. */
+  async savePhotoZonesAlways(photoZonesAlways: boolean): Promise<void> {
+    await this.updateSettings({ photoZonesAlways });
+  }
+
   /**
    * The intensive mode chosen for the test of a label (GAME_DESIGN.md 2.5). The label id
    * becomes an object key: only plain identifiers are accepted, never `__proto__` and the like.
