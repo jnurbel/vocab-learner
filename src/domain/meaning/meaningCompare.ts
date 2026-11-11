@@ -1,5 +1,6 @@
 import { cleanAnswer } from '../dictation/answerText';
 import { editDistance } from '../dictation/characterDiff';
+import { isSenseSeparator } from './senses';
 
 export type MeaningOutcome = 'correct' | 'almost' | 'wrong';
 
@@ -12,7 +13,6 @@ export interface MeaningComparison {
 /** A single typo is tolerated in senses at least this long, as in a dictation (GAME_DESIGN 6.2). */
 const TYPO_MIN_LETTERS = 6;
 const LETTER = /\p{L}/gu;
-const SENSE_SEPARATORS = new Set([',', ';', '/']);
 /** The word "ou" joins two senses, unless it is between parentheses. */
 const OR_WORD = /\s+ou\s+(?![^(]*\))/iu;
 const COMBINING_MARKS = /\p{M}/gu;
@@ -68,7 +68,7 @@ function splitSenses(translation: string): string[] {
     } else if (char === ')') {
       depth = Math.max(depth - 1, 0);
     }
-    if (depth === 0 && SENSE_SEPARATORS.has(char)) {
+    if (depth === 0 && isSenseSeparator(char)) {
       senses.push(sense);
       sense = '';
     } else {

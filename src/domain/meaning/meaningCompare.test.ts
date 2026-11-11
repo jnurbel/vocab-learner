@@ -57,6 +57,22 @@ describe('compareMeaning', () => {
   });
 
   it.each([
+    ['contrôler', 'contrôler / contrôle'],
+    ['contrôle', 'contrôler / contrôle'],
+    ['contrôle', 'contrôler | contrôle'],
+    ['contrôler', 'contrôler|contrôle'],
+  ])(
+    'accepts "%s", one sense of "%s", the vertical bar of older words included',
+    (answer, meaning) => {
+      expect(compareMeaning(answer, meaning).outcome).toBe('correct');
+    },
+  );
+
+  it('does not split the senses on a vertical bar between parentheses', () => {
+    expect(compareMeaning('a', 'b (a | c)').outcome).toBe('wrong');
+  });
+
+  it.each([
     ['laver', 'se laver'],
     ['se laver', 'laver'],
     ['appeler', "s'appeler"],
