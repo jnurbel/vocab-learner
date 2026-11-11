@@ -21,7 +21,9 @@ export type BulkLineReason =
   | 'pinyinNotAllowed'
   | 'termTooLong'
   | 'pinyinTooLong'
-  | 'translationTooLong';
+  | 'translationTooLong'
+  | 'exampleTooLong'
+  | 'labelTooLong';
 
 export type BulkLineError =
   | { lineNumber: number; reason: BulkLineReason }
@@ -78,11 +80,11 @@ export function parseBulkEntry(text: string): Result<BulkEntries, BulkInputError
  * Gathers checked lines into a batch: invalid lines and repeated words (after their first line)
  * are reported, together with `previousErrors`, in line order.
  */
-export function collectEntries(
-  checkedLines: readonly Result<BulkEntry, LineProblem>[],
+export function collectEntries<Entry extends BulkEntry>(
+  checkedLines: readonly Result<Entry, LineProblem>[],
   previousErrors: readonly BulkLineError[],
-): BulkEntries {
-  const entries: BulkEntry[] = [];
+): { entries: Entry[]; errors: BulkLineError[] } {
+  const entries: Entry[] = [];
   const errors: BulkLineError[] = [...previousErrors];
   const firstLineByKey = new Map<string, number>();
   for (const checked of checkedLines) {

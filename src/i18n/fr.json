@@ -60,6 +60,8 @@
       "termTooLong": "mot trop long",
       "pinyinTooLong": "pinyin trop long",
       "translationTooLong": "sens trop long",
+      "exampleTooLong": "exemple trop long",
+      "labelTooLong": "nom de label trop long",
       "duplicateInBatch": "déjà saisi ligne {first}"
     },
     "inputErrors": {
