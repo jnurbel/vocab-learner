@@ -1,4 +1,5 @@
 import { checkEntry, collectEntries, detectLanguage, type BulkEntries } from '../bulkEntryParser';
+import { normalizeSenses } from '../meaning/senses';
 import type { PinyinGenerator } from '../pinyinGeneration';
 import { letterKey, type SpellingResult } from './frenchSpelling';
 import type { Box } from './photoBlocks';
@@ -192,7 +193,11 @@ export function nextToCheck(
 export function photoWordsBatch(words: readonly PhotoWord[]): BulkEntries {
   return collectEntries(
     words.map((word, index) =>
-      checkEntry(index + 1, { term: word.term, pinyin: word.pinyin, translation: word.meaning }),
+      checkEntry(index + 1, {
+        term: word.term,
+        pinyin: word.pinyin,
+        translation: normalizeSenses(word.meaning),
+      }),
     ),
     [],
   );
