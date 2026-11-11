@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { RecognitionCancelled, type RecognitionProgress } from './textRecognizer';
 
 interface FakeWorker {
-  recognize: Mock<() => Promise<{ data: { text: string } }>>;
+  recognize: Mock<() => Promise<{ data: { text: string; confidence: number } }>>;
   terminate: Mock<() => Promise<unknown>>;
 }
 
@@ -21,9 +21,10 @@ const assets = {
   langPath: '/app/tesseract/lang',
 };
 
-function fakeWorker(text: string): FakeWorker {
+/** Tesseract gives a mean confidence from 0 to 100; a clear printed text reads above 80. */
+function fakeWorker(text: string, confidence = 90): FakeWorker {
   return {
-    recognize: vi.fn(() => Promise.resolve({ data: { text } })),
+    recognize: vi.fn(() => Promise.resolve({ data: { text, confidence } })),
     terminate: vi.fn(() => Promise.resolve({})),
   };
 }
@@ -65,6 +66,18 @@ describe('createTesseractRecognizer', () => {
     expect(await result).toBe('你好 | bonjour');
   });
 
+  it('returns nothing from a reading too unsure, as handwriting or a table gives', async () => {
+    const { result } = recognizeWith(fakeWorker('国 帮 EEC CLIIE 二 了', 14));
+
+    expect(await result).toBe('');
+  });
+
+  it('keeps a reading just sure enough', async () => {
+    const { result } = recognizeWith(fakeWorker('控制', 40));
+
+    expect(await result).toBe('控制');
+  });
+
   it('frees the reader once the text is read', async () => {
     const worker = fakeWorker('text');
     const { result } = recognizeWith(worker);
@@ -77,7 +90,7 @@ describe('createTesseractRecognizer', () => {
     const worker = fakeWorker('text');
     worker.recognize.mockImplementation(() => {
       tesseract.logger?.({ status: 'recognizing text', progress: 0.5 });
-      return Promise.resolve({ data: { text: 'text' } });
+      return Promise.resolve({ data: { text: 'text', confidence: 90 } });
     });
     const { result, progress } = recognizeWith(worker);
     tesseract.logger?.({ status: 'loading language traineddata', progress: 0.25 });
