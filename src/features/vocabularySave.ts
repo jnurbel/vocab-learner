@@ -7,6 +7,8 @@ export interface VocabularySave {
   /** Set when the typed label did not exist and must be stored with the words. */
   newLabel: Label | undefined;
   changes: ImportChanges;
+  /** Further labels to create, such as those named in an imported file. */
+  newLabels?: Label[];
   /** The words marked "I already know it" in a text import, never proposed again. */
   ignoredTerms?: IgnoredTerm[];
 }

@@ -472,9 +472,10 @@
     await reload(storage());
   }
 
-  async function save({ newLabel, changes, ignoredTerms }: VocabularySave) {
+  async function save({ newLabel, newLabels = [], changes, ignoredTerms }: VocabularySave) {
     const store = storage();
-    await store.saveImport(changes, newLabel, ignoredTerms);
+    const created = newLabel === undefined ? newLabels : [newLabel, ...newLabels];
+    await store.saveImport(changes, created, ignoredTerms);
     void requestPersistence();
     await recordChange();
     await reload(store);
