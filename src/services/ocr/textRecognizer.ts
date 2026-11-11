@@ -11,11 +11,6 @@ export interface RecognitionOptions {
   signal: AbortSignal;
 }
 
-/** Reads the printed text of an image, on the device. Injected so that tests can replace it. */
-export interface TextRecognizer {
-  recognize(image: Blob, options: RecognitionOptions): Promise<string>;
-}
-
 /** Thrown by `recognize` once the learner cancels. */
 export class RecognitionCancelled extends Error {
   constructor() {
