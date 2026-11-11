@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openWords } from './navigation.ts';
 import { reachFinalChallenge } from './pathSeed.ts';
 import { simulateProgress } from './progressStore.ts';
+import { publishNextVersion, serviceWorkerReady } from './serviceWorker.ts';
 
 /**
  * Screenshots of the main screens, light and dark, on a computer and on a phone, written to
@@ -302,6 +303,17 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await shoot(page, 'listen-meaning-wrong', device, scheme, game);
       });
 
+      test('privacy page, from the foot of the menu', async ({ page }) => {
+        await page.goto('./');
+        await page
+          .getByRole('contentinfo')
+          .getByRole('button', { name: 'Confidentialité' })
+          .click();
+        const privacy = page.getByRole('region', { name: 'Confidentialité' });
+        await expect(privacy.getByRole('heading', { name: 'Comment tout effacer' })).toBeVisible();
+        await shoot(page, 'privacy', device, scheme, privacy);
+      });
+
       test('mini-games: the list, BridgeMatch, ToneEcho, SentenceListen and SentenceShuffle', async ({
         page,
       }) => {
@@ -384,3 +396,26 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
     });
   }
 }
+
+/**
+ * The banner of a new version needs the next deployment, simulated by rewriting the service
+ * worker of the build: one test takes the four screenshots in turn, so that no other run
+ * rewrites it at the same time.
+ */
+test('update banner, on a computer and on a phone, light and dark', async ({ browser }, info) => {
+  for (const [device, viewport] of Object.entries(VIEWPORTS)) {
+    for (const scheme of SCHEMES) {
+      const context = await browser.newContext({
+        viewport,
+        colorScheme: scheme,
+        baseURL: info.project.use.baseURL,
+      });
+      const page = await context.newPage();
+      await page.goto('./');
+      await serviceWorkerReady(page);
+      await publishNextVersion(page);
+      await shoot(page, 'update-banner', device, scheme);
+      await context.close();
+    }
+  }
+});

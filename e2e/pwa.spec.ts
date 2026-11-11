@@ -1,16 +1,11 @@
-import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { openWords } from './navigation.ts';
+import { publishNextVersion, serviceWorkerReady, updateBanner } from './serviceWorker.ts';
 
 /**
  * The installable, offline app, on the production build: the manifest, the service worker
  * and its precache, a reload without network, and the update that waits for a click.
  */
-
-/** The service worker of the build served by `vite preview` (see playwright.config.ts). */
-const SERVICE_WORKER = 'dist/sw.js';
-/** What makes the next deployment differ from this build. */
-const NEXT_VERSION = '\n// next version\n';
 
 interface ManifestIcon {
   src: string;
@@ -37,14 +32,6 @@ function collectErrors(page: Page): string[] {
     errors.push(error.message);
   });
   return errors;
-}
-
-/** Waits until the service worker is active, i.e. the whole app is precached. */
-async function serviceWorkerReady(page: Page) {
-  return page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
-    return { scope: registration.scope, script: registration.active?.scriptURL ?? '' };
-  });
 }
 
 async function addWords(page: Page, lines: string) {
@@ -129,20 +116,10 @@ test('a new version waits for "Mettre à jour", then takes over', async ({ page 
   const errors = collectErrors(page);
   await page.goto('./');
   await serviceWorkerReady(page);
-  const banner = page.getByRole('complementary', { name: 'Nouvelle version disponible' });
+  const banner = updateBanner(page);
   await expect(banner).toBeHidden();
 
-  // The next deployment: a service worker that differs by one comment. `vite preview` serves
-  // dist/ from disk; the comment is removed at once, the browser keeps what it fetched.
-  // Removing it (rather than writing back a copy) leaves the build intact even if two runs overlap.
-  const built = (await readFile(SERVICE_WORKER, 'utf8')).replaceAll(NEXT_VERSION, '');
-  try {
-    await writeFile(SERVICE_WORKER, built + NEXT_VERSION);
-    await page.reload();
-    await expect(banner).toBeVisible();
-  } finally {
-    await writeFile(SERVICE_WORKER, built);
-  }
+  await publishNextVersion(page);
 
   await expect(banner).toContainText(/Tu utilises la version \d+\.\d+\.\d+\./);
   // The new version takes over, then the page reloads by itself, on this click only.
