@@ -158,6 +158,65 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         await shoot(page, 'backup', device, scheme);
       });
 
+      test('other imports: from a text, a CSV file and a photo', async ({ page }) => {
+        await page.goto('./');
+        await openWords(page);
+        await addWords(page);
+        const sources = page.getByRole('region', { name: 'Importer autrement' });
+        const shootSources = async (name: string) => {
+          await page.evaluate(async () => {
+            await document.fonts.ready;
+          });
+          await sources.screenshot({
+            path: `docs/ui/screenshots/${name}-${device}-${scheme}.png`,
+            animations: 'disabled',
+          });
+        };
+
+        await sources
+          .getByLabel('Texte à analyser')
+          .fill('今天是中秋节，我们吃月饼。现在天气很冷。The moon is bright tonight.');
+        await expect(sources.getByLabel('Pinyin de 月饼')).toHaveValue('yuè bǐng');
+        await sources.getByLabel('Sens de 月饼').fill('gâteau de lune');
+        await shootSources('import-text');
+
+        await sources.getByRole('tab', { name: 'Fichier CSV' }).click();
+        await sources.getByLabel('Choisir un fichier CSV').setInputFiles({
+          name: 'mots.csv',
+          mimeType: 'text/csv',
+          buffer: Buffer.from(
+            'terme;pinyin;sens;exemple;labels\n下雨;xià yǔ;pleuvoir;今天下雨。;Leçon 8\n天气;;temps;;Leçon 8\nsnow;;;;',
+          ),
+        });
+        await expect(sources.getByRole('table', { name: 'Aperçu du fichier' })).toBeVisible();
+        await shootSources('import-csv');
+
+        await sources.getByRole('tab', { name: 'Photo' }).click();
+        const image = await page.evaluate(() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 900;
+          canvas.height = 300;
+          const context = canvas.getContext('2d');
+          if (context === null) {
+            throw new Error('No canvas');
+          }
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, 900, 300);
+          context.fillStyle = '#111111';
+          context.font = '56px sans-serif';
+          context.fillText('月饼 | yuèbǐng | gâteau de lune', 40, 120);
+          context.fillText('moon | lune', 40, 220);
+          return canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+        });
+        await sources.getByLabel('Choisir ou prendre une photo').setInputFiles({
+          name: 'liste.png',
+          mimeType: 'image/png',
+          buffer: Buffer.from(image, 'base64'),
+        });
+        await expect(sources.getByRole('img', { name: 'Aperçu de la photo à lire' })).toBeVisible();
+        await shootSources('import-photo');
+      });
+
       test('flashcards: setup, a turned card, a typed answer with its diff', async ({ page }) => {
         await page.goto('./');
         await openWords(page);
