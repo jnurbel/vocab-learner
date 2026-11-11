@@ -1142,7 +1142,7 @@
       "future": {
         "title": "Les fonctions en ligne à venir",
         "paragraphs": [
-          "La lecture d’une photo sur l’appareil (version 0.8.0) se fait sans envoyer la photo.",
+          "La lecture d’une photo se fait sur l’appareil : la photo n’est ni envoyée ni conservée. Au premier usage, l’appli télécharge depuis son propre site son lecteur de texte (environ 9 Mo) et le garde dans le navigateur, pour lire les photos suivantes même sans réseau.",
           "La version 0.9.0 proposera de faire lire une photo par Claude, l’intelligence artificielle d’Anthropic. Ce sera une option, désactivée au départ, qui ne s’active qu’avec un code donné par un parent ou un professeur.",
           "Avant 15 ans, elle demandera l’accord d’un parent. La photo ne sera pas conservée. Cette page dira alors précisément ce qui est envoyé, et à qui."
         ]

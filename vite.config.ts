@@ -45,6 +45,20 @@ function progressiveWebApp() {
       // The app, its self-hosted font, the icons, and the pinyin-pro chunk loaded on demand,
       // so that the automatic pinyin works offline too.
       globPatterns: ['**/*.{js,css,html,woff2,svg,png,webmanifest}'],
+      // The photo reader (~9 MB) is not precached: most learners never open it. Its files are
+      // kept on first use instead, so that a photo read once online can be read again offline.
+      globIgnores: ['tesseract/**'],
+      runtimeCaching: [
+        {
+          urlPattern: /\/vocab-learner\/tesseract\//,
+          handler: 'CacheFirst',
+          options: {
+            // Unhashed file names: a new tesseract.js version gets a cache of its own.
+            cacheName: `tesseract-${packageJson.dependencies['tesseract.js']}`,
+            expiration: { maxEntries: 10 },
+          },
+        },
+      ],
       navigateFallback: 'index.html',
       cleanupOutdatedCaches: true,
       sourcemap: false,

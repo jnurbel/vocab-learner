@@ -30,4 +30,14 @@ if ! grep -q 'pinyinProGenerator' "${dist}/sw.js"; then
   missing=1
 fi
 
+# The photo reader is kept on first use, never precached: it would weigh ~9 MB on every install.
+if grep -q 'tesseract/' "${dist}/sw.js" && ! grep -q 'tesseract-' "${dist}/sw.js"; then
+  echo "::error::${dist}/sw.js precaches the photo reader instead of caching it on first use"
+  missing=1
+fi
+if ! grep -q 'CacheFirst' "${dist}/sw.js" || [[ ! -s "${dist}/tesseract/worker.min.js" ]]; then
+  echo "::error::the photo reader (${dist}/tesseract/) or its runtime cache is missing"
+  missing=1
+fi
+
 exit "${missing}"
