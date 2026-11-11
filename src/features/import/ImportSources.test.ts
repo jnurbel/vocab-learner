@@ -49,6 +49,16 @@ describe('ImportSources', () => {
     expect(screen.getByRole('tab', { name: fr.importSources.tabs.photo })).toHaveFocus();
   });
 
+  it('offers to import a CSV file in its own tab', async () => {
+    const user = setup();
+
+    await user.click(screen.getByRole('tab', { name: fr.importSources.tabs.csv }));
+
+    expect(screen.getByRole('tabpanel', { name: fr.importSources.tabs.csv })).toContainElement(
+      screen.getByLabelText(fr.csvImport.fileLabel),
+    );
+  });
+
   it('offers to read a photo in its own tab', async () => {
     const user = setup();
 

@@ -8,6 +8,7 @@
   import type { TextRecognizer } from '../../services/ocr/textRecognizer';
   import type { PhotoError } from '../../services/photo/preparePhoto';
   import type { VocabularySave } from '../vocabularySave';
+  import CsvImport from './CsvImport.svelte';
   import PhotoImport from './PhotoImport.svelte';
   import TextImport from './TextImport.svelte';
 
@@ -76,7 +77,9 @@
   <div role="tabpanel" id="import-panel-{selected}" aria-labelledby="import-tab-{selected}">
     {#if selected === 'text'}
       <TextImport {...importProps} />
-    {:else if selected === 'photo'}
+    {:else if selected === 'csv'}
+      <CsvImport {...importProps} />
+    {:else}
       <PhotoImport {...importProps} {loadRecognizer} {preparePhoto} />
     {/if}
   </div>
