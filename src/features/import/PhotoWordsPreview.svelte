@@ -234,6 +234,15 @@
     return column !== 'pinyin' && word.toCheck[column];
   }
 
+  /** The ids of what describes a cell: whether it is to check, and how to give several senses. */
+  function descriptionOf(word: PhotoWord, column: Column): string | undefined {
+    const ids = [
+      ...(isToCheck(word, column) ? ['photo-words-to-check'] : []),
+      ...(column === 'meaning' ? ['photo-words-senses-help'] : []),
+    ];
+    return ids.length === 0 ? undefined : ids.join(' ');
+  }
+
   async function save() {
     const now = clock();
     const choice = resolveLabelChoice(existingLabels, chosenLabelIds, labelName, {
@@ -292,7 +301,15 @@
           <tr>
             <th scope="col">{fr.photoWords.columnLine}</th>
             {#each COLUMNS as column (column)}
-              <th scope="col">{COLUMN_NAMES[column]}</th>
+              <th scope="col">
+                {COLUMN_NAMES[column]}
+                {#if column === 'meaning'}
+                  <!-- Read with each meaning cell, which it describes, rather than with the header. -->
+                  <span id="photo-words-senses-help" class="column-help" aria-hidden="true"
+                    >{fr.senses.help}</span
+                  >
+                {/if}
+              </th>
             {/each}
             <th scope="col">{fr.bulkEntry.columnStatus}</th>
             <th scope="col">{fr.photoWords.columnActions}</th>
@@ -330,9 +347,7 @@
                         line,
                       })}
                       aria-invalid={isToCheck(word, column) ? 'true' : undefined}
-                      aria-describedby={isToCheck(word, column)
-                        ? 'photo-words-to-check'
-                        : undefined}
+                      aria-describedby={descriptionOf(word, column)}
                       value={word[column]}
                       oninput={(event) => {
                         edit(word.id, { [column]: event.currentTarget.value });
@@ -505,6 +520,13 @@
     min-width: var(--target);
     min-height: var(--target);
     padding: 0;
+  }
+
+  .column-help {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: normal;
   }
 
   .help {

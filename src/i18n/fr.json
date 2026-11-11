@@ -28,6 +28,9 @@
       "duplicate": "Ce mot existe déjà dans ta liste."
     }
   },
+  "senses": {
+    "help": "Plusieurs sens ? Sépare-les par une virgule ou / : chacun sera accepté en réponse."
+  },
   "bulkEntry": {
     "title": "Saisie en lot",
     "inputLabel": "Un mot par ligne",

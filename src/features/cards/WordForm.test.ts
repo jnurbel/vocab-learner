@@ -177,8 +177,23 @@ describe('WordForm, entering one word', () => {
     const term = screen.getByLabelText(fr.wordForm.term);
     expect(term).toHaveAttribute('aria-invalid', 'true');
     expect(term).toHaveAccessibleDescription(fr.wordForm.errors.required);
-    expect(screen.getByLabelText(fr.wordForm.translation)).toHaveAttribute('aria-invalid', 'true');
+    const translation = screen.getByLabelText(fr.wordForm.translation);
+    expect(translation).toHaveAttribute('aria-invalid', 'true');
+    expect(translation).toHaveAccessibleDescription(
+      `${fr.wordForm.errors.required} ${fr.senses.help}`,
+    );
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('explains under the meaning how to give several senses', () => {
+    setup();
+
+    expect(screen.getByLabelText(fr.wordForm.translation)).toHaveAccessibleDescription(
+      fr.senses.help,
+    );
+    expect(fr.senses.help).toBe(
+      'Plusieurs sens ? Sépare-les par une virgule ou / : chacun sera accepté en réponse.',
+    );
   });
 
   it('shows typed markup as plain text and never as HTML', async () => {
