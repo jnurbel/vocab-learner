@@ -1306,7 +1306,7 @@
   },
   "photoImport": {
     "title": "Photo",
-    "honesty": "Marche bien sur du texte imprimé net, mal sur l'écriture à la main.",
+    "honesty": "Pour du texte imprimé net, sans tableau : une page de manuel, un article. L'écriture à la main n'est pas lue : une liste écrite à la main se tape dans la saisie en lot ou s'importe en fichier CSV.",
     "privacy": "La photo est lue sur cet appareil : elle n'est envoyée nulle part et n'est jamais conservée.",
     "fileLabel": "Choisir ou prendre une photo",
     "previewAlt": "Aperçu de la photo à lire",
@@ -1329,7 +1329,7 @@
       "unreadable": "Cette image n'a pas pu être ouverte.",
       "failed": "La lecture a échoué. Le premier chargement demande une connexion : vérifie-la, puis réessaie."
     },
-    "nothingRead": "Aucun texte n'a été lu sur cette photo. Essaie avec une photo nette, bien éclairée et droite.",
+    "nothingRead": "Rien n'a pu être lu de façon sûre sur cette photo. Le lecteur ne lit que du texte imprimé net, sans tableau ni écriture à la main. Essaie une photo droite et bien éclairée, ou, pour une liste écrite à la main, tape-la dans la saisie en lot ou importe un fichier CSV.",
     "listTitle": "Liste lue sur la photo",
     "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin.",
     "textTitle": "Texte lu sur la photo"

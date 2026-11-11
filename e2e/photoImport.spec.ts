@@ -65,9 +65,7 @@ test('a learner photographs a printed text and the new words are read on the dev
 
   await page.getByRole('tab', { name: 'Photo' }).click();
   const photo = page.getByRole('region', { name: 'Photo' });
-  await expect(photo).toContainText(
-    "Marche bien sur du texte imprimé net, mal sur l'écriture à la main.",
-  );
+  await expect(photo).toContainText('Pour du texte imprimé net, sans tableau');
   await photo.getByLabel('Choisir ou prendre une photo').setInputFiles({
     name: 'lesson.png',
     mimeType: 'image/png',
