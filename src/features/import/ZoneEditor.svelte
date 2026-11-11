@@ -32,6 +32,8 @@
 
   const changed = $derived(grid !== found);
   const columnBands = $derived(bands(grid.columnSeparators, grid.size.width));
+  /** The labels of the columns, at a size that follows the photo's. */
+  const labelSize = $derived(Math.round(grid.size.width / 45));
   /** One hundredth of the photo per arrow key, ten with Shift. */
   const step = (axis: Axis, large: boolean) =>
     Math.round((axis === 'column' ? grid.size.width : grid.size.height) / 100) * (large ? 10 : 1);
@@ -125,9 +127,17 @@
   >
     <image href={photoUrl} width={grid.size.width} height={grid.size.height} />
     {#each columnBands as band, index (index)}
-      <text class="role" x={band.start + 8} y="8" dominant-baseline="hanging"
-        >{fr.photoZones.roles[grid.columnRoles[index] ?? 'ignore']}</text
-      >
+      {@const name = fr.photoZones.roles[grid.columnRoles[index] ?? 'ignore']}
+      <!-- Drawn only where the column has room; the list under the photo names every column. -->
+      {#if band.end - band.start > name.length * labelSize * 0.7}
+        <text
+          class="role"
+          x={band.start + labelSize / 3}
+          y={labelSize / 3}
+          font-size={labelSize}
+          dominant-baseline="hanging">{name}</text
+        >
+      {/if}
     {/each}
     {#each grid.rowSeparators as position, index (index)}
       <!-- A focusable separator is a widget (WAI-ARIA window splitter): moved by keys and pointer. -->
@@ -278,9 +288,8 @@
     fill: var(--on-ink);
     paint-order: stroke;
     stroke: var(--ink);
-    stroke-width: 6px;
-    font-size: 28px;
-    font-weight: var(--weight-heavy);
+    stroke-width: 3px;
+    font-weight: var(--weight-bold);
     vector-effect: non-scaling-stroke;
   }
 
