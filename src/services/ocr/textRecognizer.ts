@@ -1,6 +1,6 @@
-/** Where a recognition stands: fetching the reader and its languages, then reading. */
+/** Where a recognition stands: fetching the reader, reading, then correcting the words read. */
 export interface RecognitionProgress {
-  step: 'loading' | 'reading';
+  step: 'loading' | 'reading' | 'correcting';
   /** From 0 to 1, within the step. */
   progress: number;
 }

@@ -5,7 +5,8 @@
   import type { IgnoredTerm } from '../../domain/progressRecords';
   import type { Result } from '../../domain/result';
   import fr from '../../i18n/fr.json';
-  import type { TextRecognizer } from '../../services/ocr/textRecognizer';
+  import type { Box } from '../../domain/photo/photoBlocks';
+  import type { PhotoReader } from '../../services/ocr/photoReader';
   import type { PhotoError } from '../../services/photo/preparePhoto';
   import type { VocabularySave } from '../vocabularySave';
   import CsvImport from './CsvImport.svelte';
@@ -20,11 +21,14 @@
     newId: () => string;
     clock: () => string;
     onSave: (save: VocabularySave) => Promise<void>;
-    loadRecognizer: () => Promise<TextRecognizer>;
+    createReader: () => PhotoReader;
     preparePhoto: (file: File) => Promise<Result<Blob, PhotoError>>;
+    cropPhoto: (photo: Blob, box: Box) => Promise<Blob>;
+    alwaysShowZones: boolean;
   }
 
-  const { loadRecognizer, preparePhoto, ...importProps }: Props = $props();
+  const { createReader, preparePhoto, cropPhoto, alwaysShowZones, ...importProps }: Props =
+    $props();
 
   const SOURCES = ['text', 'csv', 'photo'] as const;
   type Source = (typeof SOURCES)[number];
@@ -80,7 +84,7 @@
     {:else if selected === 'csv'}
       <CsvImport {...importProps} />
     {:else}
-      <PhotoImport {...importProps} {loadRecognizer} {preparePhoto} />
+      <PhotoImport {...importProps} {createReader} {preparePhoto} {cropPhoto} {alwaysShowZones} />
     {/if}
   </div>
 </section>

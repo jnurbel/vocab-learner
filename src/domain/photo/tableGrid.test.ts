@@ -122,6 +122,22 @@ describe('inferGrid', () => {
     expect(grid.rowSeparators).toHaveLength(3);
   });
 
+  it('keeps the columns of a short table apart, even with a meaning written into the pinyin', () => {
+    const blocks = [
+      ...table(
+        [
+          ['1', '控制', 'kong zhi', 'contrôler'],
+          ['2', '政府'],
+          ['3', '家庭', 'jia ting', 'famille'],
+        ],
+        [20, 250, 500, 800],
+      ),
+      printed(500, 220, 'zhen fu gouvernement', 520),
+    ];
+
+    expect(inferGrid(blocks, size).columnRoles).toEqual(['ignore', 'hanzi', 'pinyin', 'meaning']);
+  });
+
   it('keeps one row for a word printed in two pieces on the same line', () => {
     const blocks = [printed(100, 100, '除了', 90), printed(200, 104, '以外', 90)];
 

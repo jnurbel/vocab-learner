@@ -46,15 +46,20 @@
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import ImportSources from '../features/import/ImportSources.svelte';
   import { vocabularyToCsv } from '../domain/csv/vocabularyCsv';
-  import { loadTextRecognizer } from '../services/ocr/ocrLoader';
-  import { browserPhotoEnvironment } from '../services/photo/browserPhotoEnvironment';
+  import { createPhotoReader } from '../services/ocr/ocrLoader';
+  import { browserPhotoEnvironment, cropPhoto } from '../services/photo/browserPhotoEnvironment';
   import { preparePhoto } from '../services/photo/preparePhoto';
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
   import VoicePanel from '../features/settings/VoicePanel.svelte';
   import SettingsPanel from '../features/settings/SettingsPanel.svelte';
   import { SPEECH_RATES, speechSpeedOf, type SpeechSpeed } from '../domain/speechRate';
-  import { answerModeOf, newPerDayOf, type AnswerMode } from '../domain/studySettings';
+  import {
+    answerModeOf,
+    newPerDayOf,
+    photoZonesAlwaysOf,
+    type AnswerMode,
+  } from '../domain/studySettings';
   import { labelMastery, wordProgress } from '../features/progress/wordProgress';
   import type { VocabularySave } from '../features/vocabularySave';
   import fr from '../i18n/fr.json';
@@ -434,6 +439,25 @@
   async function changeNewPerDay(chosen: number) {
     await ready(study).saveNewPerDay(chosen);
     newPerDay = chosen;
+    await recordChange();
+  }
+
+  /** Expert setting of the photo import, read where it is shown or used. */
+  let photoZonesAlways = $state(false);
+
+  $effect(() => {
+    if (page === 'settings' || page === 'words') {
+      void loadPhotoZonesAlways();
+    }
+  });
+
+  async function loadPhotoZonesAlways() {
+    photoZonesAlways = photoZonesAlwaysOf((await ready(study).load(clock())).settings);
+  }
+
+  async function changePhotoZonesAlways(always: boolean) {
+    await ready(study).savePhotoZonesAlways(always);
+    photoZonesAlways = always;
     await recordChange();
   }
 
@@ -998,7 +1022,12 @@
         />
       {:else if page === 'settings'}
         {#if newPerDay !== undefined}
-          <SettingsPanel {newPerDay} onNewPerDayChange={changeNewPerDay} />
+          <SettingsPanel
+            {newPerDay}
+            onNewPerDayChange={changeNewPerDay}
+            {photoZonesAlways}
+            onPhotoZonesAlwaysChange={changePhotoZonesAlways}
+          />
         {/if}
         {#if voiceSpeed !== undefined}
           <VoicePanel {speaker} {voices} speed={voiceSpeed} onSpeedChange={changeVoiceSpeed} />
@@ -1186,8 +1215,10 @@
           {newId}
           {clock}
           onSave={save}
-          loadRecognizer={loadTextRecognizer}
+          createReader={createPhotoReader}
           preparePhoto={(file: File) => preparePhoto(file, browserPhotoEnvironment)}
+          {cropPhoto}
+          alwaysShowZones={photoZonesAlways}
         />
 
         {#if editing !== undefined}

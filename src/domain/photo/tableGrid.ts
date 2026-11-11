@@ -26,8 +26,9 @@ export interface Grid {
 
 /** Below this, a block is noise: a smudge or a line of the table read as a letter. */
 const MIN_BLOCK_CONFIDENCE = 0.3;
-/** A column is where more than this share of the busiest column's blocks stand. */
-const COLUMN_DENSITY = 0.25;
+/** A column is where more than this share of the busiest column's blocks stand: a block or two
+ * written over a separator does not join two columns. */
+const COLUMN_DENSITY = 0.4;
 const HAN = /\p{Script=Han}/u;
 const ROW_NUMBER = /^\(?\d{1,3}[.)]?$/;
 const TONE_MARK = /[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/;

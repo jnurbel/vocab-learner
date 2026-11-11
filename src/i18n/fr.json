@@ -1338,8 +1338,7 @@
     },
     "nothingRead": "Rien n'a pu être lu sur cette photo. Essaie une photo droite, nette et bien éclairée, ou tape la liste dans la saisie en lot.",
     "listTitle": "Mots lus sur la photo",
-    "textTitle": "Texte lu sur la photo",
-    "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin."
+    "textTitle": "Texte lu sur la photo"
   },
   "csvImport": {
     "title": "Fichier CSV",
