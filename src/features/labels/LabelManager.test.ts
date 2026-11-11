@@ -5,6 +5,7 @@ import type { Card } from '../../domain/card';
 import type { Label } from '../../domain/label';
 import { format } from '../../i18n/format';
 import fr from '../../i18n/fr.json';
+import type { ShareOutcome } from '../../services/pack/shareFile';
 import LabelManager from './LabelManager.svelte';
 
 const now = '2026-11-06T09:00:00.000Z';
@@ -293,5 +294,74 @@ describe('LabelManager', () => {
 
     expect(onOpenPath).toHaveBeenCalledWith(expect.objectContaining({ id: 'lesson' }));
     expect(within(rowOf('Animaux')).queryByRole('button', { name: /parcours/ })).toBeNull();
+  });
+});
+
+describe('LabelManager sharing', () => {
+  /** The outcome is made only when the learner shares, never left rejected beforehand. */
+  function setupSharing(outcome: () => Promise<ShareOutcome> = () => Promise.resolve('shared')) {
+    const onShare = vi.fn(outcome);
+    render(LabelManager, {
+      labels: [lesson, animals],
+      cards: [cat, dog],
+      clock: () => now,
+      onChange: vi.fn(() => Promise.resolve()),
+      onShare,
+    });
+    return { onShare, user: userEvent.setup() };
+  }
+
+  it('shares one label as a pack', async () => {
+    const { onShare, user } = setupSharing();
+
+    await user.click(within(rowOf('Animaux')).getByRole('button', { name: 'Partager Animaux' }));
+
+    expect(onShare).toHaveBeenCalledWith(['animals']);
+    expect(await screen.findByRole('status')).toHaveTextContent(fr.labelManager.shared);
+  });
+
+  it('shares several chosen labels together as one pack', async () => {
+    const { onShare, user } = setupSharing();
+    const shareChosen = screen.getByRole('button', { name: /Partager la sélection/ });
+    expect(shareChosen).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Choisir Leçon 3 pour le partage' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Choisir Animaux pour le partage' }));
+    expect(shareChosen).toHaveAccessibleName('Partager la sélection (2 labels)');
+    await user.click(shareChosen);
+
+    expect(onShare).toHaveBeenCalledWith(['animals', 'lesson']);
+  });
+
+  it('says the pack was downloaded where the device cannot share it', async () => {
+    const { user } = setupSharing(() => Promise.resolve('downloaded'));
+
+    await user.click(within(rowOf('Animaux')).getByRole('button', { name: 'Partager Animaux' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(fr.labelManager.downloaded);
+  });
+
+  it('says nothing when the learner closes the share sheet', async () => {
+    const { onShare, user } = setupSharing(() => Promise.resolve('cancelled'));
+
+    await user.click(within(rowOf('Animaux')).getByRole('button', { name: 'Partager Animaux' }));
+
+    expect(onShare).toHaveBeenCalled();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('says so when the sharing fails', async () => {
+    const { user } = setupSharing(() => Promise.reject(new Error('boom')));
+
+    await user.click(within(rowOf('Animaux')).getByRole('button', { name: 'Partager Animaux' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(fr.labelManager.shareFailed);
+  });
+
+  it('hides the sharing without a way to share', () => {
+    setup();
+
+    expect(screen.queryByRole('button', { name: /Partager/ })).toBeNull();
   });
 });

@@ -305,3 +305,37 @@ function makeCard(id: string, term: string): Card {
     updatedAt: now,
   };
 }
+
+describe('BulkEntry fed by another import', () => {
+  it('starts from a list read on a photo, saved with the photo as source, under its own title', async () => {
+    const onSave = vi.fn(() => Promise.resolve());
+    render(BulkEntry, {
+      existingCards: [],
+      existingLabels: [],
+      loadPinyin: () => Promise.resolve((hanzi: string) => hanzi),
+      newId: () => 'id',
+      clock: () => now,
+      onSave,
+      initialText: 'apple | pomme',
+      source: 'photo',
+      idPrefix: 'photo-list',
+      title: 'Liste lue sur la photo',
+    });
+
+    expect(screen.getByRole('region', { name: 'Liste lue sur la photo' })).toBeVisible();
+    expect(screen.getByLabelText(fr.bulkEntry.inputLabel)).toHaveAttribute(
+      'id',
+      'photo-list-input',
+    );
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Ajouter 1 mot' }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changes: {
+          cardsToCreate: [expect.objectContaining({ term: 'apple', source: 'photo' })],
+          cardsToUpdate: [],
+        },
+      }),
+    );
+  });
+});

@@ -15,9 +15,11 @@
     onDelete?: (card: Card) => Promise<void>;
     /** Stage and thirst of a word; the column is hidden without it. */
     progressOf?: (card: Card) => WordProgress;
+    /** Exports the words shown, after the filters; the button is hidden without it. */
+    onExportCsv?: (cards: readonly Card[]) => void;
   }
 
-  const { cards, labels, onEdit, onDelete, progressOf }: Props = $props();
+  const { cards, labels, onEdit, onDelete, progressOf, onExportCsv }: Props = $props();
 
   let deletion = $state<{ kind: 'done'; term: string } | { kind: 'failed' } | undefined>();
 
@@ -93,6 +95,14 @@
     <p>{fr.wordList.empty}</p>
   {:else}
     <p aria-live="polite" class="count">{format(fr.wordList.count, { count: shown.length })}</p>
+    {#if onExportCsv !== undefined}
+      <button
+        type="button"
+        onclick={() => {
+          onExportCsv(shown);
+        }}>{fr.csvImport.exportButton}</button
+      >
+    {/if}
     <div class="table-scroll">
       <table>
         <caption>{fr.wordList.caption}</caption>

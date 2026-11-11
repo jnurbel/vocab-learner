@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SvelteMap } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import type { Card, Language } from '../../domain/card';
   import type { Mastery } from '../../domain/srs/mastery';
   import type { Label } from '../../domain/label';
@@ -15,9 +15,10 @@
   import { EXAM_CONFIG } from '../../domain/exam/examConfig';
   import { setExamDate, setLabelFocus, type ExamDateError } from '../../domain/labelFocus';
   import { addDays, type LocalDay } from '../../domain/srs/localDay';
-  import { format } from '../../i18n/format';
+  import { format, formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import ConfirmAction from '../../ui/ConfirmAction.svelte';
+  import type { ShareOutcome } from '../../services/pack/shareFile';
 
   interface Props {
     labels: readonly Label[];
@@ -30,16 +31,28 @@
     today?: LocalDay;
     /** Opens the path of a pinned label; no button without it. */
     onOpenPath?: (label: Label) => void;
+    /** Shares the labels as a pack of words; no sharing without it. */
+    onShare?: (labelIds: readonly string[]) => Promise<ShareOutcome>;
   }
 
-  const { labels, cards, clock, onChange, masteryOf, today, onOpenPath }: Props = $props();
+  const { labels, cards, clock, onChange, masteryOf, today, onOpenPath, onShare }: Props = $props();
 
   const usages = $derived(countWordsByLabel(labels, cards));
   /** Typed new names and chosen merge targets, by label id. */
   const newNames = new SvelteMap<string, string>();
   const mergeTargets = new SvelteMap<string, string>();
+  /** Labels ticked to be shared together. */
+  const chosenForShare = new SvelteSet<string>();
+  /** In the order of the table, whatever the order of the clicks. */
+  const chosenLabelIds = $derived(
+    usages.map(({ label }) => label.id).filter((id) => chosenForShare.has(id)),
+  );
   let status = $state<
-    { kind: 'saved' } | { kind: 'refused'; reason: string } | { kind: 'failed' } | undefined
+    | { kind: 'saved' }
+    | { kind: 'refused'; reason: string }
+    | { kind: 'failed' }
+    | { kind: 'shared' | 'downloaded' | 'shareFailed' }
+    | undefined
   >();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
@@ -120,6 +133,15 @@
   async function remove(label: Label) {
     await apply(deleteLabel(labels, cards, label.id, clock()));
   }
+
+  async function share(labelIds: readonly string[], shareWith: NonNullable<typeof onShare>) {
+    try {
+      const outcome = await shareWith(labelIds);
+      status = outcome === 'cancelled' ? undefined : { kind: outcome };
+    } catch {
+      status = { kind: 'shareFailed' };
+    }
+  }
 </script>
 
 <section aria-labelledby="label-manager-title">
@@ -131,11 +153,26 @@
     <p role="alert" class="error">{status.reason}</p>
   {:else if status?.kind === 'failed'}
     <p role="alert" class="error">{fr.labelManager.saveFailed}</p>
+  {:else if status?.kind === 'shared' || status?.kind === 'downloaded'}
+    <p role="status">{fr.labelManager[status.kind]}</p>
+  {:else if status?.kind === 'shareFailed'}
+    <p role="alert" class="error">{fr.labelManager.shareFailed}</p>
   {/if}
 
   {#if usages.length === 0}
     <p>{fr.labelManager.empty}</p>
   {:else}
+    {#if onShare !== undefined}
+      <div class="share">
+        <button
+          type="button"
+          disabled={chosenLabelIds.length === 0}
+          onclick={() => share(chosenLabelIds, onShare)}
+          >{formatCount(fr.labelManager.shareChosen, chosenLabelIds.length)}</button
+        >
+        <p class="help">{fr.labelManager.shareHelp}</p>
+      </div>
+    {/if}
     <div class="table-scroll">
       <table>
         <caption>{fr.labelManager.caption}</caption>
@@ -148,6 +185,9 @@
             {/if}
             {#if today !== undefined}
               <th scope="col">{fr.labelManager.columnFocus}</th>
+            {/if}
+            {#if onShare !== undefined}
+              <th scope="col">{fr.labelManager.columnShare}</th>
             {/if}
             <th scope="col">{fr.labelManager.columnActions}</th>
           </tr>
@@ -197,8 +237,33 @@
                   </div>
                 </td>
               {/if}
+              {#if onShare !== undefined}
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label={format(fr.labelManager.chooseForShare, { name: label.name })}
+                    checked={chosenForShare.has(label.id)}
+                    onchange={(event) => {
+                      if (event.currentTarget.checked) {
+                        chosenForShare.add(label.id);
+                      } else {
+                        chosenForShare.delete(label.id);
+                      }
+                    }}
+                  />
+                </td>
+              {/if}
               <td>
                 <div class="actions">
+                  {#if onShare !== undefined}
+                    <div class="action">
+                      <button
+                        type="button"
+                        aria-label={format(fr.labelManager.shareLabel, { name: label.name })}
+                        onclick={() => share([label.id], onShare)}>{fr.labelManager.share}</button
+                      >
+                    </div>
+                  {/if}
                   {#if onOpenPath !== undefined && label.isFocus}
                     <div class="action">
                       <button
@@ -276,6 +341,19 @@
 </section>
 
 <style>
+  .share {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .help {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+
   .gauge {
     display: flex;
     flex-direction: column;

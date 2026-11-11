@@ -59,6 +59,14 @@ git config core.hooksPath .githooks   # optionnel : vérifie les messages de com
 - Conséquence : pas d'attribut `style="..."` dans les composants (bloqué par la CSP) ; utiliser des classes ou la directive `style:`.
 - Interdits par ESLint : `{@html}`, `innerHTML`, `insertAdjacentHTML`, `document.write`, `eval`.
 
+### Appli installable et hors ligne (PWA)
+
+- `vite-plugin-pwa` en mode `generateSW` : `dist/sw.js` et le runtime Workbox sont servis depuis `'self'` (`worker-src 'self'`), le manifeste aussi (`manifest-src 'self'`). L'enregistrement est dans le bundle (`src/main.ts`), sans script inline : la CSP n'a pas changé.
+- Précache : toute l'appli, la police auto-hébergée, les icônes et le chunk pinyin-pro (pinyin automatique hors ligne).
+- Mises à jour en mode « prompt » : la nouvelle version attend le clic sur « Mettre à jour », jamais pendant une séance.
+- Service worker désactivé par `npm run dev` et dans Vitest ; `npm run build && npm run preview` pour l'essayer.
+- Icônes dessinées à partir du logo 词 dans `public/icons/` : `UPDATE_ICONS=1 npx playwright test icons` pour les redessiner.
+
 ### CI/CD
 
 - `ci.yml` (PR et push sur `dev`/`master`) : lint, typecheck, tests + couverture, build, E2E, `npm audit`, gitleaks, commitlint.
@@ -72,7 +80,7 @@ Code **source disponible** sous [PolyForm Noncommercial 1.0.0](LICENSE.md) :
 - **Libre pour tout usage non commercial** : élèves, familles, professeurs, établissements scolaires, associations.
 - **Usage commercial, y compris la revente** : uniquement avec l'accord de l'autrice. Pour une licence commerciale, contacter l'autrice (voir [NOTICE](NOTICE)).
 
-Les bibliothèques tierces gardent leur propre licence : pinyin-pro (MIT), zod (MIT) et dexie (Apache-2.0). Textes complets dans [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+Les bibliothèques tierces gardent leur propre licence : pinyin-pro (MIT), zod (MIT), dexie (Apache-2.0) et Workbox (MIT, service worker). Textes complets dans [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
 
 ## Contribuer
 

@@ -40,6 +40,20 @@ describe('downloadFile', () => {
     expect(document.querySelector('a')).toBeNull();
   });
 
+  it('downloads another kind of file, such as a CSV export, with its own type', async () => {
+    const { environment, blobs } = fakeEnvironment();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    downloadFile(
+      { fileName: 'mots.csv', text: 'terme;sens' },
+      environment,
+      'text/csv;charset=utf-8',
+    );
+
+    expect(blobs[0]?.type).toBe('text/csv;charset=utf-8');
+    expect(await blobs[0]?.text()).toBe('terme;sens');
+  });
+
   it('releases the file from memory once the browser has taken it', () => {
     const { environment, scheduled, revokeObjectURL } = fakeEnvironment();
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);

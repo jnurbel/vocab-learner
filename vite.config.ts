@@ -1,8 +1,13 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
+import { readFileSync } from 'node:fs';
+import { VitePWA } from 'vite-plugin-pwa';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { tesseractAssets } from './config/tesseractAssets.ts';
 import packageJson from './package.json' with { type: 'json' };
+import { manifestColors, webManifest } from './src/app/webManifest.ts';
+import { themeTokens } from './src/ui/contrast.ts';
 
 /**
  * The CSP in index.html is the production policy. The dev server injects styles
@@ -20,11 +25,53 @@ function devCspRelaxation(): Plugin {
   };
 }
 
+/**
+ * Installable and offline (DESIGN §2, 0.8.0). `generateSW` writes a Workbox service worker
+ * served from 'self' (CSP `worker-src 'self'`), with no inline script: the registration is
+ * bundled with the app (`injectRegister: false`, see src/main.ts). "prompt": a new version
+ * waits for the user's click, never reloads the app during a session. Off on the dev server.
+ */
+function progressiveWebApp() {
+  const theme = themeTokens(readFileSync(new URL('./src/ui/theme.css', import.meta.url), 'utf8'));
+  return VitePWA({
+    strategies: 'generateSW',
+    registerType: 'prompt',
+    injectRegister: false,
+    filename: 'sw.js',
+    manifestFilename: 'manifest.webmanifest',
+    includeAssets: ['favicon.svg', 'icons/apple-touch-icon-180.png'],
+    manifest: webManifest('/vocab-learner/', manifestColors(theme.light)),
+    workbox: {
+      // The app, its self-hosted font, the icons, and the pinyin-pro chunk loaded on demand,
+      // so that the automatic pinyin works offline too.
+      globPatterns: ['**/*.{js,css,html,woff2,svg,png,webmanifest}'],
+      // The photo reader (~9 MB) is not precached: most learners never open it. Its files are
+      // kept on first use instead, so that a photo read once online can be read again offline.
+      globIgnores: ['tesseract/**'],
+      runtimeCaching: [
+        {
+          urlPattern: /\/vocab-learner\/tesseract\//,
+          handler: 'CacheFirst',
+          options: {
+            // Unhashed file names: a new tesseract.js version gets a cache of its own.
+            cacheName: `tesseract-${packageJson.dependencies['tesseract.js']}`,
+            expiration: { maxEntries: 10 },
+          },
+        },
+      ],
+      navigateFallback: 'index.html',
+      cleanupOutdatedCaches: true,
+      sourcemap: false,
+    },
+    devOptions: { enabled: false },
+  });
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   // Served from https://<user>.github.io/vocab-learner/
   base: '/vocab-learner/',
-  plugins: [svelte(), svelteTesting(), devCspRelaxation()],
+  plugins: [svelte(), svelteTesting(), devCspRelaxation(), progressiveWebApp(), tesseractAssets()],
   // Written into backups, so that a later app knows which version produced a file.
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
@@ -61,6 +108,11 @@ export default defineConfig({
         },
         // Backups are the way back after a lost database: fully covered too.
         'src/services/backup/**': {
+          100: true,
+          perFile: true,
+        },
+        // Install, offline and update logic of the PWA: fully covered as well.
+        'src/services/pwa/**': {
           100: true,
           perFile: true,
         },

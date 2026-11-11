@@ -47,11 +47,16 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.6",
-    "vitest": "^5.1.0"
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "^5.1.0",
+    "workbox-window": "7.4.1"
   },
   "dependencies": {
+    "@tesseract.js-data/chi_sim": "1.0.0",
+    "@tesseract.js-data/eng": "1.0.0",
     "dexie": "^4.4.7",
     "pinyin-pro": "^3.29.5",
+    "tesseract.js": "7.0.0",
     "ts-fsrs": "^5.4.2",
     "zod": "^4.6.7"
   }

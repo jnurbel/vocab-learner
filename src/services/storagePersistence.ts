@@ -16,6 +16,14 @@ export function persistenceRequester(storage: PersistableStorage | undefined): (
   };
 }
 
+/**
+ * Asks again, whatever was asked before: once the app is installed, Chrome grants the
+ * persistence it may have refused to a mere tab (DESIGN §11, data loss on iOS).
+ */
+export function askPersistenceAgain(storage: PersistableStorage | undefined): Promise<void> {
+  return ask(storage);
+}
+
 async function ask(storage: PersistableStorage | undefined): Promise<void> {
   if (storage === undefined) {
     return;

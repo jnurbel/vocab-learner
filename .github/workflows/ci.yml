@@ -71,6 +71,8 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: npm run build
+      - name: Check that the build ships the service worker and the web manifest
+        run: bash .github/scripts/check-pwa-build.sh dist
       - name: Upload build output
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

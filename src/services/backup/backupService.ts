@@ -42,7 +42,8 @@ export interface BackupServiceDependencies {
   clock: () => Date;
   newId: () => string;
   appVersion: string;
-  profileName: string;
+  /** The pseudonym of the profile, read at each backup: it can be renamed meanwhile. */
+  profileName: string | (() => string);
 }
 
 /** Backs up and restores a profile; everything stays on the device. */
@@ -50,7 +51,9 @@ export class BackupService {
   constructor(private readonly deps: BackupServiceDependencies) {}
 
   async createBackupFile(): Promise<BackupFile> {
-    const { repository, sha256, clock, appVersion, profileName } = this.deps;
+    const { repository, sha256, clock, appVersion } = this.deps;
+    const profileName =
+      typeof this.deps.profileName === 'string' ? this.deps.profileName : this.deps.profileName();
     const now = clock();
     const backup = await createBackup(
       await repository.snapshot(),

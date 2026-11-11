@@ -19,8 +19,12 @@ export const browserDownloadEnvironment = (): DownloadEnvironment => ({
 });
 
 /** Saves a file on this device through the browser's download; nothing is sent anywhere. */
-export function downloadFile(file: BackupFile, environment: DownloadEnvironment): void {
-  const url = environment.createObjectURL(new Blob([file.text], { type: 'application/json' }));
+export function downloadFile(
+  file: BackupFile,
+  environment: DownloadEnvironment,
+  type = 'application/json',
+): void {
+  const url = environment.createObjectURL(new Blob([file.text], { type }));
   const link = environment.document.createElement('a');
   link.href = url;
   link.download = file.fileName;

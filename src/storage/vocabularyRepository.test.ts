@@ -253,3 +253,92 @@ describe('VocabularyRepository', () => {
     expect((await repository.allCards()).map(({ term }) => term).sort()).toEqual(['小猫', '猫']);
   });
 });
+
+describe('VocabularyRepository pack import', () => {
+  it('saves every label of a pack together with its words', async () => {
+    const animals = label('animals', 'Animaux');
+    const lesson = label('lesson', 'Leçon 7');
+    const cat = card('c1', '猫', ['animals', 'lesson']);
+
+    await repository.savePackImport({ cardsToCreate: [cat], cardsToUpdate: [] }, [animals, lesson]);
+
+    expect(await repository.allLabels()).toEqual([animals, lesson]);
+    expect(await repository.allCards()).toEqual([cat]);
+  });
+
+  it('keeps neither the labels nor the words when a pack import fails', async () => {
+    await repository.saveImport({
+      cardsToCreate: [card('c1', 'apple', [], 'en')],
+      cardsToUpdate: [],
+    });
+
+    await expect(
+      repository.savePackImport(
+        { cardsToCreate: [card('c2', 'APPLE', ['fruits'], 'en')], cardsToUpdate: [] },
+        [label('fruits', 'Fruits')],
+      ),
+    ).rejects.toThrow();
+    expect(await repository.allLabels()).toEqual([]);
+    expect(await repository.allCards()).toHaveLength(1);
+  });
+});
+
+describe('VocabularyRepository and the words marked "I already know it"', () => {
+  it('has no ignored word at first', async () => {
+    expect(await repository.allIgnoredTerms()).toEqual([]);
+  });
+
+  it('saves the ignored words of an import with its cards and reads them back', async () => {
+    await repository.saveImport(
+      { cardsToCreate: [card('c1', '月饼', [])], cardsToUpdate: [] },
+      undefined,
+      [
+        { language: 'en', term: 'moon' },
+        { language: 'zh', term: '中秋' },
+      ],
+    );
+
+    expect(await repository.allCards()).toHaveLength(1);
+    expect(await repository.allIgnoredTerms()).toEqual(
+      expect.arrayContaining([
+        { language: 'en', term: 'moon' },
+        { language: 'zh', term: '中秋' },
+      ]),
+    );
+  });
+
+  it('keeps a word ignored twice only once', async () => {
+    const noChanges = { cardsToCreate: [], cardsToUpdate: [] };
+    await repository.saveImport(noChanges, undefined, [{ language: 'en', term: 'moon' }]);
+    await repository.saveImport(noChanges, undefined, [{ language: 'en', term: 'moon' }]);
+
+    expect(await repository.allIgnoredTerms()).toEqual([{ language: 'en', term: 'moon' }]);
+  });
+
+  it('keeps no ignored word when the import fails', async () => {
+    await repository.saveImport({ cardsToCreate: [card('c1', '猫', [])], cardsToUpdate: [] });
+
+    await expect(
+      repository.saveImport(
+        { cardsToCreate: [card('c1', '狗', [])], cardsToUpdate: [] },
+        undefined,
+        [{ language: 'en', term: 'moon' }],
+      ),
+    ).rejects.toThrow();
+    expect(await repository.allIgnoredTerms()).toEqual([]);
+  });
+});
+
+describe('VocabularyRepository and the labels created by a file import', () => {
+  it('saves several new labels with the words of the import', async () => {
+    await repository.saveImport(
+      { cardsToCreate: [card('c1', '猫', ['l1', 'l2'])], cardsToUpdate: [] },
+      [label('l1', 'Leçon 1'), label('l2', 'Animaux')],
+    );
+
+    expect((await repository.allLabels()).map(({ name }) => name).sort()).toEqual([
+      'Animaux',
+      'Leçon 1',
+    ]);
+  });
+});
