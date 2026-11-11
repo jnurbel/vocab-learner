@@ -103,6 +103,41 @@ describe('App', () => {
     ).toBeVisible();
   });
 
+  it('adds a word from a pasted text, and never proposes again a word known already', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(App, { databaseName: 'app-test-text-import' });
+    await openWords();
+    const textImport = screen.getByRole('region', { name: fr.textImport.title });
+
+    await user.click(within(textImport).getByLabelText(fr.textImport.inputLabel));
+    await user.paste('The moon is bright.');
+    await user.type(within(textImport).getByLabelText('Sens de moon'), 'lune');
+    await user.click(
+      within(within(textImport).getByRole('radiogroup', { name: 'Choix pour bright' })).getByRole(
+        'radio',
+        { name: fr.textImport.decisions.known },
+      ),
+    );
+    await user.click(within(textImport).getByRole('button', { name: fr.textImport.save }));
+    await within(textImport).findByRole('status');
+    unmount();
+
+    render(App, { databaseName: 'app-test-text-import' });
+    await openWords();
+    const list = await screen.findByRole('table', { name: fr.wordList.caption });
+    expect(within(list).getByRole('row', { name: /moon/ })).toHaveTextContent('lune');
+    const again = screen.getByRole('region', { name: fr.textImport.title });
+    await user.click(within(again).getByLabelText(fr.textImport.inputLabel));
+    await user.paste('The moon is bright. The sun is hot.');
+
+    const preview = await within(again).findByRole('table', { name: fr.textImport.previewCaption });
+    await vi.waitFor(() => {
+      expect(within(preview).queryByText('bright')).toBeNull();
+    });
+    expect(within(preview).queryByText('moon')).toBeNull();
+    expect(within(preview).getByText('sun')).toBeVisible();
+  });
+
   it('lists the saved words with their new label, still there after a restart', async () => {
     const user = userEvent.setup();
     const { unmount } = render(App, { databaseName: 'app-test-word-list' });

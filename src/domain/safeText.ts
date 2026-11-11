@@ -5,6 +5,16 @@ export const INVISIBLE_CONTROLS = /[\p{Cc}\p{Bidi_Control}]/u;
 /** Tolerated in multiline texts only. */
 const LINE_BREAKS = /[\t\n\r]/g;
 
+const INVISIBLE_CONTROLS_EXCEPT_LINE_BREAKS = /(?![\t\n\r])[\p{Cc}\p{Bidi_Control}]/gu;
+
+/**
+ * Drops the invisible controls of a pasted multiline text, keeping its tabs and line breaks, so
+ * that a word or an example taken from it cannot hide a bidi override ("trojan source").
+ */
+export function removeInvisibleControls(text: string): string {
+  return text.replace(INVISIBLE_CONTROLS_EXCEPT_LINE_BREAKS, '');
+}
+
 /** A trimmed, non-empty, bounded text from an untrusted file, without invisible controls. */
 export const safeText = (maxLength: number, { multiline }: { multiline: boolean }) =>
   z

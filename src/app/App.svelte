@@ -44,6 +44,11 @@
     type FlashcardStore,
   } from '../features/flashcards/flashcardSession';
   import BulkEntry from '../features/import/BulkEntry.svelte';
+  import ImportSources from '../features/import/ImportSources.svelte';
+  import { vocabularyToCsv } from '../domain/csv/vocabularyCsv';
+  import { loadTextRecognizer } from '../services/ocr/ocrLoader';
+  import { browserPhotoEnvironment } from '../services/photo/browserPhotoEnvironment';
+  import { preparePhoto } from '../services/photo/preparePhoto';
   import { startPracticeSession, type PracticeStore } from '../features/practice/practiceSession';
   import LabelManager from '../features/labels/LabelManager.svelte';
   import VoicePanel from '../features/settings/VoicePanel.svelte';
@@ -519,12 +524,25 @@
     await reload(storage());
   }
 
-  async function save({ newLabel, changes }: VocabularySave) {
+  async function save({ newLabel, newLabels = [], changes, ignoredTerms }: VocabularySave) {
     const store = storage();
-    await store.saveImport(changes, newLabel);
+    const created = newLabel === undefined ? newLabels : [newLabel, ...newLabels];
+    await store.saveImport(changes, created, ignoredTerms);
     void requestPersistence();
     await recordChange();
     await reload(store);
+  }
+
+  /** The words shown in the list, as a CSV file for Excel, saved on this device. */
+  function exportCsv(shown: readonly Card[]) {
+    downloadFile(
+      {
+        fileName: format(fr.csvImport.exportFileName, { date: clock().slice(0, 10) }),
+        text: vocabularyToCsv(shown, labels),
+      },
+      browserDownloadEnvironment(),
+      'text/csv;charset=utf-8',
+    );
   }
 
   async function changeLabels(changes: LabelChanges) {
@@ -1160,6 +1178,18 @@
           onSave={savePack}
         />
 
+        <ImportSources
+          existingCards={cards}
+          existingLabels={labels}
+          loadPinyin={loadPinyinGenerator}
+          loadIgnoredTerms={() => storage().allIgnoredTerms()}
+          {newId}
+          {clock}
+          onSave={save}
+          loadRecognizer={loadTextRecognizer}
+          preparePhoto={(file: File) => preparePhoto(file, browserPhotoEnvironment)}
+        />
+
         {#if editing !== undefined}
           {#key editing.id}
             <WordForm
@@ -1178,7 +1208,14 @@
           {/key}
         {/if}
 
-        <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
+        <WordList
+          {cards}
+          {labels}
+          {progressOf}
+          onEdit={startEditing}
+          onDelete={deleteCard}
+          onExportCsv={exportCsv}
+        />
 
         <LabelManager
           {labels}

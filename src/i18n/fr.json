@@ -60,6 +60,8 @@
       "termTooLong": "mot trop long",
       "pinyinTooLong": "pinyin trop long",
       "translationTooLong": "sens trop long",
+      "exampleTooLong": "exemple trop long",
+      "labelTooLong": "nom de label trop long",
       "duplicateInBatch": "déjà saisi ligne {first}"
     },
     "inputErrors": {
@@ -1250,5 +1252,120 @@
       "nameTaken": "Un autre profil porte déjà ce pseudo.",
       "profileNotFound": "Ce profil n’existe plus."
     }
+  },
+  "textImport": {
+    "title": "Depuis un texte",
+    "inputLabel": "Texte à analyser",
+    "inputHelp": "Colle un article, un texte du manuel ou des paroles : seuls les mots qui ne sont pas encore dans ta liste sont proposés. Le texte reste sur cet appareil.",
+    "hideCommonWords": "Masquer les mots très courants (的, 了, the, a…)",
+    "inputErrors": {
+      "inputTooLong": "Le texte est trop long : 20 000 caractères au maximum."
+    },
+    "noNewWords": "Aucun mot nouveau dans ce texte.",
+    "newWordCount": {
+      "one": "1 mot nouveau",
+      "other": "{count} mots nouveaux"
+    },
+    "previewCaption": "Mots nouveaux du texte, à compléter avant l’ajout",
+    "columns": {
+      "term": "Mot",
+      "occurrences": "Fois",
+      "pinyin": "Pinyin",
+      "translation": "Sens",
+      "sentence": "Phrase du texte",
+      "decision": "Choix"
+    },
+    "forms": "aussi : {forms}",
+    "pinyinLabel": "Pinyin de {term}",
+    "translationLabel": "Sens de {term}",
+    "decisionLabel": "Choix pour {term}",
+    "decisions": {
+      "add": "Ajouter",
+      "known": "Je le connais déjà",
+      "skip": "Ignorer pour cette fois"
+    },
+    "join": "Joindre {first} et {second}",
+    "joinShort": "+ {second}",
+    "split": "Couper en {first} | {second}",
+    "errorsTitle": "Mots à compléter",
+    "errorLine": "{term} : {reason}",
+    "labelsLegend": "Labels à poser sur les mots ajoutés",
+    "save": "Enregistrer mes choix",
+    "summary": "{added} à ajouter, {known} déjà connu(s)",
+    "saved": "{added} mot(s) ajouté(s), {known} mot(s) ne seront plus proposés.",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie."
+  },
+  "importSources": {
+    "title": "Importer autrement",
+    "tabsLabel": "Source des mots",
+    "tabs": {
+      "text": "Depuis un texte",
+      "csv": "Fichier CSV",
+      "photo": "Photo"
+    }
+  },
+  "photoImport": {
+    "title": "Photo",
+    "honesty": "Marche bien sur du texte imprimé net, mal sur l'écriture à la main.",
+    "privacy": "La photo est lue sur cet appareil : elle n'est envoyée nulle part et n'est jamais conservée.",
+    "fileLabel": "Choisir ou prendre une photo",
+    "previewAlt": "Aperçu de la photo à lire",
+    "modeLegend": "Que montre la photo ?",
+    "modes": {
+      "list": "Une liste de vocabulaire",
+      "text": "Un texte"
+    },
+    "read": "Lire la photo",
+    "progressLabel": "Lecture de la photo",
+    "steps": {
+      "loading": "Chargement du lecteur (la première fois, environ 9 Mo)…",
+      "reading": "Lecture du texte…"
+    },
+    "cancel": "Annuler la lecture",
+    "cancelled": "Lecture annulée.",
+    "errors": {
+      "notAnImage": "Ce fichier n'est pas une image.",
+      "tooLarge": "Cette image est trop lourde : 30 Mo au maximum.",
+      "unreadable": "Cette image n'a pas pu être ouverte.",
+      "failed": "La lecture a échoué. Le premier chargement demande une connexion : vérifie-la, puis réessaie."
+    },
+    "nothingRead": "Aucun texte n'a été lu sur cette photo. Essaie avec une photo nette, bien éclairée et droite.",
+    "listTitle": "Liste lue sur la photo",
+    "listHelp": "Vérifie chaque ligne et sépare le mot, le pinyin et le sens par | si besoin.",
+    "textTitle": "Texte lu sur la photo"
+  },
+  "csvImport": {
+    "title": "Fichier CSV",
+    "fileLabel": "Choisir un fichier CSV",
+    "help": "Colonnes : terme ; pinyin ; sens ; exemple ; labels (séparés par des virgules). La première ligne peut être un en-tête. Le fichier est lu sur cet appareil.",
+    "inputErrors": {
+      "inputTooLong": "Le fichier est trop gros : 1 000 000 caractères au maximum.",
+      "tooManyLines": "Trop de lignes : 5 000 mots au maximum par fichier.",
+      "unclosedQuote": "Le fichier est mal formé : un guillemet n'est pas refermé.",
+      "misplacedQuote": "Le fichier est mal formé : du texte suit un guillemet fermant.",
+      "unreadable": "Ce fichier n'a pas pu être lu."
+    },
+    "previewCaption": "Aperçu du fichier",
+    "columns": {
+      "line": "Ligne",
+      "term": "Mot",
+      "pinyin": "Pinyin",
+      "translation": "Sens",
+      "example": "Exemple",
+      "labels": "Labels",
+      "status": "État"
+    },
+    "status": {
+      "new": "Nouveau",
+      "existing": "Existe déjà"
+    },
+    "labelsLegend": "Labels à poser sur tous les mots du fichier",
+    "errorsTitle": "Lignes à corriger",
+    "errorLine": "Ligne {line} : {reason}",
+    "save": "Importer le fichier",
+    "saved": "{created} mot(s) ajouté(s), {updated} mot(s) existant(s) complété(s).",
+    "saveFailed": "L'enregistrement a échoué : rien n'a été ajouté. Réessaie.",
+    "exportButton": "Exporter ces mots en CSV",
+    "exportFileName": "vocab-learner-mots-{date}.csv"
   }
 }

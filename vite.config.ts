@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { VitePWA } from 'vite-plugin-pwa';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { tesseractAssets } from './config/tesseractAssets.ts';
 import packageJson from './package.json' with { type: 'json' };
 import { manifestColors, webManifest } from './src/app/webManifest.ts';
 import { themeTokens } from './src/ui/contrast.ts';
@@ -56,7 +57,7 @@ function progressiveWebApp() {
 export default defineConfig({
   // Served from https://<user>.github.io/vocab-learner/
   base: '/vocab-learner/',
-  plugins: [svelte(), svelteTesting(), devCspRelaxation(), progressiveWebApp()],
+  plugins: [svelte(), svelteTesting(), devCspRelaxation(), progressiveWebApp(), tesseractAssets()],
   // Written into backups, so that a later app knows which version produced a file.
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
