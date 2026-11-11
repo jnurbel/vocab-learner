@@ -3,6 +3,7 @@ import { uniqueValues } from './collections';
 import { addLabels, findCard, indexCardsByTerm, type ImportChanges } from './importPlan';
 import type { Label } from './label';
 import { findLabelByName, labelNameKey } from './labelOperations';
+import { normalizeSenses } from './meaning/senses';
 import type { VocabPack } from './vocabPack';
 
 export type PackWord = VocabPack['cards'][number];
@@ -39,7 +40,10 @@ export function planPackImport(
     const labelIndexes = uniqueValues(word.labelIds.flatMap((id) => indexOfPackId.get(id) ?? []));
     const card = findCard(cardsByKey, word.language, word.term);
     if (card === undefined) {
-      plan.newWords.push({ word, labelIndexes });
+      plan.newWords.push({
+        word: { ...word, translation: normalizeSenses(word.translation) },
+        labelIndexes,
+      });
     } else {
       const addedLabelIndexes = labelIndexes.filter((index) => {
         const existing = labels[index]?.existing;
