@@ -207,7 +207,7 @@ Exercices « audio d'abord » sur ses mots :
 | Option | Fiabilité (écriture d'enfant) | Coût | Vie privée |
 |---|---|---|---|
 | Tesseract.js `chi_sim` (local) | Mauvaise : < 30–50 % en chinois | 0 | Parfaite |
-| PaddleOCR ONNX (local) | Meilleure, mais lourde (dizaines de Mo) | 0 | Parfaite |
+| PaddleOCR ONNX (local, retenu en 0.9.0 pour l’import, §8.1) | Meilleure, mais lourde (~48 Mo au premier usage) | 0 | Parfaite |
 | **LLM vision (Claude) via proxy** | **~80–90 %** | quelques centimes/photo | Image envoyée au fournisseur |
 
 **Décision :**
@@ -239,20 +239,40 @@ Trois façons d'importer. Toutes aboutissent au **même écran d'aperçu éditab
 
 ### 8.1 Import par photo
 
-Ce cas est **bien plus favorable** que la correction de dictée : le texte est souvent imprimé et propre, et une erreur se corrige dans l'aperçu avant l'enregistrement.
+Ce cas est **bien plus favorable** que la correction de dictée : le texte est souvent imprimé et propre, et une erreur se corrige dans l'aperçu avant l'enregistrement. Le cas visé en priorité est la **page de cahier de l'élève** : un tableau numéro | hanzi imprimés | pinyin manuscrit | sens français manuscrit.
 
-| Option | Imprimé | Manuscrit propre | Structure (colonnes hanzi / pinyin / sens) |
-|---|---|---|---|
-| Tesseract.js `chi_sim+eng` (local) | Correcte | Faible | À reconstruire soi-même, fragile |
-| **LLM vision (Claude) via le Worker** | Très bonne | Bonne | **Renvoie directement du JSON structuré** |
+**Décision (0.9.0, 2026-11-11) : conversion sur l'appareil par PaddleOCR**, gratuite, sans compte, la photo n'est jamais envoyée.
 
-**Décision :**
+| Option (essai du 2026-11-11 sur une vraie page de cahier de 23 lignes) | Hanzi imprimés | Français manuscrit | Coût | Vie privée |
+|---|---|---|---|---|
+| Tesseract.js `chi_sim+eng` (0.8.0) | Rien d'exploitable | Rien | 0 | Parfaite |
+| **PaddleOCR PP-OCRv5 mobile** (détection 4,7 Mo, chinois 16,6 Mo, latin 8,1 Mo) | **22/23** | ~12/23 exacts lus seuls ; 17/23 après correction par dictionnaire | 0 | Parfaite |
+| PaddleOCR server (~165 Mo) ; v6 small et medium | 22/23 ; 21/23 | — | 0 | Parfaite |
+| LLM vision (Claude) via le Worker | Très bonne | Bonne | Quelques centimes par photo | Image envoyée : reporté en **0.10.0, en pause** |
 
-- **Moteur** : LLM vision via le même Cloudflare Worker que la correction de dictée. Le prompt demande un JSON `[{ term, pinyin?, translation? }]`.
-- **Validation** : la réponse est validée par **zod** côté client, car c'est une sortie non fiable (OWASP).
-- **Données manquantes** : le pinyin absent est complété par pinyin-pro et la traduction absente reste à remplir dans l'aperçu.
-- **Mêmes protections que §7** : option activée par le parent, image recadrée, réduite et sans EXIF, rien conservé, code d'accès, plafond de dépenses.
-- **Repli hors ligne / sans clé** : Tesseract.js local pour du texte imprimé, avec un résultat brut collé dans la saisie en lot.
+**Moteur** (`src/services/ocr/paddle/`) : `ppu-paddle-ocr` 6.7.0 (MIT, build web) sur `onnxruntime-web` 1.31.1 (MIT), dans un **Web Worker** démarré à la première photo.
+
+- WebAssembly **mono-thread** (`numThreads = 1`) : GitHub Pages ne permet pas l'isolation cross-origin qu'exigent les threads, donc pas de `coi-serviceworker` ; pas de WebGPU non plus, pour un seul fichier d'exécution (`ort-wasm-simd-threaded.wasm`).
+- **Aucun changement de CSP** : un worker chargé depuis l'appli (`worker-src 'self'`) ne prend pas la politique de la page, et l'instanciation du WebAssembly n'y demande pas `'wasm-unsafe-eval'`. Vérifié en E2E : 0 violation, aucune requête hors origine. Au passage, zod est configuré `jitless` : sa sonde `new Function()` faisait signaler une violation.
+- **Fichiers servis par l'appli** sous `dist/paddle/` (`config/paddleAssets.ts`) : les modèles sont téléchargés au build depuis une **révision figée** du dépôt `snowfluke/ppu-paddle-ocr-models` (Apache-2.0) et **refusés si leur SHA-256 diffère** ; le runtime vient de `node_modules` ; le dictionnaire français est tiré de `an-array-of-french-words` (MIT, d'après la liste Letterpress, CC0). Git ne contient aucun binaire.
+- **Mis en cache au premier usage** par le service worker (`CacheFirst`, cache `paddle-ocr-<versions>`), **jamais précachés** : environ **48 Mo** (modèles 29 Mo, runtime 15 Mo, dictionnaire 4 Mo), moins une fois compressés. `check-pwa-build.sh` le contrôle.
+- La photo est réduite à **2 500 px** (et toujours redessinée sans EXIF, §7) : à 1 500 px, 20/23 hanzi seulement.
+
+**Pipeline** :
+
+1. **Détection** des blocs de texte, une seule fois ; chaque bloc est lu par le **modèle chinois**, puis par le **modèle latin** (accents du français et du pinyin) sauf s'il est déjà lu sûrement comme hanzi.
+2. **Mise en tableau** (domaine pur, `tableGrid.ts`) : colonnes là où les blocs s'empilent (plus de 40 % de la colonne la plus dense, coupure au point le plus creux), rôle de chaque colonne (numéros ignorés, hanzi, pinyin reconnu à ses tons ou à ses syllabes, sens ; anglais et sens sans hanzi), une ligne par mot de la colonne des mots, coupée à mi-chemin. Une liste sans colonnes (« 控制 kòngzhì contrôler ») ou anglais–français (« apple - pomme ») est découpée ligne par ligne.
+3. **Cases** (`photoTable.ts`) : chaque bloc prend la lecture du modèle de sa colonne ; un bloc écrit à cheval sur un séparateur est **coupé**, et chaque morceau est **relu** par le modèle de sa colonne. Une petite annotation au-dessus d'un mot est gardée comme pinyin du cahier si elle en a l'air ; les taches sont écartées.
+4. **Français** (`frenchSpelling.ts`) : arbre des lettres (336 000 mots, en tableaux typés) parcouru avec une distance d'édition limitée à sa bande diagonale ; segmentation des mots collés (« diremerci »), élisions (« shabiller » → « s'habiller »), accents. **Remplacement seulement si la correction est sûre** ; sinon la lecture brute reste, **marquée à vérifier**. Index construit en ~0,3 s dans le worker, 30 sens corrigés en ~50 ms (test : moins de 300 ms) ; sur la page du cahier, 17/23 sens justes après correction contre 8 bruts.
+5. **Pinyin** : toujours **calculé depuis les caractères** par pinyin-pro (polyphones en contexte du mot). Le pinyin lu sur la feuille n'est qu'une note « Ton cahier : zhen fu », affichée quand il diffère par plus que les tons ou les espaces : un point d'apprentissage, jamais un remplacement.
+
+**Correction facile** (`PhotoWordsPreview.svelte`) : une ligne par mot, **sous la vignette de sa ligne de photo** (découpée autour de ses mots ; canvas → URL `blob:` libérée ensuite) ; chaque case est modifiable et le pinyin suit le mot ; les cases à vérifier (confiance basse, correction douteuse) sont **surlignées** (ocre, `aria-invalid`, compteur), avec « Ligne suivante à vérifier » ; supprimer, fusionner avec la suivante, ajouter une ligne ; doublons signalés, labels sur le lot, **rien n'est enregistré avant « Ajouter N mots »** ; mêmes règles que la saisie en lot (`checkEntry`, `collectEntries`, `planImport`). Cibles d'au moins 44 px, annonces `role="status"`.
+
+**Zones, en mode expert** (`ZoneEditor.svelte`, `gridEditing.ts`), masqué par défaut : le parcours normal va de la photo aux mots sans écran intermédiaire. Un bouton discret « Ajuster les zones (mode expert) » de l'aperçu (proposé par un message quand beaucoup de cases sont à vérifier), ou le réglage de profil « Toujours afficher les zones avant la lecture », montre la photo avec ses séparateurs en SVG : colonnes étiquetées (Chinois, Anglais, Pinyin, Français, Ignorer) et lignes ; déplacement au doigt, à la souris ou aux flèches (séparateurs focusables, motif ARIA « window splitter »), ajout, suppression ; « Relire avec ces zones » relance seulement la reconnaissance des cases coupées, sans refaire la détection ; « Les zones sont bonnes » passe en un tap.
+
+**Résultat sur la page de cahier d'essai** (dans Chromium, photo réduite à 2 500 px) : 23 lignes trouvées, **22/23 hanzi** justes, **15/23 lignes entièrement justes sans correction** ; les 8 autres sont toutes signalées « à vérifier ». Lecture et correction en ~8 s sur un PC (mono-thread), plus le premier téléchargement.
+
+**Mode « Un texte »** : les blocs sont remis en lignes (`photoText.ts`), puis le texte passe par l'aperçu de l'import de texte (§8.4).
 
 ### 8.2 Saisie en lot
 
@@ -281,7 +301,7 @@ L'élève **colle un texte** (article, texte du manuel, paroles…) ou le **phot
 
 1. **Récupération du texte** :
    - copier-coller (hors ligne, gratuit) ;
-   - ou photo, avec le même OCR que §8.1 : Tesseract local pour de l'imprimé, ou LLM vision via le Worker (option activée).
+   - ou photo, avec le même OCR que §8.1 : PaddleOCR sur l'appareil (0.9.0) ; plus tard peut-être un LLM vision via le Worker (0.10.0, en pause).
 2. **Découpage en mots** :
    - **chinois** (pas d'espaces entre les mots) : `Intl.Segmenter('zh', { granularity: 'word' })`, intégré aux navigateurs, hors ligne, avec un dictionnaire ICU. Le découpage n'est pas parfait, donc l'élève peut **fusionner ou couper** un mot dans l'aperçu ;
    - **anglais** : `Intl.Segmenter('en')`, mise en minuscules, et regroupement simple des formes (pluriel, -ing, -ed) proposé mais modifiable.
@@ -402,12 +422,13 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.6.0 | **Labels à travailler + objectif contrôle + jauge de maîtrise** (nouvel accueil), jardin minimal (stades, soif, XP, niveaux, série), `ListenMeaning` |
 | 0.7.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
 | 0.8.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité ; **import par photo lu sur l'appareil** (Tesseract.js `chi_sim+eng`, chargé à la première utilisation, aucune donnée ne quitte l'appareil) pour du **texte imprimé** : liste de vocabulaire ou texte, avec le même aperçu que l'import par texte collé (mots nouveaux uniquement) — décision de l'autrice, 2026-11-10 |
-| 0.9.0 | **Import par photo lu par Claude** via le Cloudflare Worker (§7, §8.1, §8.4) — avancé de 1.4.0 (décision de l'autrice, 2026-11-10) : listes et textes, imprimés ou manuscrits, traduction suggérée en contexte ; option activée par le parent, code d'accès familial, consentement, rien de conservé. Prérequis côté autrice : clé API Anthropic avec plafond de dépenses, compte Cloudflare |
+| 0.9.0 | **Conversion de photo sur l'appareil (PaddleOCR) avec correction facile** (§8.1) : liste de vocabulaire en tableau, imprimée ou en partie manuscrite, ou page de texte ; colonnes et lignes reconstruites, français corrigé par dictionnaire seulement quand c'est sûr, pinyin calculé (celui du cahier en note), aperçu éditable sous la vignette de chaque ligne, cases à vérifier surlignées, zones ajustables en mode expert ; modèles téléchargés depuis l'appli au premier usage (~48 Mo), photo jamais envoyée |
+| 0.10.0 | **En pause** (décision de l'autrice du 2026-11-11, coût de l'API) : **Import par photo lu par Claude** via le Cloudflare Worker (§7, §8.1, §8.4) — prévu d'abord en 0.9.0 (décision de l'autrice, 2026-11-10) : listes et textes, imprimés ou manuscrits, traduction suggérée en contexte ; option activée par le parent, code d'accès familial, consentement, rien de conservé. Prérequis côté autrice : clé API Anthropic avec plafond de dépenses, compte Cloudflare |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
 | 1.1.0 | ~~`ToneEcho`, `SentenceListen`, `BridgeMatch`~~ (livrés en 0.7.0) |
 | 1.2.0 | Atelier de phrases, vue parent (`SentenceShuffle` livré en 0.7.0) |
 | 1.3.0 | Répéter à voix haute (reconnaissance vocale, option), ordre des traits en bonus |
-| 1.4.0 | ~~Import par photo~~ (avancé en 0.8.0 pour la lecture sur l'appareil et en 0.9.0 pour la lecture par Claude) |
+| 1.4.0 | ~~Import par photo~~ (avancé : 0.8.0 et 0.9.0 pour la lecture sur l'appareil, 0.10.0 en pause pour la lecture par Claude) |
 | 1.5.0 | Correction de dictée par photo (réutilise le Worker) |
 | 1.6.0 | Synchro chiffrée |
 | 1.7.0 | **Suivi professeur, étape 1** : rapport de progression partageable + tableau de bord professeur local (§9 ter) |

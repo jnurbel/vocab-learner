@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { useFakePhotoReader } from './fakePhotoReader.ts';
 import { openWords } from './navigation.ts';
 import { reachFinalChallenge } from './pathSeed.ts';
 import { simulateProgress } from './progressStore.ts';
@@ -69,6 +70,57 @@ async function addWords(page: Page) {
     .fill('Leçon 7');
   await page.getByRole('button', { name: 'Ajouter 5 mots' }).click();
   await expect(page.getByRole('table', { name: 'Liste des mots' }).getByRole('row')).toHaveCount(6);
+}
+
+/** A notebook page drawn by the test: number | hanzi | handwritten-like pinyin | meaning. */
+const PHOTO_ROWS = [
+  ['1', '控制', 'kong zhi', 'contrôler'],
+  ['2', '政府', 'zhen fu', 'gouvernemant'],
+  ['3', '家庭', 'jia ting', 'famille'],
+  ['4', '除了', 'chu le', 'à part'],
+] as const;
+
+const PHOTO_READING = {
+  size: { width: 1000, height: 440 },
+  blocks: PHOTO_ROWS.flatMap((cells, row) =>
+    cells.map((text, column) => ({
+      box: {
+        x: [20, 120, 380, 640][column] ?? 0,
+        y: 30 + row * 100,
+        width: column === 0 ? 50 : 220,
+        height: 60,
+      },
+      text,
+    })),
+  ),
+  unsure: ['gouvernemant'],
+};
+
+async function notebookImage(page: Page): Promise<Buffer> {
+  const dataUrl = await page.evaluate((rows) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1000;
+    canvas.height = 440;
+    const context = canvas.getContext('2d');
+    if (context === null) {
+      throw new Error('No canvas');
+    }
+    context.fillStyle = '#fbfaf4';
+    context.fillRect(0, 0, 1000, 440);
+    context.strokeStyle = '#9db3c8';
+    context.fillStyle = '#1d2a6b';
+    context.font = '44px sans-serif';
+    rows.forEach((cells, row) => {
+      const y = 30 + row * 100;
+      context.strokeRect(10, y - 15, 980, 95);
+      cells.forEach((text, column) => {
+        context.font = column === 1 ? '48px sans-serif' : 'italic 40px serif';
+        context.fillText(text, [25, 125, 385, 645][column] ?? 0, y + 45);
+      });
+    });
+    return canvas.toDataURL('image/png');
+  }, PHOTO_ROWS);
+  return Buffer.from(dataUrl.replace(/^data:image\/png;base64,/, ''), 'base64');
 }
 
 /** A Chinese voice that reads nothing, so that the mini-game shows its audio screen. */
@@ -216,6 +268,34 @@ for (const [device, viewport] of Object.entries(VIEWPORTS)) {
         });
         await expect(sources.getByRole('img', { name: 'Aperçu de la photo à lire' })).toBeVisible();
         await shootSources('import-photo');
+      });
+
+      test.describe('photo read by a fake reader', () => {
+        // The service worker would fetch the reader itself, out of reach of page.route.
+        test.use({ serviceWorkers: 'block' });
+
+        test('photo import: the words to check, then the zones', async ({ page }) => {
+          await useFakePhotoReader(page, PHOTO_READING);
+          await page.goto('./');
+          await openWords(page);
+          const sources = page.getByRole('region', { name: 'Importer autrement' });
+          await sources.getByRole('tab', { name: 'Photo' }).click();
+          await sources.getByLabel('Choisir ou prendre une photo').setInputFiles({
+            name: 'cahier.png',
+            mimeType: 'image/png',
+            buffer: await notebookImage(page),
+          });
+          await sources.getByRole('button', { name: 'Lire la photo' }).click();
+          const words = page.getByRole('region', { name: 'Mots lus sur la photo' });
+          await expect(words.getByRole('img', { name: 'Ligne 3 de la photo' })).toBeVisible();
+          await words.getByRole('button', { name: 'Ligne suivante à vérifier' }).click();
+          await shoot(page, 'import-photo-words', device, scheme, words);
+
+          await words.getByRole('button', { name: 'Ajuster les zones (mode expert)' }).click();
+          const zones = page.getByRole('region', { name: 'Zones de la photo' });
+          await zones.getByRole('separator', { name: 'Séparateur de colonnes 2' }).focus();
+          await shoot(page, 'import-photo-zones', device, scheme, zones);
+        });
       });
 
       test('flashcards: setup, a turned card, a typed answer with its diff', async ({ page }) => {
