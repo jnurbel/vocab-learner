@@ -14,7 +14,7 @@ reprendre l'apparence avec des classes CSS et des jetons (`src/ui/theme.css`).
 | `Parcours.dc.html` | Parcours d'un label (7 étapes) | 0.6.0 |
 | `Dictee.dc.html` | Dictée tapée | 0.4.0 |
 | `ExListenTypeWrong.dc.html` | Dictée : « bon son, mauvais caractère » + diff | 0.4.0 |
-| `Import.dc.html` | Import en lot, aperçu, labels à poser | 0.2.0 (onglets texte 0.7.0, photo 1.4.0) |
+| `Import.dc.html` | Import en lot, aperçu, labels à poser | 0.2.0 (onglets texte 0.7.0, photo 0.8.0, aperçu photo et zones 0.9.0) |
 | `Jardin.dc.html` | Île-Jardin (parcelles zh / en, stades, soif) | 0.5.0 |
 | `ExListenMeaning.dc.html` | Mini-jeu : écouter et choisir le sens | 0.5.0 |
 | `SessionSummary.dc.html` | Bilan de séance | 0.5.0 |
@@ -46,7 +46,7 @@ licence OFL à joindre) ou repli système. Hanzi : polices système (`"Microsoft
 
 `screenshots/` contient les écrans existants de l'appli (accueil, mots, import, flashcards, réponse tapée,
 dictée, sauvegarde, réglages, bilan de séance, jardin et sa vue liste, île aux niveaux 1, 5, 10 et 20,
-mini-jeu `ListenMeaning`), en clair et en sombre, à 1280 px (page entière) et à 390 × 844
+mini-jeu `ListenMeaning`, aperçu des mots lus sur une photo et ses zones), en clair et en sombre, à 1280 px (page entière) et à 390 × 844
 (un écran, comme `Mobile.dc.html`), pour comparer avec les maquettes. Pour les régénérer :
 
 ```sh
