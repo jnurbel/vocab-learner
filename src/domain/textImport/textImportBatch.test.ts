@@ -63,6 +63,15 @@ describe('textImportBatch', () => {
     expect(batch.entries[0]).not.toHaveProperty('example');
   });
 
+  it('saves the senses typed for a word separated by a slash rather than a vertical bar', () => {
+    const { batch } = textImportBatch(
+      [bright],
+      choices([[bright, { decision: 'add', translation: 'brillant|vif,clair' }]]),
+    );
+
+    expect(batch.entries[0]?.translation).toBe('brillant / vif, clair');
+  });
+
   it('reports a word to add whose meaning is missing, located by its row', () => {
     const { batch } = textImportBatch([mooncake, moon], choices([[moon, { decision: 'add' }]]));
 

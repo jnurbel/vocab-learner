@@ -238,11 +238,14 @@
     maxlength="600"
     bind:value={translation}
     aria-invalid={errorOf('translation') === undefined ? undefined : 'true'}
-    aria-describedby={errorOf('translation') === undefined ? undefined : id('translation-error')}
+    aria-describedby={errorOf('translation') === undefined
+      ? id('translation-help')
+      : `${id('translation-error')} ${id('translation-help')}`}
   />
   {#if errorOf('translation') !== undefined}
     <p id={id('translation-error')} class="error">{errorOf('translation')}</p>
   {/if}
+  <p id={id('translation-help')} class="help">{fr.senses.help}</p>
 
   <label for={id('example')}>{fr.wordForm.example}</label>
   <textarea

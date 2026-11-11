@@ -1,6 +1,7 @@
 import { detectLanguage } from './bulkEntryParser';
 import { createCard, type Card, type CardError, type CreationContext } from './card';
 import { addLabels, findCard, indexCardsByTerm, missingLabelIds } from './importPlan';
+import { normalizeSenses } from './meaning/senses';
 import { numericToDiacritic } from './pinyin';
 import { failure, success, type Result } from './result';
 
@@ -28,7 +29,7 @@ function cardFromFields(fields: WordFields, context: CreationContext): Result<Ca
       term: fields.term,
       // Pinyin only makes sense for Chinese; it is dropped for an English word.
       pinyin: language === 'zh' ? numericToDiacritic(fields.pinyin) : undefined,
-      translation: fields.translation,
+      translation: normalizeSenses(fields.translation),
       example: fields.example,
       labelIds: fields.labelIds,
       source: 'manual',

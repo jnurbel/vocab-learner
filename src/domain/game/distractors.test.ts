@@ -80,6 +80,11 @@ describe('the glosses of a meaning (GAME_DESIGN.md 6.0)', () => {
     expect(meaningsConflict('le temps, la durée', 'temps (météo)')).toBe(true);
     expect(meaningsConflict('chat', 'chien')).toBe(false);
   });
+
+  it('never offers as a distractor a word sharing a sense written after a vertical bar', () => {
+    expect(glosses('contrôler | contrôle')).toEqual(['controler', 'controle']);
+    expect(meaningsConflict('contrôler | contrôle', 'le contrôle')).toBe(true);
+  });
 });
 
 describe('the words that can never be distractors', () => {

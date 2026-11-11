@@ -1,5 +1,6 @@
 import type { Card } from '../card';
 import { editDistance } from '../dictation/characterDiff';
+import { SENSE_SEPARATOR } from '../meaning/senses';
 import type { Rng } from '../srs/random';
 import { toneSegments } from '../toneSyllables';
 import type { Difficulty, MiniGameConfig } from './miniGameConfig';
@@ -30,7 +31,7 @@ export function glosses(translation: string): string[] {
     .replace(COMBINING_MARKS, '')
     .replace(/’/g, "'")
     .replace(/\([^)]*\)/g, ' ')
-    .split(/[,;/]/)
+    .split(SENSE_SEPARATOR)
     .map((piece) => piece.trim().replace(LEADING_ARTICLE, '').trim())
     .filter((piece) => piece !== '');
 }
