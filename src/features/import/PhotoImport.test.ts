@@ -219,10 +219,7 @@ describe('PhotoImport', () => {
       expect.objectContaining({ script: 'latin' }),
       expect.objectContaining({ script: 'latin' }),
     ]);
-    expect(cropPhoto).toHaveBeenCalledWith(
-      prepared,
-      expect.objectContaining({ x: 0, width: 1000 }),
-    );
+    expect(cropPhoto).toHaveBeenCalledWith(prepared, expect.objectContaining({ x: 144, y: 94 }));
     await vi.waitFor(() => {
       expect(screen.getByText(format(fr.photoWords.notebook, { pinyin: 'zhen fu' }))).toBeVisible();
     });

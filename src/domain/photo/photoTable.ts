@@ -168,13 +168,33 @@ function englishCell(pieces: readonly BlockPiece[]): RowCells {
   return { term: { ...term, text: word.trim() }, pinyin: [], meaning: [meaning.join(' ')] };
 }
 
+/** Around the words of a thumbnail, this share of their height, so that no stroke is cut. */
+const THUMBNAIL_MARGIN = 0.1;
+
+/** The part of the photo where the words of a row stand, with a margin, within the photo. */
+function thumbnailOf(pieces: readonly BlockPiece[], grid: Grid): Box {
+  const left = Math.min(...pieces.map(({ box }) => box.x));
+  const top = Math.min(...pieces.map(({ box }) => box.y));
+  const right = Math.max(...pieces.map(({ box }) => box.x + box.width));
+  const bottom = Math.max(...pieces.map(({ box }) => box.y + box.height));
+  const margin = Math.round((bottom - top) * THUMBNAIL_MARGIN);
+  const x = Math.max(0, left - margin);
+  const y = Math.max(0, top - margin);
+  return {
+    x,
+    y,
+    width: Math.min(grid.size.width, right + margin) - x,
+    height: Math.min(grid.size.height, bottom + margin) - y,
+  };
+}
+
 /** Builds one word per row of the grid from the pieces read in its cells. */
 export function fillTable(grid: Grid, pieces: readonly BlockPiece[]): PhotoRow[] {
   const ordered = [...pieces].sort(
     (first, second) => first.box.y - second.box.y || first.box.x - second.box.x,
   );
   const hasHanzi = grid.columnRoles.includes('hanzi');
-  return bands(grid.rowSeparators, grid.size.height).flatMap(({ start, end }, row): PhotoRow[] => {
+  return bands(grid.rowSeparators, grid.size.height).flatMap((_, row): PhotoRow[] => {
     const inRow = ordered.filter((piece) => piece.row === row);
     const ofRole = (role: ColumnRole) =>
       withoutSmudges(inRow.filter(({ column }) => roleOf(grid, column) === role));
@@ -191,7 +211,7 @@ export function fillTable(grid: Grid, pieces: readonly BlockPiece[]): PhotoRow[]
     return [
       {
         row,
-        box: { x: 0, y: start, width: grid.size.width, height: end - start },
+        box: thumbnailOf(inRow, grid),
         term: cells.term,
         notebookPinyin: [...cells.pinyin, ...pinyin].filter((text) => text !== '').join(' '),
         meaning: {

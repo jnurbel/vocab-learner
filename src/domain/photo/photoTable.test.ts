@@ -108,13 +108,22 @@ describe('fillTable', () => {
     expect(row?.meaning.text).toBe('contrôler');
   });
 
-  it('gives each row its band of the photo, the whole width of the page, for a thumbnail', () => {
-    expect(rows[0]?.box).toEqual({
-      x: 0,
-      y: 0,
-      width: 2464,
-      height: notebookGrid.rowSeparators[0],
-    });
+  it('gives each row the part of the photo where its words stand, with a margin, for a thumbnail', () => {
+    // 独生子女, the pinyin above the meaning and enfant unique, without the row number.
+    expect(rows[0]?.box).toEqual({ x: 512, y: 62, width: 1384, height: 120 });
+  });
+
+  it('keeps the thumbnail of a row within the photo', () => {
+    const grid: Grid = {
+      size: { width: 400, height: 100 },
+      columnSeparators: [],
+      columnRoles: ['hanzi'],
+      rowSeparators: [],
+    };
+
+    const [row] = fillTable(grid, cutIntoPieces(grid, [printed(0, 0, '控制', 400)]));
+
+    expect(row?.box).toEqual({ x: 0, y: 0, width: 400, height: 66 });
   });
 
   it('splits a line "控制 kòngzhì contrôler" of a list without columns', () => {

@@ -291,7 +291,6 @@
         <thead>
           <tr>
             <th scope="col">{fr.photoWords.columnLine}</th>
-            <th scope="col">{fr.photoWords.columnPhoto}</th>
             {#each COLUMNS as column (column)}
               <th scope="col">{COLUMN_NAMES[column]}</th>
             {/each}
@@ -306,15 +305,18 @@
             {@const note = notebookNote(word)}
             {@const thumbnail =
               word.box === undefined ? '' : (thumbnails.get(boxKey(word.box)) ?? '')}
-            <tr class:checking={checking === word.id}>
-              <th scope="row">{line}</th>
-              <td class="thumbnail">
+            <!-- The line of the photo above its word, wide enough to compare at a glance. -->
+            <tr class="photo-line" class:checking={checking === word.id}>
+              <td colspan="6">
                 {#if thumbnail !== ''}
                   <img src={thumbnail} alt={format(fr.photoWords.thumbnailAlt, { line })} />
                 {:else if word.box === undefined}
                   <span class="help">{fr.photoWords.noThumbnail}</span>
                 {/if}
               </td>
+            </tr>
+            <tr class="word" class:checking={checking === word.id}>
+              <th scope="row">{line}</th>
               {#each COLUMNS as column (column)}
                 <td class:to-check={isToCheck(word, column)}>
                   {#if column !== 'pinyin' || isChinese || word.term === ''}
@@ -448,10 +450,16 @@
     vertical-align: top;
   }
 
-  .thumbnail img {
+  .photo-line td {
+    padding-top: var(--space-3);
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .photo-line img {
     display: block;
-    width: 14rem;
-    max-width: 40vw;
+    max-width: 100%;
+    max-height: 5rem;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
   }

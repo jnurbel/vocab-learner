@@ -187,9 +187,17 @@ describe('PhotoWordsPreview', () => {
   it('flags the words already in the list, which are not duplicated', () => {
     setup([word('1', '家庭', 'famille'), word('2', '控制', 'contrôler')]);
 
-    const [, first, second] = screen.getAllByRole('row');
-    expect(within(first ?? document.body).getByText(fr.bulkEntry.status.existing)).toBeVisible();
-    expect(within(second ?? document.body).getByText(fr.bulkEntry.status.new)).toBeVisible();
+    const rowOf = (term: string) =>
+      screen
+        .getByRole('textbox', {
+          name: format(fr.bulkEntry.cellLabel, {
+            column: fr.bulkEntry.columns.term,
+            line: term === '家庭' ? 1 : 2,
+          }),
+        })
+        .closest('tr') ?? document.body;
+    expect(within(rowOf('家庭')).getByText(fr.bulkEntry.status.existing)).toBeVisible();
+    expect(within(rowOf('控制')).getByText(fr.bulkEntry.status.new)).toBeVisible();
   });
 
   it('saves nothing before "Add N words", then the new words with their label, from a photo', async () => {

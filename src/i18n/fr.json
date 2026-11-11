@@ -1378,7 +1378,6 @@
   },
   "photoWords": {
     "caption": "Mots lus sur la photo, à vérifier et corriger avant l’ajout",
-    "columnPhoto": "Photo",
     "columnLine": "Ligne",
     "columnActions": "Actions",
     "thumbnailAlt": "Ligne {line} de la photo",
