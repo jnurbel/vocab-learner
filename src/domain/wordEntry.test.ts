@@ -104,6 +104,16 @@ describe('planWordEntry', () => {
     );
     expect(outcome.ok && outcome.value.card).not.toHaveProperty('pinyin');
   });
+
+  it('saves the senses typed with a vertical bar separated by a slash', () => {
+    const outcome = planWordEntry(
+      fields({ term: 'control', translation: 'contrôler | contrôle,surveiller' }),
+      [],
+      context,
+    );
+
+    expect(outcome.ok && outcome.value.card.translation).toBe('contrôler / contrôle, surveiller');
+  });
 });
 
 describe('editCard', () => {
@@ -179,6 +189,12 @@ describe('editCard', () => {
       expect.objectContaining({ language: 'en', term: 'cat' }),
     );
     expect(edited.ok && edited.value).not.toHaveProperty('pinyin');
+  });
+
+  it('saves the edited senses separated by a slash rather than a vertical bar', () => {
+    const edited = editCard(cat, fields({ term: '猫', translation: 'chat|minou' }), [cat], now);
+
+    expect(edited.ok && edited.value.translation).toBe('chat / minou');
   });
 
   it('reports invalid fields without changing the word', () => {
