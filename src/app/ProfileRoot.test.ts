@@ -44,10 +44,13 @@ async function createProfile(user: User, from: string, name: string) {
   await screen.findByRole('button', { name: `Profil : ${name}` });
 }
 
-async function wordRows(user: User) {
+/** The words are read from storage after the screen shows: waits for the count expected. */
+async function expectWordRows(user: User, count: number) {
   await user.click(screen.getByRole('button', { name: fr.nav.words }));
   const list = await screen.findByRole('region', { name: fr.wordList.title });
-  return within(list).queryAllByRole('row');
+  await vi.waitFor(() => {
+    expect(within(list).queryAllByRole('row')).toHaveLength(count);
+  });
 }
 
 describe('ProfileRoot', () => {
@@ -61,7 +64,7 @@ describe('ProfileRoot', () => {
 
     await screen.findByRole('button', { name: 'Profil : Moi' });
 
-    expect(await wordRows(user)).toHaveLength(2);
+    await expectWordRows(user, 2);
   });
 
   it('keeps the words and the island of each profile apart when switching', async () => {
@@ -80,7 +83,7 @@ describe('ProfileRoot', () => {
 
     await createProfile(user, 'Moi', 'Léa');
 
-    expect(await wordRows(user)).toHaveLength(0);
+    await expectWordRows(user, 0);
     await user.click(screen.getByRole('button', { name: fr.nav.garden }));
     expect(await screen.findByRole('img', { name: /^Île niveau 1/ })).toBeVisible();
 
@@ -88,7 +91,7 @@ describe('ProfileRoot', () => {
     await user.click(within(panel).getByRole('button', { name: 'Ouvrir le profil Moi' }));
     await screen.findByRole('button', { name: 'Profil : Moi' });
 
-    expect(await wordRows(user)).toHaveLength(2);
+    await expectWordRows(user, 2);
     await user.click(screen.getByRole('button', { name: fr.nav.garden }));
     expect(await screen.findByRole('img', { name: /^Île niveau 8/ })).toBeVisible();
   });
@@ -177,5 +180,38 @@ describe('ProfileRoot', () => {
         expect.not.arrayContaining([expect.stringMatching(/^vocab-learner-[0-9a-f]{8}-/)]),
       );
     });
+  });
+
+  it("restores a backup into the profile open, whoever's backup it is", async () => {
+    await new VocabularyRepository('vocab-learner-default').saveImport({
+      cardsToCreate: [cat()],
+      cardsToUpdate: [],
+    });
+    const user = userEvent.setup();
+    const download = vi.fn<(file: BackupFile) => void>();
+    render(ProfileRoot, { speaker: new FakeSpeaker(), download });
+    await screen.findByRole('button', { name: 'Profil : Moi' });
+    await user.click(screen.getByRole('button', { name: fr.nav.backup }));
+    await user.click(await screen.findByRole('button', { name: fr.backup.saveNow }));
+    await vi.waitFor(() => {
+      expect(download).toHaveBeenCalledOnce();
+    });
+    const backup = download.mock.calls[0]?.[0];
+
+    await createProfile(user, 'Moi', 'Léa');
+    await user.click(screen.getByRole('button', { name: fr.nav.backup }));
+    await user.upload(
+      await screen.findByLabelText(fr.backup.chooseFile),
+      new File([backup?.text ?? ''], backup?.fileName ?? '', { type: 'application/json' }),
+    );
+    await user.click(await screen.findByRole('button', { name: fr.backup.merge }));
+    expect(await screen.findByText(fr.backup.merged)).toBeVisible();
+
+    await expectWordRows(user, 2);
+    const lea = (await Dexie.getDatabaseNames()).find((name) =>
+      /^vocab-learner-[0-9a-f]{8}-/.test(name),
+    );
+    expect(await new VocabularyRepository(lea ?? '').allCards()).toHaveLength(1);
+    expect(await new VocabularyRepository('vocab-learner-default').allCards()).toHaveLength(1);
   });
 });
