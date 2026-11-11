@@ -28,6 +28,12 @@ const LETTERS_PER_ERROR = 8;
 /** A letter that makes no word is kept as read, at a high cost. */
 const STRAY_LETTER_COST = 1.5;
 const LETTER_A = 'a'.charCodeAt(0);
+/**
+ * A lone "I" or "l" between two words: the vertical bar between two senses, read as a letter.
+ * Only taken for a bar when sure: no French word is a capital "I" amid words in lower case, and
+ * a lone "l" before a consonant cannot be an elision ("l avion" is read for "l'avion").
+ */
+const BAR_READ_AS_LETTER = /(?<=\p{Ll})\s+(?:I(?=\s+\p{Ll})|l(?=\s+[bcdfgjklmnpqrstvwxzç]))\s+/gu;
 type Parenthesis = '(' | ')';
 const PARENTHESIS_TEXT: Readonly<Record<Parenthesis, string>> = {
   '(': ' (',
@@ -417,7 +423,7 @@ export function createFrenchSpelling(words: readonly string[]): FrenchSpelling {
     if (read.length > MAX_CORRECTED_LENGTH) {
       return { text: read.trim(), certain: false };
     }
-    const parts = cutAtSeparators(read.replace(/\.+|…/g, ' '));
+    const parts = cutAtSeparators(read.replace(/\.+|…/g, ' ').replace(BAR_READ_AS_LETTER, '|'));
     let certain = true;
     const text = parts
       .map((part, index) => {
