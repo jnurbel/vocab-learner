@@ -79,6 +79,51 @@ describe('createPaddleEngine', () => {
     expect(closed).toHaveBeenCalledOnce();
   });
 
+  it('matches each reading to its box when the model gives the box back rounded', async () => {
+    const { dependencies, createRecognizer } = fakeDependencies();
+    createRecognizer.mockImplementation(() =>
+      Promise.resolve({
+        run: (_canvas: unknown, boxes: Box[]) =>
+          Promise.resolve(
+            boxes.map((box, index) => ({
+              box: { ...box, x: box.x + 1, width: box.width - 1 },
+              text: String(index),
+              confidence: 0.9,
+            })),
+          ),
+      }),
+    );
+
+    const { blocks } = await createPaddleEngine(appBase, dependencies).analyze(
+      new Blob(['photo']),
+      () => undefined,
+    );
+
+    expect(blocks.map(({ chinese }) => chinese.text)).toEqual(['0', '1']);
+  });
+
+  it('does not read again with the Latin model a block surely read as hanzi', async () => {
+    const { dependencies, createRecognizer } = fakeDependencies();
+    const latinBoxes: Box[][] = [];
+    const chinese = {
+      run: (_canvas: unknown, boxes: Box[]) =>
+        Promise.resolve(
+          boxes.map((box) => ({ box, text: box === first ? '控制' : 'kong', confidence: 0.9 })),
+        ),
+    };
+    const latin = {
+      run: (_canvas: unknown, boxes: Box[]) => {
+        latinBoxes.push(boxes);
+        return Promise.resolve([]);
+      },
+    };
+    createRecognizer.mockResolvedValueOnce(chinese).mockResolvedValueOnce(latin);
+
+    await createPaddleEngine(appBase, dependencies).analyze(new Blob(['photo']), () => undefined);
+
+    expect(latinBoxes).toEqual([[second]]);
+  });
+
   it('loads the models once for all the photos read', async () => {
     const { dependencies, createDetector, createRecognizer } = fakeDependencies();
     const engine = createPaddleEngine(appBase, dependencies);

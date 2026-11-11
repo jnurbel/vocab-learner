@@ -26,7 +26,7 @@ export interface Grid {
 
 /** Below this, a block is noise: a smudge or a line of the table read as a letter. */
 const MIN_BLOCK_CONFIDENCE = 0.3;
-/** A column is where at least this share of the busiest column's blocks stand. */
+/** A column is where more than this share of the busiest column's blocks stand. */
 const COLUMN_DENSITY = 0.25;
 const HAN = /\p{Script=Han}/u;
 const ROW_NUMBER = /^\(?\d{1,3}[.)]?$/;
@@ -118,11 +118,11 @@ function quietestPoint(counts: readonly number[], start: number, end: number): n
 /** Vertical separators at the quietest place between the busy stretches of the photo. */
 function findColumnSeparators(blocks: readonly DetectedBlock[], width: number): number[] {
   const counts = coverage(blocks, width);
-  const threshold = Math.max(1, Math.max(0, ...counts) * COLUMN_DENSITY);
+  const threshold = Math.max(0, ...counts) * COLUMN_DENSITY;
   const separators: number[] = [];
   let previousEnd: number | undefined;
   counts.forEach((count, x) => {
-    if (count < threshold) {
+    if (count <= threshold) {
       return;
     }
     if (previousEnd !== undefined && previousEnd < x - 1) {
@@ -215,7 +215,23 @@ export function midpoints(positions: readonly number[]): number[] {
   return halfways;
 }
 
-function isWordOf(role: ColumnRole | undefined, block: DetectedBlock): boolean {
+/** A block stands in the word column when at least this share of its width is in it. */
+const WORD_SHARE = 0.25;
+
+/** The edges of the bands between sorted separators, from 0 to the size. */
+export function bands(
+  separators: readonly number[],
+  size: number,
+): { start: number; end: number }[] {
+  let start = 0;
+  return [...separators, size].map((end) => {
+    const band = { start, end };
+    start = end;
+    return band;
+  });
+}
+
+function isWordOf(role: ColumnRole, block: DetectedBlock): boolean {
   return role === 'hanzi' ? hasHan(block.chinese.text) : role === 'english';
 }
 
@@ -231,8 +247,18 @@ export function inferGrid(blocks: readonly DetectedBlock[], size: ImageSize): Gr
     columns[bandOf(columnSeparators, centerX(block.box))]?.push(block);
   }
   const columnRoles = guessRoles(columns);
-  const words = columns.flatMap((column, index) =>
-    column.filter((block) => isWordOf(columnRoles[index], block)),
+  // A word read together with its number, over the separator, still makes its row.
+  const wordColumns = bands(columnSeparators, size.width).filter((_, index) =>
+    columnRoles.slice(index, index + 1).some((role) => role === 'hanzi' || role === 'english'),
+  );
+  const role = columnRoles.includes('hanzi') ? 'hanzi' : 'english';
+  const words = text.filter(
+    (block) =>
+      isWordOf(role, block) &&
+      wordColumns.some(({ start, end }) => {
+        const shared = Math.min(end, block.box.x + block.box.width) - Math.max(start, block.box.x);
+        return shared >= block.box.width * WORD_SHARE;
+      }),
   );
   return {
     size: { width: size.width, height: size.height },

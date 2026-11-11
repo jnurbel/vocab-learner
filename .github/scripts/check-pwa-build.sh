@@ -40,4 +40,27 @@ if ! grep -q 'CacheFirst' "${dist}/sw.js" || [[ ! -s "${dist}/tesseract/worker.m
   missing=1
 fi
 
+# The on-device photo reader (PaddleOCR): its models, runtime, worker and dictionary are served by
+# the app, kept on first use, never precached: they weigh ~48 MB.
+for file in paddle/models/PP-OCRv5_mobile_det_infer.onnx paddle/models/PP-OCRv5_mobile_rec_infer.onnx \
+  paddle/models/ppocrv5_dict.txt paddle/models/latin_PP-OCRv5_mobile_rec_infer.onnx \
+  paddle/models/ppocrv5_latin_dict.txt paddle/ort/ort-wasm-simd-threaded.wasm paddle/fr-words.txt; do
+  if [[ ! -s "${dist}/${file}" ]]; then
+    echo "::error::${dist}/${file} (photo reader) is missing from the build"
+    missing=1
+  fi
+done
+if ! compgen -G "${dist}/paddle/paddle.worker-*.js" >/dev/null; then
+  echo "::error::the photo reader worker (${dist}/paddle/paddle.worker-*.js) is missing from the build"
+  missing=1
+fi
+if ! grep -q 'paddle-ocr-' "${dist}/sw.js"; then
+  echo "::error::${dist}/sw.js does not cache the photo reader on first use"
+  missing=1
+fi
+if grep -q 'url:"paddle/' "${dist}/sw.js"; then
+  echo "::error::${dist}/sw.js precaches a file of the photo reader"
+  missing=1
+fi
+
 exit "${missing}"

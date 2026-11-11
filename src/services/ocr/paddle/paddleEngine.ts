@@ -4,6 +4,7 @@ import {
   type SpellingResult,
 } from '../../../domain/photo/frenchSpelling';
 import type { ImageSize } from '../../../domain/photo/imageSize';
+import { hasHan } from '../../../domain/photo/tableGrid';
 import type { Box, Reading, Script } from '../../../domain/photo/photoBlocks';
 import { lazyLoader } from '../../lazyLoader';
 import type { PhotoAnalysis, Region } from '../photoReader';
@@ -64,28 +65,53 @@ const MODEL_FILES: readonly PaddleFile[] = [
   'latinDictionary',
 ];
 const NOTHING_READ: Reading = { text: '', confidence: 0 };
+/** A block read as hanzi this surely is not read with the Latin model. */
+const SURE_HANZI = 0.8;
 
-function boxKey({ x, y, width, height }: Box): string {
-  return [x, y, width, height].join(',');
+/** How much two boxes cover each other, from 0 (apart) to 1 (the same). */
+function overlap(first: Box, second: Box): number {
+  const width =
+    Math.min(first.x + first.width, second.x + second.width) - Math.max(first.x, second.x);
+  const height =
+    Math.min(first.y + first.height, second.y + second.height) - Math.max(first.y, second.y);
+  if (width <= 0 || height <= 0) {
+    return 0;
+  }
+  const shared = width * height;
+  return shared / (first.width * first.height + second.width * second.height - shared);
 }
+
+/** A reading is the one of a box when they cover each other at least this much. */
+const SAME_BOX = 0.5;
 
 function dictionaryOf(file: ArrayBuffer): string[] {
   return new TextDecoder().decode(file).split(/\r?\n/);
 }
 
-/** The readings of a model, by box. */
-async function readBoxes(
+/** What a model read in the given boxes. */
+function readBoxes(
   recognizer: Recognizer,
   canvas: unknown,
   boxes: readonly Box[],
-): Promise<Map<string, Reading>> {
-  const found = await recognizer.run(canvas, [...boxes]);
-  return new Map(found.map(({ box, text, confidence }) => [boxKey(box), { text, confidence }]));
+): Promise<RecognizedText[]> {
+  return recognizer.run(canvas, [...boxes]);
 }
 
-/** What a model read in a box; nothing when it dropped the box (too small, or blank). */
-function readingOf(readings: ReadonlyMap<string, Reading>, box: Box): Reading {
-  return readings.get(boxKey(box)) ?? NOTHING_READ;
+/**
+ * What a model read in a box: the reading whose box covers it most, as the model may give the
+ * box back rounded (scaled); nothing when the model dropped the box (too small, or blank).
+ */
+function readingOf(readings: readonly RecognizedText[], box: Box): Reading {
+  let best: RecognizedText | undefined;
+  let bestOverlap = SAME_BOX;
+  for (const reading of readings) {
+    const covered = overlap(reading.box, box);
+    if (covered >= bestOverlap) {
+      best = reading;
+      bestOverlap = covered;
+    }
+  }
+  return best === undefined ? NOTHING_READ : { text: best.text, confidence: best.confidence };
 }
 
 /**
@@ -155,7 +181,12 @@ export function createPaddleEngine(
         onProgress({ step: 'reading', progress: 0.3 });
         const chinese = await readBoxes(recognizers.chinese, canvas, boxes);
         onProgress({ step: 'reading', progress: 0.7 });
-        const latin = await readBoxes(recognizers.latin, canvas, boxes);
+        // Hanzi read surely need no Latin reading: it would only cost time.
+        const latinBoxes = boxes.filter((box) => {
+          const reading = readingOf(chinese, box);
+          return !(hasHan(reading.text) && reading.confidence >= SURE_HANZI);
+        });
+        const latin = await readBoxes(recognizers.latin, canvas, latinBoxes);
         onProgress({ step: 'reading', progress: 1 });
         return {
           size,

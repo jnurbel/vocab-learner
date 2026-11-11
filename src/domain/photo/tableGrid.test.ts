@@ -102,6 +102,26 @@ describe('inferGrid', () => {
     expect(inferGrid(blocks, size).columnRoles).toEqual(['ignore']);
   });
 
+  it('makes a row for a word read together with its number, across the separator', () => {
+    const blocks = [
+      ...table(
+        [
+          ['1', '控制', 'contrôler'],
+          ['2', '政府', 'gouvernement'],
+          ['3', '家庭', 'famille'],
+        ],
+        [50, 300, 700],
+      ),
+      { ...printed(50, 460, '4 分享', 330), latin: { text: '4f', confidence: 0.7 } },
+      printed(700, 460, 'partager'),
+    ];
+
+    const grid = inferGrid(blocks, size);
+
+    expect(grid.columnRoles).toEqual(['ignore', 'hanzi', 'meaning']);
+    expect(grid.rowSeparators).toHaveLength(3);
+  });
+
   it('keeps one row for a word printed in two pieces on the same line', () => {
     const blocks = [printed(100, 100, '除了', 90), printed(200, 104, '以外', 90)];
 

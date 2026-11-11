@@ -1,3 +1,5 @@
+import { createPaddleReader } from './paddle/paddleReader';
+import type { PhotoReader } from './photoReader';
 import { lazyLoader } from '../lazyLoader';
 import type { TesseractAssets } from './tesseractRecognizer';
 import type { TextRecognizer } from './textRecognizer';
@@ -22,3 +24,17 @@ export const loadTextRecognizer: () => Promise<TextRecognizer> = lazyLoader(asyn
     tesseractAssetUrls(new URL(import.meta.env.BASE_URL, document.baseURI).href),
   );
 });
+
+/**
+ * The on-device photo reader: PaddleOCR in a Web Worker, a module of the app (the CSP allows
+ * `worker-src 'self'`), started on the first photo read.
+ */
+export function createPhotoReader(): PhotoReader {
+  return createPaddleReader(
+    () =>
+      new Worker(new URL('./paddle/paddle.worker.ts', import.meta.url), {
+        type: 'module',
+        name: 'photo-reader',
+      }),
+  );
+}

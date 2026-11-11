@@ -1,6 +1,7 @@
 import type { Box, DetectedBlock, Reading, Script } from './photoBlocks';
 import {
   bandOf,
+  bands,
   centerX,
   centerY,
   hasHan,
@@ -56,19 +57,6 @@ const NOT_PINYIN_LETTER = /[^\p{L}\s]/gu;
 
 export function scriptOf(role: ColumnRole): Script {
   return role === 'hanzi' ? 'chinese' : 'latin';
-}
-
-/** The edges of the bands between sorted separators, from 0 to `size`. */
-export function bands(
-  separators: readonly number[],
-  size: number,
-): { start: number; end: number }[] {
-  let start = 0;
-  return [...separators, size].map((end) => {
-    const band = { start, end };
-    start = end;
-    return band;
-  });
 }
 
 function roleOf(grid: Grid, column: number): ColumnRole {
