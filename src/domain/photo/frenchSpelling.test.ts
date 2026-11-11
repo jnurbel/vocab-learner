@@ -47,6 +47,18 @@ describe('createFrenchSpelling', () => {
     );
   });
 
+  it('corrects the words between parentheses apart, and keeps the parentheses', () => {
+    expect(correct('controler(verbe)').text).toBe('contrôler (verbe)');
+  });
+
+  it('corrects each sense read on either side of a vertical bar, then shows a slash', () => {
+    expect(correct('controler | controle')).toEqual({
+      text: 'contrôler / contrôle',
+      certain: true,
+    });
+    expect(correct('controler|controle').text).toBe('contrôler / contrôle');
+  });
+
   it('keeps the reading as it is, marked unsure, when no correction is sure', () => {
     expect(correct('zqxwvt')).toEqual({ text: 'zqxwvt', certain: false });
   });

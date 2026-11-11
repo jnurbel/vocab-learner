@@ -1,3 +1,5 @@
+import { isSenseSeparator, senseSeparatorText } from '../meaning/senses';
+
 /** A meaning read on a photo, corrected when the correction is sure. */
 export interface SpellingResult {
   text: string;
@@ -26,12 +28,8 @@ const LETTERS_PER_ERROR = 8;
 /** A letter that makes no word is kept as read, at a high cost. */
 const STRAY_LETTER_COST = 1.5;
 const LETTER_A = 'a'.charCodeAt(0);
-const SEPARATORS = /\s*([,;/()])\s*/;
-type Separator = ',' | ';' | '/' | '(' | ')';
-const SEPARATOR_TEXT: Readonly<Record<Separator, string>> = {
-  ',': ', ',
-  ';': '; ',
-  '/': ' / ',
+type Parenthesis = '(' | ')';
+const PARENTHESIS_TEXT: Readonly<Record<Parenthesis, string>> = {
   '(': ' (',
   ')': ') ',
 };
@@ -381,6 +379,29 @@ function correctPhrase(tree: LetterTree, phrase: string): SpellingResult {
   };
 }
 
+function isParenthesis(character: string): character is Parenthesis {
+  return character === '(' || character === ')';
+}
+
+/**
+ * The reading cut at the separators of the senses and at the parentheses, kept as the odd parts:
+ * each part between them is corrected alone.
+ */
+function cutAtSeparators(read: string): string[] {
+  const parts: string[] = [];
+  let part = '';
+  for (const character of read) {
+    if (isSenseSeparator(character) || isParenthesis(character)) {
+      parts.push(part, character);
+      part = '';
+    } else {
+      part += character;
+    }
+  }
+  parts.push(part);
+  return parts;
+}
+
 function tidy(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
 }
@@ -396,13 +417,15 @@ export function createFrenchSpelling(words: readonly string[]): FrenchSpelling {
     if (read.length > MAX_CORRECTED_LENGTH) {
       return { text: read.trim(), certain: false };
     }
-    const parts = read.replace(/\.+|…/g, ' ').split(SEPARATORS);
+    const parts = cutAtSeparators(read.replace(/\.+|…/g, ' '));
     let certain = true;
     const text = parts
       .map((part, index) => {
         if (index % 2 === 1) {
-          // The odd parts are the separators matched by SEPARATORS.
-          return SEPARATOR_TEXT[part as Separator];
+          // The odd parts are the separators kept by cutAtSeparators.
+          return isSenseSeparator(part)
+            ? senseSeparatorText(part)
+            : PARENTHESIS_TEXT[part as Parenthesis];
         }
         if (letterKey(part) === '') {
           return '';
