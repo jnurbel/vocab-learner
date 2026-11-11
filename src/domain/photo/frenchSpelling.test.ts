@@ -61,6 +61,13 @@ describe('createFrenchSpelling', () => {
     expect(correct('frère et sœur')).toEqual({ text: 'frère et soeur', certain: true });
   });
 
+  it('never cuts a hyphenated word read with an error into an elision: grand-jère', () => {
+    const result = correct('grand-jère');
+
+    expect(result.text).not.toContain("j'");
+    expect(result.certain).toBe(false);
+  });
+
   it('keeps the commas, slashes and spaces between the meanings', () => {
     expect(correct('controler, controle/prendre soin').text).toBe(
       'contrôler, contrôle / prendre soin',

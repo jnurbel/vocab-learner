@@ -249,7 +249,7 @@ interface Path {
   open: boolean;
 }
 
-/** The letters of a reading, and whether a space (or an apostrophe, a hyphen) comes before each. */
+/** The letters of a reading, and whether a space (or an apostrophe) comes before each. */
 function lettersOf(phrase: string): { key: string; spaceBefore: boolean[] } {
   let key = '';
   const spaceBefore: boolean[] = [];
@@ -258,7 +258,8 @@ function lettersOf(phrase: string): { key: string; spaceBefore: boolean[] } {
   for (const character of phrase) {
     const letters = letterKey(character);
     if (letters === '') {
-      space = true;
+      // A hyphen ties the parts of one word (grand-père): no word starts after it.
+      space ||= character !== '-';
       continue;
     }
     spaceBefore.push(space, ...Array.from(letters.slice(1), () => false));
