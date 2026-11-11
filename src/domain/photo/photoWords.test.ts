@@ -195,6 +195,12 @@ describe('editing the words', () => {
     expect(mergeWithNext(withAdded, list[2]?.id ?? '', generate)[2]?.box).toEqual(box(200));
   });
 
+  it('gives a word added by hand the band of the read word merged into it', () => {
+    const withAdded = addWord(list, list[0]?.id, 'added');
+
+    expect(mergeWithNext(withAdded, 'added', generate)[1]?.box).toEqual(box(100));
+  });
+
   it('does nothing when merging the last word', () => {
     expect(mergeWithNext(list, list[2]?.id ?? '', generate)).toEqual(list);
   });
