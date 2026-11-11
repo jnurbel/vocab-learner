@@ -298,8 +298,9 @@ describe('LabelManager', () => {
 });
 
 describe('LabelManager sharing', () => {
-  function setupSharing(outcome: Promise<ShareOutcome> = Promise.resolve('shared')) {
-    const onShare = vi.fn(() => outcome);
+  /** The outcome is made only when the learner shares, never left rejected beforehand. */
+  function setupSharing(outcome: () => Promise<ShareOutcome> = () => Promise.resolve('shared')) {
+    const onShare = vi.fn(outcome);
     render(LabelManager, {
       labels: [lesson, animals],
       cards: [cat, dog],
@@ -333,7 +334,7 @@ describe('LabelManager sharing', () => {
   });
 
   it('says the pack was downloaded where the device cannot share it', async () => {
-    const { user } = setupSharing(Promise.resolve('downloaded'));
+    const { user } = setupSharing(() => Promise.resolve('downloaded'));
 
     await user.click(within(rowOf('Animaux')).getByRole('button', { name: 'Partager Animaux' }));
 
@@ -341,7 +342,7 @@ describe('LabelManager sharing', () => {
   });
 
   it('says nothing when the learner closes the share sheet', async () => {
-    const { onShare, user } = setupSharing(Promise.resolve('cancelled'));
+    const { onShare, user } = setupSharing(() => Promise.resolve('cancelled'));
 
     await user.click(within(rowOf('Animaux')).getByRole('button', { name: 'Partager Animaux' }));
 
@@ -351,7 +352,7 @@ describe('LabelManager sharing', () => {
   });
 
   it('says so when the sharing fails', async () => {
-    const { user } = setupSharing(Promise.reject(new Error('boom')));
+    const { user } = setupSharing(() => Promise.reject(new Error('boom')));
 
     await user.click(within(rowOf('Animaux')).getByRole('button', { name: 'Partager Animaux' }));
 
