@@ -8,6 +8,7 @@ import {
 } from '../bulkEntryParser';
 import { CARD_LIMITS, type Card } from '../card';
 import { checkLabelName, type Label } from '../label';
+import { normalizeSenses } from '../meaning/senses';
 import { failure, success, type Result } from '../result';
 import { removeInvisibleControls } from '../safeText';
 import { checkText } from '../text';
@@ -70,7 +71,11 @@ function readRow(row: readonly string[], lineNumber: number): Result<CsvEntry, L
   }
   const [term = '', pinyin = '', translation = '', example = '', labels = ''] =
     row.map(restoreFormula);
-  const entry = checkEntry(lineNumber, { term, pinyin, translation });
+  const entry = checkEntry(lineNumber, {
+    term,
+    pinyin,
+    translation: normalizeSenses(translation),
+  });
   if (!entry.ok) {
     return entry;
   }

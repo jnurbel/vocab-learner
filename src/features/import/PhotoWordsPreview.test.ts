@@ -236,6 +236,34 @@ describe('PhotoWordsPreview', () => {
     expect(await screen.findByText(format(fr.bulkEntry.saved, { count: 2 }))).toBeVisible();
   });
 
+  it('explains once, under the meaning column, how to give several senses', () => {
+    setup([
+      word('1', '控制', 'contrôler'),
+      word('2', '政府', 'gouvernemant', { toCheck: { term: false, meaning: true } }),
+    ]);
+
+    expect(screen.getByText(fr.senses.help)).toBeVisible();
+    expect(cell(fr.bulkEntry.columns.translation, 1)).toHaveAccessibleDescription(fr.senses.help);
+    expect(cell(fr.bulkEntry.columns.translation, 2)).toHaveAccessibleDescription(
+      `${fr.photoWords.toCheck} ${fr.senses.help}`,
+    );
+    expect(cell(fr.bulkEntry.columns.term, 1)).not.toHaveAccessibleDescription(fr.senses.help);
+  });
+
+  it('saves the senses separated by a vertical bar with a slash', async () => {
+    const { onSave, user } = setup([word('1', '控制', 'contrôler | contrôle')]);
+
+    await user.click(screen.getByRole('button', { name: fr.bulkEntry.addWordsOne }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changes: expect.objectContaining({
+          cardsToCreate: [expect.objectContaining({ translation: 'contrôler / contrôle' })],
+        }) as unknown,
+      }),
+    );
+  });
+
   it('says when saving failed, and keeps the words to try again', async () => {
     const { user } = setup([word('1', '控制', 'contrôler')], { failSave: true });
 

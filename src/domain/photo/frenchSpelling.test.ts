@@ -47,6 +47,36 @@ describe('createFrenchSpelling', () => {
     );
   });
 
+  it('corrects the words between parentheses apart, and keeps the parentheses', () => {
+    expect(correct('controler(verbe)').text).toBe('contrôler (verbe)');
+  });
+
+  it('corrects each sense read on either side of a vertical bar, then shows a slash', () => {
+    expect(correct('controler | controle')).toEqual({
+      text: 'contrôler / contrôle',
+      certain: true,
+    });
+    expect(correct('controler|controle').text).toBe('contrôler / contrôle');
+  });
+
+  it.each(['controler I controle', 'controler l controle'])(
+    'reads a lone "I" or "l" between two words as a vertical bar: %s',
+    (read) => {
+      expect(correct(read)).toEqual({ text: 'contrôler / contrôle', certain: true });
+    },
+  );
+
+  it.each([
+    'prendre l avion',
+    'prendre l habit',
+    'l controle',
+    'controler l',
+    'tome I',
+    'tome I Paris',
+  ])('never takes for a bar a letter that may be read as is: %s', (read) => {
+    expect(correct(read).text).not.toContain('/');
+  });
+
   it('keeps the reading as it is, marked unsure, when no correction is sure', () => {
     expect(correct('zqxwvt')).toEqual({ text: 'zqxwvt', certain: false });
   });

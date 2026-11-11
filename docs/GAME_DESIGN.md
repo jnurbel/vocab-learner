@@ -590,7 +590,7 @@ Utilisée par `listenMeaning`, `sentenceListen`, `bridgeMatch` (choix des paires
 1. **Pool** : cartes de la même langue, `id ≠ cible`, déjà introduites de préférence (`reps ≥ 1`), sinon toutes.
 2. **Exclusions obligatoires** (une question ne doit jamais avoir deux bonnes réponses) :
    - même `term` ;
-   - **sens en conflit** : `glosses(a) ∩ glosses(b) ≠ ∅`, où `glosses(t)` = traduction en minuscules, sans accents, sans contenu entre parenthèses, découpée sur `,` `;` `/`, chaque morceau sans article ni particule de tête (`le`, `la`, `les`, `l'`, `un`, `une`, `des`, `du`, `de la`, `se`, `s'`, `to`) ;
+   - **sens en conflit** : `glosses(a) ∩ glosses(b) ≠ ∅`, où `glosses(t)` = traduction en minuscules, sans accents, sans contenu entre parenthèses, découpée sur `,` `;` `/` `|` (séparateurs de `src/domain/meaning/senses.ts`), chaque morceau sans article ni particule de tête (`le`, `la`, `les`, `l'`, `un`, `une`, `des`, `du`, `de la`, `se`, `s'`, `to`) ;
    - **homophones exacts** dans les exercices audio : zh, même pinyin **avec** tons (ex. 是/事 shì) ; en, même mot ou paire de la liste embarquée d'homophones (`two/too`, `their/there`…).
 3. **Score de proximité** `sim(cible, candidat)` :
 

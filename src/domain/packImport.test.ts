@@ -154,6 +154,20 @@ describe('applyPackImportPlan', () => {
     expect(outcome.changes.cardsToCreate[0]).toMatchObject({ example: '我的猫', labelIds: [] });
   });
 
+  it('saves the senses of a word separated by a slash rather than a vertical bar', () => {
+    const withBar = pack(
+      [{ language: 'en', term: 'control', translation: 'contrôler|contrôle', labelIds: [] }],
+      [],
+    );
+
+    const outcome = applyPackImportPlan(planPackImport(withBar, [], []), {
+      nextId: ids('W1'),
+      now,
+    });
+
+    expect(outcome.changes.cardsToCreate[0]?.translation).toBe('contrôler / contrôle');
+  });
+
   it('adds the labels to the known words that lack them and leaves the others untouched', () => {
     const lesson = label('l1', 'Leçon 7');
     const knownCat = card('c1', '猫', ['other']);

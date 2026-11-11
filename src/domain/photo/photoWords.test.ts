@@ -267,6 +267,16 @@ describe('photoWordsBatch', () => {
 
     expect(batch.entries[0]?.pinyin).toBe('kòngzhì');
   });
+
+  it('saves the senses corrected in the preview separated by a slash', () => {
+    const list = words([row('控制', 'contrôler')]);
+
+    const batch = photoWordsBatch(
+      editWord(list, list[0]?.id ?? '', { meaning: 'contrôler | contrôle' }, generate),
+    );
+
+    expect(batch.entries[0]?.translation).toBe('contrôler / contrôle');
+  });
 });
 
 describe('fillMissingPinyin', () => {
