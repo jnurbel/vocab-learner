@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Deps, Env } from '../src/handler.ts';
+import type { QuotaStore } from '../src/quota.ts';
 
 export const ALLOWED_ORIGIN = 'https://jnurbel.github.io';
 export const WORKER_URL = 'https://vocab-learner-photo.example.workers.dev';
@@ -9,7 +10,9 @@ export function sha256Hex(text: string): Promise<string> {
   return Promise.resolve(createHash('sha256').update(text, 'utf8').digest('hex'));
 }
 
-export const ACCESS_CODE_HASH = createHash('sha256').update(ACCESS_CODE, 'utf8').digest('hex');
+export const ACCESS_CODE_HASH: string = createHash('sha256')
+  .update(ACCESS_CODE, 'utf8')
+  .digest('hex');
 
 export function makeEnv(overrides: Partial<Env> = {}): Env {
   return {
@@ -19,8 +22,30 @@ export function makeEnv(overrides: Partial<Env> = {}): Env {
   };
 }
 
+/** In-memory stand-in for the QUOTA KV namespace, recording what is written. */
+export class MemoryQuotaStore implements QuotaStore {
+  readonly values = new Map<string, string>();
+  readonly puts: { key: string; value: string; expirationTtl: number }[] = [];
+
+  get(key: string): Promise<string | null> {
+    return Promise.resolve(this.values.get(key) ?? null);
+  }
+
+  put(key: string, value: string, options: { expirationTtl: number }): Promise<void> {
+    this.values.set(key, value);
+    this.puts.push({ key, value, expirationTtl: options.expirationTtl });
+    return Promise.resolve();
+  }
+}
+
+/** 2026-11-11, 22:00 UTC: two hours before the quota resets. */
+export const NOW = new Date('2026-11-11T22:00:00Z');
+export const TODAY_KEY = `${ACCESS_CODE_HASH}:2026-11-11`;
+
 export function makeDeps(overrides: Partial<Deps> = {}): Deps {
   return {
+    quota: new MemoryQuotaStore(),
+    now: () => NOW,
     ...overrides,
   };
 }

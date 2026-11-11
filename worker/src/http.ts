@@ -1,6 +1,11 @@
 /** Error codes of the photo API contract (docs/PHOTO_API.md). */
 export type ErrorCode =
-  'unauthorized' | 'forbidden_origin' | 'not_found' | 'method_not_allowed' | 'too_large';
+  | 'unauthorized'
+  | 'forbidden_origin'
+  | 'not_found'
+  | 'method_not_allowed'
+  | 'too_large'
+  | 'quota_exceeded';
 
 const ERROR_STATUS: Record<ErrorCode, number> = {
   unauthorized: 401,
@@ -8,6 +13,7 @@ const ERROR_STATUS: Record<ErrorCode, number> = {
   not_found: 404,
   method_not_allowed: 405,
   too_large: 413,
+  quota_exceeded: 429,
 };
 
 /** Nothing is cached anywhere, and the browser must not sniff another content type. */
