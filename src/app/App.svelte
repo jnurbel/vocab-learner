@@ -45,6 +45,7 @@
   } from '../features/flashcards/flashcardSession';
   import BulkEntry from '../features/import/BulkEntry.svelte';
   import ImportSources from '../features/import/ImportSources.svelte';
+  import { vocabularyToCsv } from '../domain/csv/vocabularyCsv';
   import { loadTextRecognizer } from '../services/ocr/ocrLoader';
   import { browserPhotoEnvironment } from '../services/photo/browserPhotoEnvironment';
   import { preparePhoto } from '../services/photo/preparePhoto';
@@ -479,6 +480,18 @@
     void requestPersistence();
     await recordChange();
     await reload(store);
+  }
+
+  /** The words shown in the list, as a CSV file for Excel, saved on this device. */
+  function exportCsv(shown: readonly Card[]) {
+    downloadFile(
+      {
+        fileName: format(fr.csvImport.exportFileName, { date: clock().slice(0, 10) }),
+        text: vocabularyToCsv(shown, labels),
+      },
+      browserDownloadEnvironment(),
+      'text/csv;charset=utf-8',
+    );
   }
 
   async function changeLabels(changes: LabelChanges) {
@@ -1017,7 +1030,14 @@
           {/key}
         {/if}
 
-        <WordList {cards} {labels} {progressOf} onEdit={startEditing} onDelete={deleteCard} />
+        <WordList
+          {cards}
+          {labels}
+          {progressOf}
+          onEdit={startEditing}
+          onDelete={deleteCard}
+          onExportCsv={exportCsv}
+        />
 
         <LabelManager
           {labels}
