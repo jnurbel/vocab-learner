@@ -25,7 +25,12 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - run: npm run build
+      - name: Build
+        run: npm run build
+        env:
+          # Origin of the worker that has photos read by Claude (repository variable, see
+          # docs/DESIGN.md §8.1). Empty while the variable does not exist: the option is hidden.
+          VITE_PHOTO_WORKER_URL: ${{ vars.PHOTO_WORKER_URL }}
       - name: Check that the build ships the service worker and the web manifest
         run: bash .github/scripts/check-pwa-build.sh dist
       - name: Upload Pages artifact

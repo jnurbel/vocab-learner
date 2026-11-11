@@ -2,10 +2,11 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
 import { readFileSync } from 'node:fs';
 import { VitePWA } from 'vite-plugin-pwa';
-import type { Plugin } from 'vite';
+import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { tesseractAssets } from './config/tesseractAssets.ts';
 import packageJson from './package.json' with { type: 'json' };
+import { allowPhotoWorker, photoWorkerOrigin } from './src/app/photoWorkerCsp.ts';
 import { manifestColors, webManifest } from './src/app/webManifest.ts';
 import { themeTokens } from './src/ui/contrast.ts';
 
@@ -21,6 +22,19 @@ function devCspRelaxation(): Plugin {
       return html
         .replace("style-src 'self'", "style-src 'self' 'unsafe-inline'")
         .replace("connect-src 'self'", "connect-src 'self' ws: wss:");
+    },
+  };
+}
+
+/**
+ * Photos read by Claude (DESIGN §8.1, 0.9.0) go to the worker named by VITE_PHOTO_WORKER_URL:
+ * its origin, and nothing else, joins connect-src. Without the variable the policy is unchanged.
+ */
+function photoWorkerCsp(origin: string | undefined): Plugin {
+  return {
+    name: 'photo-worker-csp',
+    transformIndexHtml(html) {
+      return allowPhotoWorker(html, origin);
     },
   };
 }
@@ -68,55 +82,70 @@ function progressiveWebApp() {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  // Served from https://<user>.github.io/vocab-learner/
-  base: '/vocab-learner/',
-  plugins: [svelte(), svelteTesting(), devCspRelaxation(), progressiveWebApp(), tesseractAssets()],
-  // Written into backups, so that a later app knows which version produced a file.
-  define: {
-    __APP_VERSION__: JSON.stringify(packageJson.version),
-  },
-  build: {
-    sourcemap: false,
-  },
-  test: {
-    include: ['src/**/*.test.ts'],
-    environment: 'jsdom',
-    setupFiles: ['./src/setupTests.ts'],
-    restoreMocks: true,
-    coverage: {
-      provider: 'v8',
-      include: ['src/**/*.{ts,svelte}'],
-      exclude: [
-        'src/**/*.test.ts',
-        'src/**/*.fixtures.ts',
-        'src/setupTests.ts',
-        'src/main.ts',
-        'src/**/*.d.ts',
-      ],
-      reporter: ['text', 'html', 'lcov', 'json-summary'],
-      thresholds: {
-        // The domain is written test-first: every line and branch must be covered.
-        'src/domain/**': {
-          100: true,
-          perFile: true,
-        },
-        // Storage holds the user's only copy of their progress: fully covered as well.
-        'src/storage/**': {
-          100: true,
-          perFile: true,
-        },
-        // Backups are the way back after a lost database: fully covered too.
-        'src/services/backup/**': {
-          100: true,
-          perFile: true,
-        },
-        // Install, offline and update logic of the PWA: fully covered as well.
-        'src/services/pwa/**': {
-          100: true,
-          perFile: true,
+export default defineConfig(({ mode }) => {
+  // Refuses at build time an address that is not https (except a worker on localhost).
+  const workerOrigin = photoWorkerOrigin(
+    loadEnv(mode, process.cwd(), 'VITE_').VITE_PHOTO_WORKER_URL,
+  );
+  return {
+    // Served from https://<user>.github.io/vocab-learner/
+    base: '/vocab-learner/',
+    plugins: [
+      svelte(),
+      svelteTesting(),
+      devCspRelaxation(),
+      photoWorkerCsp(workerOrigin),
+      progressiveWebApp(),
+      tesseractAssets(),
+    ],
+    // Written into backups, so that a later app knows which version produced a file.
+    define: {
+      __APP_VERSION__: JSON.stringify(packageJson.version),
+      // The worker the CSP allows, or '' when the photo reading by Claude is not offered.
+      __PHOTO_WORKER_ORIGIN__: JSON.stringify(workerOrigin ?? ''),
+    },
+    build: {
+      sourcemap: false,
+    },
+    test: {
+      include: ['src/**/*.test.ts'],
+      environment: 'jsdom',
+      setupFiles: ['./src/setupTests.ts'],
+      restoreMocks: true,
+      coverage: {
+        provider: 'v8',
+        include: ['src/**/*.{ts,svelte}'],
+        exclude: [
+          'src/**/*.test.ts',
+          'src/**/*.fixtures.ts',
+          'src/setupTests.ts',
+          'src/main.ts',
+          'src/**/*.d.ts',
+        ],
+        reporter: ['text', 'html', 'lcov', 'json-summary'],
+        thresholds: {
+          // The domain is written test-first: every line and branch must be covered.
+          'src/domain/**': {
+            100: true,
+            perFile: true,
+          },
+          // Storage holds the user's only copy of their progress: fully covered as well.
+          'src/storage/**': {
+            100: true,
+            perFile: true,
+          },
+          // Backups are the way back after a lost database: fully covered too.
+          'src/services/backup/**': {
+            100: true,
+            perFile: true,
+          },
+          // Install, offline and update logic of the PWA: fully covered as well.
+          'src/services/pwa/**': {
+            100: true,
+            perFile: true,
+          },
         },
       },
     },
-  },
+  };
 });
