@@ -145,6 +145,12 @@ describe('readVocabularyCsv', () => {
     ]);
   });
 
+  it('saves the senses of a row separated by a slash rather than a vertical bar', () => {
+    expect(entriesOf('control;;"contrôler | contrôle,surveiller"').entries[0]?.translation).toBe(
+      'contrôler / contrôle, surveiller',
+    );
+  });
+
   it('removes invisible controls from the cells', () => {
     const rightToLeftOverride = String.fromCodePoint(0x202e);
 
