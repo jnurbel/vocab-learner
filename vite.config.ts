@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { VitePWA } from 'vite-plugin-pwa';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
-import { tesseractAssets } from './config/tesseractAssets.ts';
+import { paddleAssets } from './config/paddleAssets.ts';
 import packageJson from './package.json' with { type: 'json' };
 import { manifestColors, webManifest } from './src/app/webManifest.ts';
 import { themeTokens } from './src/ui/contrast.ts';
@@ -45,17 +45,18 @@ function progressiveWebApp() {
       // The app, its self-hosted font, the icons, and the pinyin-pro chunk loaded on demand,
       // so that the automatic pinyin works offline too.
       globPatterns: ['**/*.{js,css,html,woff2,svg,png,webmanifest}'],
-      // The photo reader (~9 MB) is not precached: most learners never open it. Its files are
-      // kept on first use instead, so that a photo read once online can be read again offline.
-      globIgnores: ['tesseract/**'],
+      // The on-device photo reader (PaddleOCR models, runtime, worker and dictionary, ~48 MB) is
+      // not precached: most learners never open it. Its files are kept on first use instead, so
+      // that a photo read once online can be read again offline.
+      globIgnores: ['paddle/**'],
       runtimeCaching: [
         {
-          urlPattern: /\/vocab-learner\/tesseract\//,
+          urlPattern: /\/vocab-learner\/paddle\//,
           handler: 'CacheFirst',
           options: {
-            // Unhashed file names: a new tesseract.js version gets a cache of its own.
-            cacheName: `tesseract-${packageJson.dependencies['tesseract.js']}`,
-            expiration: { maxEntries: 10 },
+            // Unhashed model names: a new reader version gets a cache of its own.
+            cacheName: `paddle-ocr-${packageJson.dependencies['ppu-paddle-ocr']}-${packageJson.dependencies['onnxruntime-web']}`,
+            expiration: { maxEntries: 20 },
           },
         },
       ],
@@ -68,10 +69,25 @@ function progressiveWebApp() {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // Served from https://<user>.github.io/vocab-learner/
   base: '/vocab-learner/',
-  plugins: [svelte(), svelteTesting(), devCspRelaxation(), progressiveWebApp(), tesseractAssets()],
+  plugins: [svelte(), svelteTesting(), devCspRelaxation(), progressiveWebApp(), paddleAssets()],
+  resolve: {
+    // PaddleOCR imports onnxruntime-web: take its WebAssembly-only build, without WebGPU/WebGL,
+    // so that the reader fetches a single runtime file.
+    alias: [{ find: /^onnxruntime-web$/, replacement: 'onnxruntime-web/wasm' }],
+  },
+  worker: {
+    format: 'es',
+    // The photo reader worker goes with the reader's files, cached on first use, not precached.
+    rollupOptions: {
+      output: {
+        entryFileNames: 'paddle/[name]-[hash].js',
+        chunkFileNames: 'paddle/[name]-[hash].js',
+      },
+    },
+  },
   // Written into backups, so that a later app knows which version produced a file.
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
@@ -80,7 +96,10 @@ export default defineConfig({
     sourcemap: false,
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    // Timings run alone and uninstrumented (npm run test:perf): coverage and the other tests
+    // running alongside would measure the machine rather than the code.
+    include: mode === 'perf' ? ['src/**/*.perf.test.ts'] : ['src/**/*.test.ts'],
+    exclude: mode === 'perf' ? [] : ['src/**/*.perf.test.ts'],
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
     restoreMocks: true,
@@ -119,4 +138,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

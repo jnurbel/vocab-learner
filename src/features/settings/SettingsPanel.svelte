@@ -7,9 +7,13 @@
     newPerDay: number;
     /** Saves a quota chosen among NEW_PER_DAY_CHOICES. */
     onNewPerDayChange: (newPerDay: number) => Promise<void>;
+    /** Expert setting of the photo import: the zones are shown before the words. */
+    photoZonesAlways?: boolean;
+    onPhotoZonesAlwaysChange?: (always: boolean) => Promise<void>;
   }
 
-  const { newPerDay, onNewPerDayChange }: Props = $props();
+  const { newPerDay, onNewPerDayChange, photoZonesAlways, onPhotoZonesAlwaysChange }: Props =
+    $props();
 
   // svelte-ignore state_referenced_locally
   let selected = $state(String(newPerDay));
@@ -22,14 +26,18 @@
       : [...NEW_PER_DAY_CHOICES, newPerDay].sort((a, b) => a - b),
   );
 
-  async function save() {
+  async function saveWith(change: () => Promise<void>) {
     status = undefined;
     try {
-      await onNewPerDayChange(Number(selected));
+      await change();
       status = 'saved';
     } catch {
       status = 'saveFailed';
     }
+  }
+
+  function save() {
+    void saveWith(() => onNewPerDayChange(Number(selected)));
   }
 </script>
 
@@ -49,6 +57,22 @@
   </select>
   <p id="settings-new-per-day-help" class="help">{fr.settings.newPerDayHelp}</p>
 
+  {#if photoZonesAlways !== undefined && onPhotoZonesAlwaysChange !== undefined}
+    <label class="choice expert">
+      <input
+        type="checkbox"
+        checked={photoZonesAlways}
+        aria-describedby="settings-photo-zones-help"
+        onchange={(event) => {
+          const always = event.currentTarget.checked;
+          void saveWith(() => onPhotoZonesAlwaysChange(always));
+        }}
+      />
+      {fr.settings.photoZonesAlways}
+    </label>
+    <p id="settings-photo-zones-help" class="help">{fr.settings.photoZonesAlwaysHelp}</p>
+  {/if}
+
   <p aria-live="polite">
     {#if status === 'saved'}{fr.settings.saved}{/if}
   </p>
@@ -61,6 +85,12 @@
   label {
     display: block;
     font-weight: var(--weight-heavy);
+  }
+
+  .expert {
+    display: inline-flex;
+    margin-top: var(--space-4);
+    font-weight: var(--weight-bold);
   }
 
   select {

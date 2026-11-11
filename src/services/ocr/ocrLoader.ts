@@ -1,24 +1,16 @@
-import { lazyLoader } from '../lazyLoader';
-import type { TesseractAssets } from './tesseractRecognizer';
-import type { TextRecognizer } from './textRecognizer';
-
-/** The files of the reader, served by the app (see config/tesseractAssets.ts). */
-export function tesseractAssetUrls(appBase: string): TesseractAssets {
-  const url = (path: string) => new URL(`tesseract/${path}`, appBase).href;
-  return {
-    workerPath: url('worker.min.js'),
-    corePath: url('core'),
-    langPath: url('lang'),
-  };
-}
+import { createPaddleReader } from './paddle/paddleReader';
+import type { PhotoReader } from './photoReader';
 
 /**
- * Tesseract.js and its languages are large: they are fetched as separate files, only when a
- * first photo is read, and from the app itself.
+ * The on-device photo reader: PaddleOCR in a Web Worker, a module of the app (the CSP allows
+ * `worker-src 'self'`), started on the first photo read.
  */
-export const loadTextRecognizer: () => Promise<TextRecognizer> = lazyLoader(async () => {
-  const { createTesseractRecognizer } = await import('./tesseractRecognizer');
-  return createTesseractRecognizer(
-    tesseractAssetUrls(new URL(import.meta.env.BASE_URL, document.baseURI).href),
+export function createPhotoReader(): PhotoReader {
+  return createPaddleReader(
+    () =>
+      new Worker(new URL('./paddle/paddle.worker.ts', import.meta.url), {
+        type: 'module',
+        name: 'photo-reader',
+      }),
   );
-});
+}

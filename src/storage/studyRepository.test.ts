@@ -309,6 +309,14 @@ describe('StudyRepository', () => {
     });
   });
 
+  it('saves the expert setting of the photo import, showing the zones before the words', async () => {
+    await repository.saveNewPerDay(10);
+
+    await repository.savePhotoZonesAlways(true);
+
+    expect(await db.settings.get(SINGLETON_KEY)).toEqual({ newPerDay: 10, photoZonesAlways: true });
+  });
+
   it('refuses to store an unknown way of answering', async () => {
     await expect(repository.saveAnswerMode('<script>' as AnswerMode)).rejects.toThrow(RangeError);
     expect(await db.settings.get(SINGLETON_KEY)).toBeUndefined();

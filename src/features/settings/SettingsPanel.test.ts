@@ -56,3 +56,24 @@ describe('SettingsPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(fr.settings.saveFailed);
   });
 });
+
+describe('SettingsPanel, expert setting of the photo import', () => {
+  it('lets the learner always see the zones of a photo before its words, off by default', async () => {
+    const onPhotoZonesAlwaysChange = vi.fn(() => Promise.resolve());
+    render(SettingsPanel, {
+      newPerDay: 5,
+      onNewPerDayChange: vi.fn(() => Promise.resolve()),
+      photoZonesAlways: false,
+      onPhotoZonesAlwaysChange,
+    });
+    const user = userEvent.setup();
+    const expert = screen.getByRole('checkbox', { name: fr.settings.photoZonesAlways });
+    expect(expert).not.toBeChecked();
+    expect(expert).toHaveAccessibleDescription(fr.settings.photoZonesAlwaysHelp);
+
+    await user.click(expert);
+
+    expect(onPhotoZonesAlwaysChange).toHaveBeenCalledWith(true);
+    expect(await screen.findByText(fr.settings.saved)).toBeVisible();
+  });
+});

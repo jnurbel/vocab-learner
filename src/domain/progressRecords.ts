@@ -95,6 +95,8 @@ export interface SettingsRecord {
   audioFreeMode?: boolean;
   rushTimeMultiplier?: 1 | 1.5 | 2;
   intensiveExamMode?: Record<string, boolean>;
+  /** Expert: the photo import shows the zones it found before the words, see photoZonesAlwaysOf. */
+  photoZonesAlways?: boolean;
 }
 
 export type PathStep =

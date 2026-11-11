@@ -13,8 +13,12 @@ function setup() {
     newId: () => 'id',
     clock: () => '2026-11-10T12:00:00.000Z',
     onSave: vi.fn(() => Promise.resolve()),
-    loadRecognizer: () => Promise.reject(new Error('not used')),
+    createReader: () => {
+      throw new Error('not used');
+    },
     preparePhoto: () => Promise.reject(new Error('not used')),
+    cropPhoto: () => Promise.reject(new Error('not used')),
+    alwaysShowZones: false,
   });
   return userEvent.setup();
 }

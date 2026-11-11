@@ -23,12 +23,12 @@ function fakeEnvironment(size: ImageSize, options: { unreadable?: boolean } = {}
 const photo = (type = 'image/jpeg', size = 10) => new Blob(['x'.repeat(size)], { type });
 
 describe('preparePhoto', () => {
-  it('redraws the photo reduced to 1 500 pixels, so that only its pixels are kept', async () => {
+  it('redraws the photo reduced to 2 500 pixels, so that only its pixels are kept', async () => {
     const { environment, drawn } = fakeEnvironment({ width: 4000, height: 3000 });
 
     const prepared = await preparePhoto(photo(), environment);
 
-    expect(drawn).toEqual([{ width: 1500, height: 1125 }]);
+    expect(drawn).toEqual([{ width: 2500, height: 1875 }]);
     expect(prepared.ok && (await prepared.value.text())).toBe('pixels only');
   });
 

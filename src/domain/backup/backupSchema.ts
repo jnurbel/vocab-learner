@@ -144,6 +144,7 @@ const settingsSchema = z.strictObject({
   speedGameEnabled: z.boolean().optional(),
   newPerDay: count.max(1_000).optional(),
   answerMode: z.enum(ANSWER_MODES).optional(),
+  photoZonesAlways: z.boolean().optional(),
   sfxEnabled: z.boolean().optional(),
   sfxVolume: z.number().min(0).max(1).optional(),
   audioFreeMode: z.boolean().optional(),
