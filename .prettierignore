@@ -7,3 +7,5 @@ package-lock.json
 *.md
 # UI mockups are reference material exported from the design canvas, not app code.
 docs/ui/mockups/
+# worker/ is a separate project with its own Prettier config and lint script.
+worker/

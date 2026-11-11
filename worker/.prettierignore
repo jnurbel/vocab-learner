@@ -1,0 +1,5 @@
+coverage/
+.wrangler/
+package-lock.json
+# Prose is reviewed by hand.
+*.md

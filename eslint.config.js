@@ -25,7 +25,8 @@ const forbiddenHtmlSinks = [
 ];
 
 export default defineConfig(
-  globalIgnores(['dist/', 'coverage/', 'playwright-report/', 'test-results/']),
+  // worker/ is a separate project (Cloudflare Worker) with its own ESLint config.
+  globalIgnores(['dist/', 'coverage/', 'playwright-report/', 'test-results/', 'worker/']),
   js.configs.recommended,
   ts.configs.strictTypeChecked,
   ts.configs.stylisticTypeChecked,
