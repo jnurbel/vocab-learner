@@ -29,6 +29,8 @@ export default defineConfig(
       'no-new-func': 'error',
       // Too noisy with TypeScript index access; noUncheckedIndexedAccess covers the typing side.
       'security/detect-object-injection': 'off',
+      // A leading underscore marks a parameter that an interface requires but the body ignores.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
   {

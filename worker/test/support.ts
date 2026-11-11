@@ -18,7 +18,13 @@ export function makeDeps(overrides: Partial<Deps> = {}): Deps {
 }
 
 export function photoRequest(
-  init: { origin?: string | null; method?: string; path?: string; headers?: Record<string, string>; body?: string } = {},
+  init: {
+    origin?: string | null;
+    method?: string;
+    path?: string;
+    headers?: Record<string, string>;
+    body?: string;
+  } = {},
 ): Request {
   const headers = new Headers(init.headers);
   const origin = init.origin === undefined ? ALLOWED_ORIGIN : init.origin;
