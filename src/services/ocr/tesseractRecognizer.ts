@@ -17,6 +17,11 @@ export interface TesseractAssets {
 const LANGUAGES = ['chi_sim', 'eng'];
 /** The LSTM engine only: the languages served are the "best_int" LSTM models. */
 const LSTM_ONLY = 1;
+/**
+ * Below this mean confidence (0 to 100), the reading is noise: handwriting or the lines of a
+ * table give some 15, a clear printed text above 80. Nothing is better than wrong words.
+ */
+const MIN_CONFIDENCE = 40;
 
 function progressOf({ status, progress }: Pick<LoggerMessage, 'status' | 'progress'>) {
   return { step: status === 'recognizing text' ? 'reading' : 'loading', progress } as const;
@@ -57,7 +62,7 @@ export function createTesseractRecognizer(assets: TesseractAssets): TextRecogniz
         // The cancellation first: it wins over a reader loaded at the same time.
         const worker = await Promise.race([cancelled, loading]);
         const { data } = await Promise.race([cancelled, worker.recognize(image)]);
-        return cleanRecognizedText(data.text);
+        return data.confidence < MIN_CONFIDENCE ? '' : cleanRecognizedText(data.text);
       } finally {
         // Also frees a reader whose loading ends after a cancellation.
         loading.then(
