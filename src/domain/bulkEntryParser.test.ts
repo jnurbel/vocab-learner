@@ -54,6 +54,10 @@ describe('parseBulkEntry', () => {
     expect(parsed('apple | pomme; fruit').entries[0]?.translation).toBe('pomme; fruit');
   });
 
+  it('leaves the meaning as typed: the vertical bar separates the fields here, not the senses', () => {
+    expect(parsed('apple | pomme,fruit').entries[0]?.translation).toBe('pomme,fruit');
+  });
+
   it.each([
     ['an empty pinyin column', '你好 || bonjour'],
     ['a blank pinyin column', '你好 |   | bonjour'],
