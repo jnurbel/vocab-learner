@@ -20,6 +20,7 @@
   } from '../../services/ocr/textRecognizer';
   import type { PhotoError } from '../../services/photo/preparePhoto';
   import type { VocabularySave } from '../vocabularySave';
+  import AiPrompt from './AiPrompt.svelte';
   import PhotoWordsPreview from './PhotoWordsPreview.svelte';
   import TextImport from './TextImport.svelte';
   import ZoneEditor from './ZoneEditor.svelte';
@@ -234,14 +235,7 @@
   <p class="help">{fr.photoImport.privacy}</p>
 
   <label for="photo-import-file">{fr.photoImport.fileLabel}</label>
-  <input
-    id="photo-import-file"
-    type="file"
-    accept="image/*"
-    capture="environment"
-    disabled={busy}
-    onchange={choose}
-  />
+  <input id="photo-import-file" type="file" accept="image/*" disabled={busy} onchange={choose} />
 
   {#if photoError !== undefined}
     <p role="alert" class="error">{fr.photoImport.errors[photoError]}</p>
@@ -292,6 +286,8 @@
   {:else if stage?.kind === 'failed'}
     <p role="alert" class="error">{stage.message}</p>
   {/if}
+
+  <AiPrompt />
 </section>
 
 {#if stage?.kind === 'zones' && photo !== undefined}
