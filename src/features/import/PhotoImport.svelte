@@ -20,6 +20,7 @@
   } from '../../services/ocr/textRecognizer';
   import type { PhotoError } from '../../services/photo/preparePhoto';
   import type { VocabularySave } from '../vocabularySave';
+  import AiPrompt from './AiPrompt.svelte';
   import PhotoWordsPreview from './PhotoWordsPreview.svelte';
   import TextImport from './TextImport.svelte';
   import ZoneEditor from './ZoneEditor.svelte';
@@ -292,6 +293,8 @@
   {:else if stage?.kind === 'failed'}
     <p role="alert" class="error">{stage.message}</p>
   {/if}
+
+  <AiPrompt />
 </section>
 
 {#if stage?.kind === 'zones' && photo !== undefined}

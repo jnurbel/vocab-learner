@@ -2,6 +2,7 @@
   import type { BulkLineError } from '../../domain/bulkEntryParser';
   import type { Card } from '../../domain/card';
   import { planCsvImport } from '../../domain/csv/csvImportPlan';
+  import { csvFromReply } from '../../domain/csv/pastedCsv';
   import {
     readVocabularyCsv,
     VOCABULARY_CSV_LIMITS,
@@ -39,6 +40,7 @@
   let inputError = $state<CsvInputError | 'unreadable'>();
   let chosenLabelIds = $state<string[]>([]);
   let labelName = $state('');
+  let pasted = $state('');
   let status = $state<{ kind: 'saved'; created: number; updated: number } | { kind: 'failed' }>();
 
   const needsPinyin = $derived(
@@ -90,14 +92,25 @@
       return;
     }
     try {
-      const result = readVocabularyCsv(await file.text());
-      if (result.ok) {
-        read = result.value;
-      } else {
-        inputError = result.errors[0];
-      }
+      readText(await file.text());
     } catch {
       inputError = 'unreadable';
+    }
+  }
+
+  function readPasted() {
+    read = undefined;
+    inputError = undefined;
+    status = undefined;
+    readText(csvFromReply(pasted));
+  }
+
+  function readText(text: string) {
+    const result = readVocabularyCsv(text);
+    if (result.ok) {
+      read = result.value;
+    } else {
+      inputError = result.errors[0];
     }
   }
 
@@ -153,6 +166,18 @@
     onchange={choose}
   />
   <p id="csv-import-help" class="help">{fr.csvImport.help}</p>
+
+  <label for="csv-import-pasted">{fr.csvImport.pasteLabel}</label>
+  <textarea
+    id="csv-import-pasted"
+    rows="4"
+    maxlength={VOCABULARY_CSV_LIMITS.characters}
+    aria-describedby="csv-import-paste-help"
+    bind:value={pasted}></textarea>
+  <p id="csv-import-paste-help" class="help">{fr.csvImport.pasteHelp}</p>
+  <button type="button" disabled={pasted.trim() === ''} onclick={readPasted}
+    >{fr.csvImport.readPasted}</button
+  >
 
   {#if inputError !== undefined}
     <p role="alert" class="error">{fr.csvImport.inputErrors[inputError]}</p>
@@ -226,6 +251,10 @@
 <style>
   label {
     display: block;
+  }
+
+  textarea {
+    width: 100%;
   }
 
   .help,

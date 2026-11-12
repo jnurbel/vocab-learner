@@ -54,7 +54,51 @@ function preview() {
   return screen.findByRole('table', { name: fr.csvImport.previewCaption });
 }
 
+async function paste(user: ReturnType<typeof userEvent.setup>, text: string) {
+  await user.click(screen.getByLabelText(fr.csvImport.pasteLabel));
+  await user.paste(text);
+  await user.click(screen.getByRole('button', { name: fr.csvImport.readPasted }));
+}
+
 describe('CsvImport', () => {
+  it('reads the CSV pasted from the reply of an AI, out of its code block', async () => {
+    const { user, onSave } = setup();
+
+    await paste(
+      user,
+      [
+        'Voici le fichier :',
+        '```csv',
+        'terme;pinyin;sens;exemple;labels',
+        '政府;zhèng fǔ;gouvernement / État;;',
+        '```',
+      ].join('\n'),
+    );
+
+    const table = await preview();
+    expect(within(table).getByRole('row', { name: /政府/ })).toHaveTextContent('zhèng fǔ');
+    await user.click(screen.getByRole('button', { name: fr.csvImport.save }));
+    expect(onSave.mock.calls[0]?.[0].changes.cardsToCreate).toEqual([
+      expect.objectContaining({ term: '政府', translation: 'gouvernement / État' }),
+    ]);
+  });
+
+  it('reads nothing until some text is pasted', () => {
+    setup();
+
+    expect(screen.getByRole('button', { name: fr.csvImport.readPasted })).toBeDisabled();
+  });
+
+  it('reports a pasted text that is not a well-formed CSV', async () => {
+    const { user } = setup();
+
+    await paste(user, '猫;"māo;chat');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      fr.csvImport.inputErrors.unclosedQuote,
+    );
+  });
+
   it('previews the words of the file, telling the new ones from those already in the list', async () => {
     const { user } = setup();
 

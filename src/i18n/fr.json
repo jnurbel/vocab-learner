@@ -1345,10 +1345,23 @@
     "listTitle": "Mots lus sur la photo",
     "textTitle": "Texte lu sur la photo"
   },
+  "aiPrompt": {
+    "title": "Lire la photo avec une IA, en dehors de l'appli",
+    "steps": "Si la lecture sur l'appareil se trompe trop : copie la consigne, donne-la avec la photo à une IA (un assistant en ligne), puis colle sa réponse dans l'onglet « Fichier CSV ». L'appli n'envoie rien elle-même et ne garde aucune clé.",
+    "consent": "Demande d'abord l'accord d'un parent : la photo part alors chez le service de cette IA.",
+    "promptLabel": "Consigne à donner à l'IA",
+    "prompt": "Voici la photo d'une liste de vocabulaire : des mots chinois ou anglais, avec leur sens en français.\nTransforme-la en fichier CSV et réponds uniquement avec ce fichier, dans un bloc de code.\n\nRègles :\n- La première ligne est exactement : terme;pinyin;sens;exemple;labels\n- Ensuite, une ligne par mot de la photo, les cases séparées par un point-virgule (;).\n- terme : le mot chinois en caractères simplifiés, ou le mot ou l'expression en anglais, tel qu'il est écrit sur la photo.\n- pinyin : pour un mot chinois, son pinyin avec les accents des tons (par exemple : zhèng fǔ), corrigé s'il est faux sur la photo. Vide pour un mot anglais.\n- sens : le sens en français écrit sur la photo, avec l'orthographe corrigée. S'il y a plusieurs sens, sépare-les par « / ».\n- exemple : la phrase d'exemple si la photo en donne une, sinon vide.\n- labels : vide.\n- Ne mets jamais de point-virgule dans une case.\n- N'ajoute aucun mot qui n'est pas sur la photo et n'en oublie aucun. Si un mot est illisible, laisse sa ligne de côté.",
+    "copy": "Copier la consigne",
+    "copied": "Consigne copiée : colle-la dans l'IA avec la photo.",
+    "copyFailed": "La copie n'a pas marché : sélectionne la consigne et copie-la à la main."
+  },
   "csvImport": {
     "title": "Fichier CSV",
     "fileLabel": "Choisir un fichier CSV",
     "help": "Colonnes : terme ; pinyin ; sens ; exemple ; labels (séparés par des virgules). La première ligne peut être un en-tête. Le fichier est lu sur cet appareil.",
+    "pasteLabel": "Ou colle ici le texte CSV, par exemple la réponse d'une IA",
+    "pasteHelp": "S'il est dans un bloc de code, seul ce bloc est lu. Rien n'est enregistré avant « Importer le fichier ».",
+    "readPasted": "Lire le texte collé",
     "inputErrors": {
       "inputTooLong": "Le fichier est trop gros : 1 000 000 caractères au maximum.",
       "tooManyLines": "Trop de lignes : 5 000 mots au maximum par fichier.",
