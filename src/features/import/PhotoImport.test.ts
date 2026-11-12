@@ -158,12 +158,13 @@ describe('PhotoImport', () => {
     expect(screen.getByText(fr.photoImport.privacy)).toBeVisible();
   });
 
-  it('asks for an image, from the camera on a phone', () => {
+  it('asks for an image, from the files or the camera, as the phone lets the learner choose', () => {
     setup();
 
     const input = screen.getByLabelText(fr.photoImport.fileLabel);
     expect(input).toHaveAttribute('accept', 'image/*');
-    expect(input).toHaveAttribute('capture', 'environment');
+    // "capture" would open the camera straight away, without the photos already taken.
+    expect(input).not.toHaveAttribute('capture');
   });
 
   it('shows the photo once reduced and redrawn, and reads that copy, not the original', async () => {
