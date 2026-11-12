@@ -238,7 +238,6 @@
     id="photo-import-file"
     type="file"
     accept="image/*"
-    capture="environment"
     disabled={busy}
     onchange={choose}
   />
