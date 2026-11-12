@@ -234,13 +234,7 @@
   <p class="help">{fr.photoImport.privacy}</p>
 
   <label for="photo-import-file">{fr.photoImport.fileLabel}</label>
-  <input
-    id="photo-import-file"
-    type="file"
-    accept="image/*"
-    disabled={busy}
-    onchange={choose}
-  />
+  <input id="photo-import-file" type="file" accept="image/*" disabled={busy} onchange={choose} />
 
   {#if photoError !== undefined}
     <p role="alert" class="error">{fr.photoImport.errors[photoError]}</p>
