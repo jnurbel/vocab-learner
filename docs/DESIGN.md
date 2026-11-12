@@ -248,7 +248,8 @@ Ce cas est **bien plus favorable** que la correction de dictée : le texte est s
 | Tesseract.js `chi_sim+eng` (0.8.0) | Rien d'exploitable | Rien | 0 | Parfaite |
 | **PaddleOCR PP-OCRv5 mobile** (détection 4,7 Mo, chinois 16,6 Mo, latin 8,1 Mo) | **22/23** | ~12/23 exacts lus seuls ; 17/23 après correction par dictionnaire | 0 | Parfaite |
 | PaddleOCR server (~165 Mo) ; v6 small et medium | 22/23 ; 21/23 | — | 0 | Parfaite |
-| LLM vision (Claude) via le Worker | Très bonne | Bonne | Quelques centimes par photo | Image envoyée : reporté en **0.10.0, en pause** |
+| LLM vision (Claude) via le Worker | Très bonne | Bonne | Quelques centimes par photo | Image envoyée, clé API à garder : **abandonné** (décision de l'autrice du 2026-11-12) |
+| IA externe choisie par la famille, hors de l'appli | Très bonne | Bonne | Celui du service choisi | L'appli ne fait que **copier une consigne** et lire le CSV collé en retour (0.10.0) : aucune clé, aucun appel réseau |
 
 **Moteur** (`src/services/ocr/paddle/`) : `ppu-paddle-ocr` 6.7.0 (MIT, build web) sur `onnxruntime-web` 1.31.1 (MIT), dans un **Web Worker** démarré à la première photo.
 
@@ -301,7 +302,7 @@ L'élève **colle un texte** (article, texte du manuel, paroles…) ou le **phot
 
 1. **Récupération du texte** :
    - copier-coller (hors ligne, gratuit) ;
-   - ou photo, avec le même OCR que §8.1 : PaddleOCR sur l'appareil (0.9.0) ; plus tard peut-être un LLM vision via le Worker (0.10.0, en pause).
+   - ou photo, avec le même OCR que §8.1 : PaddleOCR sur l'appareil (0.9.0) ; ou, en dehors de l'appli, une IA à qui l'élève donne la photo avec la consigne copiée, et dont il colle la réponse CSV (0.10.0).
 2. **Découpage en mots** :
    - **chinois** (pas d'espaces entre les mots) : `Intl.Segmenter('zh', { granularity: 'word' })`, intégré aux navigateurs, hors ligne, avec un dictionnaire ICU. Le découpage n'est pas parfait, donc l'élève peut **fusionner ou couper** un mot dans l'aperçu ;
    - **anglais** : `Intl.Segmenter('en')`, mise en minuscules, et regroupement simple des formes (pluriel, -ing, -ed) proposé mais modifiable.
@@ -423,12 +424,12 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.7.0 | Parcours par label (étapes à débloquer), exercices adaptés à l'anglais |
 | 0.8.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité ; **import par photo lu sur l'appareil** (Tesseract.js `chi_sim+eng`, chargé à la première utilisation, aucune donnée ne quitte l'appareil) pour du **texte imprimé** : liste de vocabulaire ou texte, avec le même aperçu que l'import par texte collé (mots nouveaux uniquement) — décision de l'autrice, 2026-11-10 |
 | 0.9.0 | **Conversion de photo sur l'appareil (PaddleOCR) avec correction facile** (§8.1) : liste de vocabulaire en tableau, imprimée ou en partie manuscrite, ou page de texte ; colonnes et lignes reconstruites, français corrigé par dictionnaire seulement quand c'est sûr, pinyin calculé (celui du cahier en note), aperçu éditable sous la vignette de chaque ligne, cases à vérifier surlignées, zones ajustables en mode expert ; modèles téléchargés depuis l'appli au premier usage (~48 Mo), photo jamais envoyée |
-| 0.10.0 | **En pause** (décision de l'autrice du 2026-11-11, coût de l'API) : **Import par photo lu par Claude** via le Cloudflare Worker (§7, §8.1, §8.4) — prévu d'abord en 0.9.0 (décision de l'autrice, 2026-11-10) : listes et textes, imprimés ou manuscrits, traduction suggérée en contexte ; option activée par le parent, code d'accès familial, consentement, rien de conservé. Prérequis côté autrice : clé API Anthropic avec plafond de dépenses, compte Cloudflare |
+| 0.10.0 | **Consigne pour une IA externe** (décision de l'autrice du 2026-11-12 : pas d'import par Claude, pas de secret dans l'appli) : dans l'onglet Photo, une consigne prête à copier qui demande à une IA, hors de l'appli, le CSV `terme;pinyin;sens;exemple;labels` (pinyin avec tons, sens séparés par « / ») ; dans l'onglet Fichier CSV, une zone pour coller la réponse, dont seul le bloc de code est lu. Rappel de l'accord d'un parent, la photo partant chez le service choisi. L'appli n'envoie rien elle-même |
 | **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
 | 1.1.0 | ~~`ToneEcho`, `SentenceListen`, `BridgeMatch`~~ (livrés en 0.7.0) |
 | 1.2.0 | Atelier de phrases, vue parent (`SentenceShuffle` livré en 0.7.0) |
 | 1.3.0 | Répéter à voix haute (reconnaissance vocale, option), ordre des traits en bonus |
-| 1.4.0 | ~~Import par photo~~ (avancé : 0.8.0 et 0.9.0 pour la lecture sur l'appareil, 0.10.0 en pause pour la lecture par Claude) |
+| 1.4.0 | ~~Import par photo~~ (avancé : 0.8.0 et 0.9.0 pour la lecture sur l'appareil, 0.10.0 pour la consigne à donner à une IA externe) |
 | 1.5.0 | Correction de dictée par photo (réutilise le Worker) |
 | 1.6.0 | Synchro chiffrée |
 | 1.7.0 | **Suivi professeur, étape 1** : rapport de progression partageable + tableau de bord professeur local (§9 ter) |

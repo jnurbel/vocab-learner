@@ -56,3 +56,32 @@ test('a learner exports the filtered words as CSV and imports the file on a fres
   await expect(list.getByRole('row', { name: /猫/ })).toContainText('chat');
   await context.close();
 });
+
+test('a learner copies the prompt for an AI and pastes its reply as CSV', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('./');
+  await openWords(page);
+
+  await page.getByRole('tab', { name: 'Photo' }).click();
+  await page.getByText("Lire la photo avec une IA, en dehors de l'appli").click();
+  await page.getByRole('button', { name: 'Copier la consigne' }).click();
+  await expect(page.getByText('Consigne copiée')).toBeVisible();
+  const prompt = await page.evaluate(() => navigator.clipboard.readText());
+  expect(prompt).toContain('terme;pinyin;sens;exemple;labels');
+
+  await page.getByRole('tab', { name: 'Fichier CSV' }).click();
+  await page
+    .getByLabel("Ou colle ici le texte CSV, par exemple la réponse d'une IA")
+    .fill('Voici :\n```csv\nterme;pinyin;sens;exemple;labels\n家庭;jiā tíng;famille;;\n```');
+  await page.getByRole('button', { name: 'Lire le texte collé' }).click();
+  await expect(page.getByRole('table', { name: 'Aperçu du fichier' }).getByRole('row')).toHaveCount(
+    2,
+  );
+  await page.getByRole('button', { name: 'Importer le fichier' }).click();
+  await expect(
+    page.getByRole('table', { name: 'Liste des mots' }).getByRole('row', { name: /家庭/ }),
+  ).toContainText('famille');
+});
