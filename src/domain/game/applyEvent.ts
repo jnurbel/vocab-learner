@@ -48,8 +48,19 @@ export type GameEvent =
       answers: number;
       correct: number;
     }
+  | SentenceWrittenEvent
   | PathStepValidatedEvent
   | FinalChallengeFinishedEvent;
+
+/** A sentence of the workshop, once the learner judged it (GAME_DESIGN.md 6.12). */
+export interface SentenceWrittenEvent {
+  type: 'SentenceWritten';
+  language: Language;
+  /** No frequent error was found in its last check. */
+  clean: boolean;
+  /** The learner said "Ma phrase est juste". */
+  judgedRight: boolean;
+}
 
 /** What the interface shows of an event (GAME_DESIGN.md 9.2). */
 export type GameEffect =
@@ -79,6 +90,9 @@ export interface GameUpdate {
   effects: GameEffect[];
 }
 
+/** The decoration of a sentence of the workshop judged right (GAME_DESIGN.md 4.5). */
+export const SENTENCE_BANNER = 'sentenceBanner';
+
 /** Exercises with an adaptive level of their own (GAME_DESIGN.md 6.0). */
 const MINI_GAMES: ReadonlySet<ExerciseType> = new Set([
   'listenMeaning',
@@ -86,6 +100,8 @@ const MINI_GAMES: ReadonlySet<ExerciseType> = new Set([
   'toneEcho',
   'sentenceListen',
   'sentenceShuffle',
+  'gapFill',
+  'measureWord',
 ]);
 
 /**
@@ -126,6 +142,8 @@ function reduce(
         return progress;
       }
       return activeDay(earn(progress, 'sessionCompleted', context, effects), context, effects);
+    case 'SentenceWritten':
+      return sentenceWritten(progress, event, context, effects);
     case 'PathStepValidated':
       return earn(progress, 'pathStepValidated', context, effects);
     case 'FinalChallengeFinished':
@@ -151,6 +169,26 @@ function answerGiven(
   return dailyAnswers >= context.economy.activeDayMinAnswers
     ? activeDay(counted, context, effects)
     : counted;
+}
+
+/** 10 points for a sentence, 5 more without error found, for the first ones of the day. */
+function sentenceWritten(
+  progress: ProgressRecord,
+  { clean, judgedRight }: SentenceWrittenEvent,
+  context: GameContext,
+  effects: GameEffect[],
+): ProgressRecord {
+  const written = (progress.dailyWorkshopSentences ?? 0) + 1;
+  const rewarded = written <= context.economy.workshopRewardedPerDay;
+  const checked = rewarded ? earn(progress, 'sentenceChecked', context, effects) : progress;
+  const earned =
+    rewarded && clean ? earn(checked, 'sentenceWithoutError', context, effects) : checked;
+  const counted = { ...earned, dailyWorkshopSentences: written };
+  if (!clean || !judgedRight) {
+    return counted;
+  }
+  effects.push({ type: 'UnlockGranted', unlockId: SENTENCE_BANNER });
+  return { ...counted, sentenceBanners: (counted.sentenceBanners ?? 0) + 1 };
 }
 
 function adaptLevel(
@@ -188,6 +226,8 @@ function startDay(
     ...progress,
     ...ledgerFields({ dailyXp: 0, dailyXpDay: today, dailyRewardedCount: {} }, today),
     dailyAnswers: 0,
+    // Only a learner who used the workshop has this counter.
+    ...(progress.dailyWorkshopSentences === undefined ? {} : { dailyWorkshopSentences: 0 }),
     ...streakFields(roll.state),
   };
 }

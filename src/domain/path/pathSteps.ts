@@ -24,6 +24,8 @@ const STEP_OF_EXERCISE: Readonly<Record<ExerciseType, PathStep | undefined>> = O
   bridgeMatch: 'recognize',
   sentenceListen: 'sentences',
   sentenceShuffle: 'sentences',
+  gapFill: 'sentences',
+  measureWord: undefined,
   typeEcho: 'type',
   typeMeaning: undefined,
   seasonRush: undefined,

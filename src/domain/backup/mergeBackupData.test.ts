@@ -164,6 +164,16 @@ describe('mergeBackupData', () => {
     expect(merged.progress).toEqual({ islandLevelSeen: 7 });
   });
 
+  it('keeps the most sentence banners, so that none is lost', () => {
+    const merged = mergeBackupData(
+      data({ progress: { sentenceBanners: 4 } }),
+      data({ progress: { sentenceBanners: 7 } }),
+      idGenerator(),
+    );
+
+    expect(merged.progress).toEqual({ sentenceBanners: 7 });
+  });
+
   it('keeps the progress fields that only one side has', () => {
     const merged = mergeBackupData(
       data({ progress: { xp: 10, stamps: 3 } }),

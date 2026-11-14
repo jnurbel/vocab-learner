@@ -479,7 +479,9 @@
       "messengerCompleted": "Dictée du Messager",
       "stageReached": "Plantes qui ont grandi",
       "pathStepValidated": "Étapes de parcours",
-      "finalChallengePassed": "Défi final"
+      "finalChallengePassed": "Défi final",
+      "sentenceChecked": "Phrases de l’atelier",
+      "sentenceWithoutError": "Phrases sans erreur fréquente trouvée"
     },
     "dailyGoal": "Objectif du jour",
     "dailyGoalProgress": "Objectif du jour : {xp} / {goal} XP",

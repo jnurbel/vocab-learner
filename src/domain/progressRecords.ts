@@ -20,6 +20,10 @@ export const EXERCISE_TYPES = [
   'bridgeMatch',
   'sentenceListen',
   'sentenceShuffle',
+  /** A word to find in a sentence with a gap (GAME_DESIGN.md 6.10). */
+  'gapFill',
+  /** The measure word of a noun: never rated, the word itself is not tested (6.11). */
+  'measureWord',
   'typeEcho',
   /** The flashcard shows the word, the learner types its French meaning. */
   'typeMeaning',
@@ -77,6 +81,10 @@ export interface ProgressRecord {
   lastStreakDay?: string;
   /** The level of the island last seen in the garden: it grows from there after a level up. */
   islandLevelSeen?: number;
+  /** Sentences written in the workshop today: only the first ones earn points. */
+  dailyWorkshopSentences?: number;
+  /** Sentences of the workshop judged right with no error found: a banner each on the island. */
+  sentenceBanners?: number;
 }
 
 export interface SettingsRecord {
