@@ -1325,6 +1325,7 @@
     "modeLegend": "Que montre la photo ?",
     "modes": {
       "list": "Une liste de vocabulaire",
+      "chinesePairs": "Une liste de mots chinois de deux caractères, sans le sens",
       "text": "Un texte"
     },
     "read": "Lire la photo",
@@ -1344,7 +1345,8 @@
     },
     "nothingRead": "Rien n'a pu être lu sur cette photo. Essaie une photo droite, nette et bien éclairée, ou tape la liste dans la saisie en lot.",
     "listTitle": "Mots lus sur la photo",
-    "textTitle": "Texte lu sur la photo"
+    "textTitle": "Texte lu sur la photo",
+    "chinesePairsTitle": "Mots chinois lus sur la photo"
   },
   "aiPrompt": {
     "title": "Lire la photo avec une IA, en dehors de l'appli",

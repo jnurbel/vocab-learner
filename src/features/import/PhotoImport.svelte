@@ -64,15 +64,16 @@
     ...importProps
   }: Props = $props();
 
-  type Mode = 'list' | 'text';
-  const MODES: readonly Mode[] = ['list', 'text'];
+  /** A table of words and meanings, a list of Chinese words of two characters, or a text. */
+  type Mode = 'list' | 'chinesePairs' | 'text';
+  const MODES: readonly Mode[] = ['list', 'chinesePairs', 'text'];
 
   /** Where the import of a photo stands. */
   type Stage =
     | { kind: 'reading'; progress: RecognitionProgress; controller: AbortController }
     | { kind: 'zones'; analysis: PhotoAnalysis; grid: Grid; words?: PhotoWord[] }
     | { kind: 'words'; analysis: PhotoAnalysis; grid: Grid; words: PhotoWord[]; id: number }
-    | { kind: 'text'; text: string; id: number }
+    | { kind: 'text'; text: string; chinesePairs: boolean; id: number }
     | { kind: 'cancelled' }
     | { kind: 'failed'; message: string };
 
@@ -152,13 +153,13 @@
     if (analysis === undefined) {
       return;
     }
-    if (readMode === 'text') {
+    if (readMode !== 'list') {
       const text = blocksToText(analysis.blocks);
       readings += 1;
       stage =
         text === ''
           ? { kind: 'failed', message: fr.photoImport.nothingRead }
-          : { kind: 'text', text, id: readings };
+          : { kind: 'text', text, chinesePairs: readMode === 'chinesePairs', id: readings };
       return;
     }
     const grid = inferGrid(analysis.blocks, analysis.size);
@@ -324,8 +325,9 @@
     <TextImport
       {...importProps}
       initialText={stage.text}
+      initialChinesePairs={stage.chinesePairs}
       idPrefix="photo-text"
-      title={fr.photoImport.textTitle}
+      title={stage.chinesePairs ? fr.photoImport.chinesePairsTitle : fr.photoImport.textTitle}
       source="photo"
     />
   {/key}

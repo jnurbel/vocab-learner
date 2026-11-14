@@ -34,6 +34,8 @@
     onSave: (save: VocabularySave) => Promise<void>;
     /** A text read by another import (a photo), to start from. */
     initialText?: string;
+    /** Starts with the text read as a list of Chinese words of two characters. */
+    initialChinesePairs?: boolean;
     /** Makes the ids unique when several imports are on the page. */
     idPrefix?: string;
     title?: string;
@@ -49,6 +51,7 @@
     clock,
     onSave,
     initialText = '',
+    initialChinesePairs = false,
     idPrefix = 'text-import',
     title = fr.textImport.title,
     source = 'manual',
@@ -63,7 +66,8 @@
   // svelte-ignore state_referenced_locally
   let text = $state(initialText);
   let hideCommonWords = $state(false);
-  let chinesePairs = $state(false);
+  // svelte-ignore state_referenced_locally
+  let chinesePairs = $state(initialChinesePairs);
   let ignoredTerms = $state.raw<IgnoredTerm[]>([]);
   let adjustments = $state.raw<SegmentAdjustment[]>([]);
   /** The choices made in the preview, by word. */
