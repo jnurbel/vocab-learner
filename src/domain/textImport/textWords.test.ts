@@ -250,3 +250,19 @@ describe('extractTextWords on a list of Chinese words of two characters', () => 
     expect(pairs('apple 控制').map(({ term }) => term)).toEqual(['apple', '控制']);
   });
 });
+
+describe('extractTextWords on the list of a photographed sheet', () => {
+  it('cuts each line two by two, whatever the cuts of the segmenter', () => {
+    const extracted = extractTextWords(
+      '分量费力起风信封朋友幸福政府父母妇女复习\n应该改正 概念 干活 勇敢 感谢 刚才 身高 搞笑价格',
+      [],
+      { chinesePairs: true },
+    );
+
+    expect(extracted.ok && extracted.value.map(({ term }) => term)).toEqual(
+      '分量 费力 起风 信封 朋友 幸福 政府 父母 妇女 复习 应该 改正 概念 干活 勇敢 感谢 刚才 身高 搞笑 价格'.split(
+        ' ',
+      ),
+    );
+  });
+});

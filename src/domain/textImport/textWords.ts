@@ -73,30 +73,41 @@ export interface TextReading {
   chinesePairs?: boolean;
 }
 
-/** The words of a segment, its Chinese characters cut two by two for a list of words. */
-function wordsOfSegment(segment: string, chinesePairs: boolean): FoundWord[] {
-  const word = toWord(segment);
-  if (word === undefined || word.language === 'en' || !chinesePairs) {
-    return word === undefined ? [] : [word];
-  }
-  return Array.from(segment.matchAll(CHINESE_PAIR), ([term]) => ({
+/** Chinese characters written one after the other, cut two by two. */
+function chinesePairsOf(characters: string): FoundWord[] {
+  return Array.from(characters.matchAll(CHINESE_PAIR), ([term]) => ({
     language: 'zh',
     term,
     capitalized: false,
   }));
 }
 
-/** The runs of words of a sentence: punctuation, numbers and other scripts break a run. */
+/**
+ * The runs of words of a sentence: punctuation, numbers and other scripts break a run. For a list
+ * of words, the characters between two spaces or marks are cut two by two as a whole, whatever
+ * the cuts of the segmenter (起|风信|封 is 起风, 信封).
+ */
 function runsOfSentence(sentence: string, chinesePairs: boolean): WordRun[] {
   const runs: WordRun[] = [[]];
+  let characters = '';
+  const pushCharacters = () => {
+    runs[runs.length - 1]?.push(...chinesePairsOf(characters));
+    characters = '';
+  };
   for (const { segment, isWordLike } of wordSegmenter.segment(sentence)) {
-    const words = isWordLike === true ? wordsOfSegment(segment, chinesePairs) : [];
-    if (words.length > 0) {
-      runs[runs.length - 1]?.push(...words);
+    if (chinesePairs && CHINESE_WORD.test(segment)) {
+      characters += segment;
+      continue;
+    }
+    pushCharacters();
+    const word = isWordLike === true ? toWord(segment) : undefined;
+    if (word !== undefined) {
+      runs[runs.length - 1]?.push(word);
     } else if (segment.trim() !== '') {
       runs.push([]);
     }
   }
+  pushCharacters();
   return runs;
 }
 
