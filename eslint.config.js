@@ -68,7 +68,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['*.config.{js,ts}', 'e2e/**/*.ts', 'config/**/*.ts'],
+    files: ['*.config.{js,ts}', 'e2e/**/*.ts', 'config/**/*.ts', 'scripts/**/*.ts'],
     languageOptions: {
       globals: { ...globals.node },
     },

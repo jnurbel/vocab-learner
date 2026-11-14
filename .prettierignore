@@ -7,3 +7,5 @@ package-lock.json
 *.md
 # UI mockups are reference material exported from the design canvas, not app code.
 docs/ui/mockups/
+# Generated sentence data (scripts/sentences/), one JSON line per file.
+public/data/*.json
