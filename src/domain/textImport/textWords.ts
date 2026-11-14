@@ -35,6 +35,8 @@ const sentenceSegmenter = new Intl.Segmenter('zh', { granularity: 'sentence' });
 const wordSegmenter = new Intl.Segmenter('zh', { granularity: 'word' });
 
 const CHINESE_WORD = /^\p{Script=Han}+$/u;
+/** Two Chinese characters, or the last one left alone. */
+const CHINESE_PAIR = /\p{Script=Han}{1,2}/gu;
 /** Latin letters and apostrophes or hyphens (don't, well-known)... */
 const ENGLISH_CHARACTERS = /^[\p{Script=Latin}'-]+$/u;
 /** ...which never start or end a word, nor follow each other. */
@@ -65,13 +67,32 @@ function toWord(segment: string): FoundWord | undefined {
   return undefined;
 }
 
+/** How to read the text. */
+export interface TextReading {
+  /** A list of Chinese words of two characters: the characters are cut two by two. */
+  chinesePairs?: boolean;
+}
+
+/** The words of a segment, its Chinese characters cut two by two for a list of words. */
+function wordsOfSegment(segment: string, chinesePairs: boolean): FoundWord[] {
+  const word = toWord(segment);
+  if (word === undefined || word.language === 'en' || !chinesePairs) {
+    return word === undefined ? [] : [word];
+  }
+  return Array.from(segment.matchAll(CHINESE_PAIR), ([term]) => ({
+    language: 'zh',
+    term,
+    capitalized: false,
+  }));
+}
+
 /** The runs of words of a sentence: punctuation, numbers and other scripts break a run. */
-function runsOfSentence(sentence: string): WordRun[] {
+function runsOfSentence(sentence: string, chinesePairs: boolean): WordRun[] {
   const runs: WordRun[] = [[]];
   for (const { segment, isWordLike } of wordSegmenter.segment(sentence)) {
-    const word = isWordLike === true ? toWord(segment) : undefined;
-    if (word !== undefined) {
-      runs[runs.length - 1]?.push(word);
+    const words = isWordLike === true ? wordsOfSegment(segment, chinesePairs) : [];
+    if (words.length > 0) {
+      runs[runs.length - 1]?.push(...words);
     } else if (segment.trim() !== '') {
       runs.push([]);
     }
@@ -92,9 +113,9 @@ function isObviousProperNoun({ word, seenInLowerCase, capitalizedInsideSentence 
 function startCollecting(
   collected: Map<string, Collected>,
   { language, term }: FoundWord,
-  context: { sentence: string; followedBy: string | undefined },
+  context: { sentence: string | undefined; followedBy: string | undefined },
 ): Collected {
-  const example = asExample(context.sentence);
+  const example = context.sentence === undefined ? undefined : asExample(context.sentence);
   const entry: Collected = {
     word: {
       language,
@@ -118,6 +139,7 @@ function startCollecting(
 export function extractTextWords(
   text: string,
   adjustments: readonly SegmentAdjustment[] = [],
+  { chinesePairs = false }: TextReading = {},
 ): Result<TextWord[], TextInputError> {
   if (text.length > TEXT_IMPORT_LIMITS.characters) {
     return failure(['inputTooLong']);
@@ -125,13 +147,17 @@ export function extractTextWords(
   const collected = new Map<string, Collected>();
   for (const { segment } of sentenceSegmenter.segment(removeInvisibleControls(text))) {
     const sentence = segment.trim();
-    const runs = runsOfSentence(sentence).map((run) => adjustRun(run, adjustments));
+    const runs = runsOfSentence(sentence, chinesePairs).map((run) => adjustRun(run, adjustments));
     runs
       .flatMap((run) => run.map((word, index) => ({ word, followedBy: run[index + 1]?.term })))
       .forEach(({ word, followedBy }, position) => {
         const entry =
           collected.get(termKey(word.language, word.term)) ??
-          startCollecting(collected, word, { sentence, followedBy });
+          startCollecting(collected, word, {
+            // A list of words is no sentence: it gives no example.
+            sentence: chinesePairs ? undefined : sentence,
+            followedBy,
+          });
         entry.word.occurrences += 1;
         entry.seenInLowerCase ||= !word.capitalized;
         entry.capitalizedInsideSentence ||= word.capitalized && position > 0;

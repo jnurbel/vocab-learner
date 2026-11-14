@@ -211,3 +211,42 @@ describe('extractTextWords with the corrections of the learner', () => {
     expect(words.ok && words.value.map(({ term }) => term)).toEqual(['今天是', '中秋', '节']);
   });
 });
+
+describe('extractTextWords on a list of Chinese words of two characters', () => {
+  const pairs = (text: string) => {
+    const extracted = extractTextWords(text, [], { chinesePairs: true });
+    if (!extracted.ok) {
+      throw new Error(`Unexpected failure: ${extracted.errors.join(', ')}`);
+    }
+    return extracted.value;
+  };
+
+  it('cuts the characters written one after the other two by two', () => {
+    expect(pairs('控制政府家庭').map(({ term }) => term)).toEqual(['控制', '政府', '家庭']);
+  });
+
+  it('starts again after a space, a line break or a punctuation mark', () => {
+    expect(pairs('控制 政府\n家庭、社会。').map(({ term }) => term)).toEqual([
+      '控制',
+      '政府',
+      '家庭',
+      '社会',
+    ]);
+  });
+
+  it('keeps the last character alone when a group has an odd number of them', () => {
+    expect(pairs('控制政').map(({ term }) => term)).toEqual(['控制', '政']);
+  });
+
+  it('counts a word met twice once', () => {
+    expect(pairs('家庭家庭')).toEqual([expect.objectContaining({ term: '家庭', occurrences: 2 })]);
+  });
+
+  it('takes no example from the list, which is not a sentence', () => {
+    expect(pairs('控制政府')[0]?.sentence).toBeUndefined();
+  });
+
+  it('still reads the English words of the list', () => {
+    expect(pairs('apple 控制').map(({ term }) => term)).toEqual(['apple', '控制']);
+  });
+});

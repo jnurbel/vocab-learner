@@ -1268,6 +1268,7 @@
     "title": "Depuis un texte",
     "inputLabel": "Texte à analyser",
     "inputHelp": "Colle un article, un texte du manuel ou des paroles : seuls les mots qui ne sont pas encore dans ta liste sont proposés. Le texte reste sur cet appareil.",
+    "chinesePairs": "Liste de mots chinois de deux caractères : couper les caractères deux par deux (控制政府 → 控制, 政府)",
     "hideCommonWords": "Masquer les mots très courants (的, 了, the, a…)",
     "inputErrors": {
       "inputTooLong": "Le texte est trop long : 20 000 caractères au maximum."
