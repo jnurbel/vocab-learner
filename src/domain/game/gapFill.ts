@@ -40,18 +40,41 @@ export interface GapFillResult {
   rating: Rating;
 }
 
-/** Longest example asked (GAME_DESIGN.md 6.10): 20 characters in Chinese, 15 words in English. */
-const MAX_CHINESE_CHARS = 20;
-const MAX_ENGLISH_WORDS = 15;
+/** Longest sentence asked (GAME_DESIGN.md 6.10): 20 characters in Chinese, 15 words in English. */
+export const GAP_FILL_MAX_LENGTH: SentenceMaxLength = { zh: 20, en: 15 };
 
-function exampleOf(card: Card): GapSentence | undefined {
+/** Characters in Chinese, words in English. */
+export interface SentenceMaxLength {
+  zh: number;
+  en: number;
+}
+
+/** The card's own example as a sentence with a gap, when it holds the word and is short enough. */
+export function exampleSentenceOf(card: Card, max: SentenceMaxLength): GapSentence | undefined {
   const text = card.example?.trim() ?? '';
   const parts = splitAroundTerm(text, card);
   const short =
-    card.language === 'zh'
-      ? Array.from(text).length <= MAX_CHINESE_CHARS
-      : text.split(/\s+/).length <= MAX_ENGLISH_WORDS;
+    card.language === 'zh' ? Array.from(text).length <= max.zh : text.split(/\s+/).length <= max.en;
   return parts !== undefined && short ? { text, parts } : undefined;
+}
+
+/** A bank sentence of a Chinese word, drawn with the seed, with its translation and source. */
+export function bankSentenceOf(
+  card: Card,
+  bank: BankLookup | undefined,
+  seed: string,
+): GapSentence | undefined {
+  const picked =
+    card.language !== 'zh' || bank === undefined ? undefined : pickBankSentence(bank(card), seed);
+  const parts = picked === undefined ? undefined : splitAroundTerm(picked.text, card);
+  return picked === undefined || parts === undefined
+    ? undefined
+    : {
+        text: picked.text,
+        parts,
+        translation: { lang: picked.translation.lang, text: picked.translation.text },
+        bank: picked,
+      };
 }
 
 /**
@@ -63,20 +86,7 @@ export function gapFillSentenceOf(
   bank: BankLookup | undefined,
   seed: string,
 ): GapSentence | undefined {
-  const example = exampleOf(card);
-  if (example !== undefined || card.language !== 'zh' || bank === undefined) {
-    return example;
-  }
-  const picked = pickBankSentence(bank(card), seed);
-  const parts = picked === undefined ? undefined : splitAroundTerm(picked.text, card);
-  return picked === undefined || parts === undefined
-    ? undefined
-    : {
-        text: picked.text,
-        parts,
-        translation: { lang: picked.translation.lang, text: picked.translation.text },
-        bank: picked,
-      };
+  return exampleSentenceOf(card, GAP_FILL_MAX_LENGTH) ?? bankSentenceOf(card, bank, seed);
 }
 
 export function isGapFillEligible(card: Card, bank: BankLookup | undefined): boolean {
