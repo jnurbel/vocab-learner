@@ -63,6 +63,7 @@
   // svelte-ignore state_referenced_locally
   let text = $state(initialText);
   let hideCommonWords = $state(false);
+  let chinesePairs = $state(false);
   let ignoredTerms = $state.raw<IgnoredTerm[]>([]);
   let adjustments = $state.raw<SegmentAdjustment[]>([]);
   /** The choices made in the preview, by word. */
@@ -71,7 +72,7 @@
   let labelName = $state('');
   let status = $state<{ kind: 'saved'; added: number; known: number } | { kind: 'failed' }>();
 
-  const extracted = $derived(extractTextWords(text, adjustments));
+  const extracted = $derived(extractTextWords(text, adjustments, { chinesePairs }));
   const words = $derived(
     extracted.ok
       ? keepNewWords(extracted.value, { knownTerms: existingCards, ignoredTerms, hideCommonWords })
@@ -208,6 +209,16 @@
     }}></textarea>
   <p id="{idPrefix}-help" class="help">{fr.textImport.inputHelp}</p>
 
+  <label class="option">
+    <input
+      type="checkbox"
+      bind:checked={chinesePairs}
+      onchange={() => {
+        adjustments = [];
+      }}
+    />
+    {fr.textImport.chinesePairs}
+  </label>
   <label class="option">
     <input type="checkbox" bind:checked={hideCommonWords} />
     {fr.textImport.hideCommonWords}

@@ -115,6 +115,20 @@ describe('TextImport', () => {
     expect(termsShown()).toEqual(['moon', 'bright']);
   });
 
+  it('cuts a list of Chinese words two characters by two, each with its pinyin', async () => {
+    const { user } = setup();
+
+    await pasteText(user, '控制政府家庭');
+    await user.click(screen.getByRole('checkbox', { name: fr.textImport.chinesePairs }));
+
+    expect(termsShown()).toEqual(['控制', '政府', '家庭']);
+    await vi.waitFor(() => {
+      expect(
+        screen.getByLabelText(format(fr.textImport.pinyinLabel, { term: '政府' })),
+      ).not.toHaveValue('');
+    });
+  });
+
   it('proposes the pinyin of the Chinese words', async () => {
     const { user } = setup();
 
