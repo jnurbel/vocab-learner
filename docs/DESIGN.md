@@ -166,8 +166,45 @@ Rien ne meurt, aucune perte de progression.
   - `TypeEcho` (plus tard) : écrire le mot entendu.
   - `SeasonRush` (plus tard, désactivable) : 60 s contre son propre record.
 - **Dictée « Le Messager »** : XP pour avoir fini + bonus par mot juste ; les mots ratés passent en priorité dans le SRS ; un timbre par dictée.
-- **Atelier de phrases** : utiliser des mots « en fleur » ; une phrase validée devient une banderole sur l'île.
+- **Atelier de phrases** (0.11.0, §5 ter) : construire une phrase avec un mot de sa liste, vérifiée par des règles d'erreurs fréquentes puis comparée à une phrase modèle ; une phrase validée devient une banderole sur l'île.
 - Rendu en **DOM/CSS + SVG** (pas de canvas), `prefers-reduced-motion` respecté.
+
+## 5 ter. Phrases : banque, classificateurs et erreurs fréquentes (0.11.0)
+
+> Décision de l'autrice (2026-11-14) : l'élève doit savoir **construire des phrases avec ses mots**, sans compte d'IA. Trois jeux en découlent (`GAME_DESIGN.md` §6.10 à §6.12) : `GapFill` (phrase à trous), `MeasureWord` (le bon classificateur), `SentenceWorkshop` (atelier de phrases). Niveau visé : **HSK 3** (3e section internationale).
+
+**Mesures faites avant de choisir** (2026-11-14, sur les 42 mots de deux listes réelles de l'élève) :
+- Tatoeba : 86 % des mots ont au moins une phrase traduite, **69 % une phrase « facile »** (les autres mots en HSK 1-3 ou dans la liste de l'élève), 45 % une phrase facile traduite en français. Les mots courants sont très bien couverts, les mots « scolaires » (政府, 速度) mal.
+- Règles d'erreurs fréquentes : 15 erreurs typiques sur 17 détectées, aucune fausse alerte sur les 17 versions corrigées, **0,25 % de fausses alertes** sur les 11 500 phrases faciles de Tatoeba (surtout 什么 au sens de « quelque chose »).
+- Classificateurs CC-CEDICT : 64 % des noms HSK 1-3 en ont un. La règle « mauvais classificateur » a été **écartée** : CC-CEDICT ne liste souvent qu'un classificateur là où l'usage en accepte plusieurs (这只梨, 这件运动衫 signalés à tort).
+
+**Données embarquées** (fichiers statiques produits par un script du dépôt, `scripts/sentences/`, puis versionnés ; jamais téléchargées depuis un tiers à l'exécution) :
+
+| Fichier | Contenu | Source et licence |
+|---|---|---|
+| Banque de phrases zh | Phrases en caractères simplifiés (converties avec opencc-js si besoin), ≤ 20 caractères, avec leur traduction française ou anglaise, leur identifiant Tatoeba et leurs mots déjà découpés ; seulement celles dont au plus 2 mots sont hors HSK 1-4. Cible : ≤ 1,5 Mo. | Tatoeba, CC BY 2.0 FR (attribution exacte : avis de l'agent juriste) |
+| Table des classificateurs | Nom → classificateurs, pour les noms HSK 1-6 | CC-CEDICT, CC BY-SA 4.0 (fichier de données sous la même licence) |
+| Mots HSK | Mot → niveau HSK (1 à 6) et nature (nom, verbe, adjectif) | complete-hsk-vocabulary, MIT (provenance des natures à vérifier) |
+
+- Chargées **à la demande** au premier jeu de phrases, puis gardées hors ligne par le service worker (comme les modèles de PaddleOCR).
+- Le script de génération est reproductible et documenté (date de l'export Tatoeba, sommes de contrôle des sources). Il ne tourne pas dans la CI ; la CI vérifie seulement le format et la taille des fichiers.
+- Une page « Sources des phrases » (ou la page Confidentialité) cite Tatoeba, CC-CEDICT et la liste HSK.
+
+**Mots connus** : un mot est connu s'il est en HSK 1 à 3 ou dans la liste de l'élève (n'importe quelle carte zh). Le découpage reprend `Intl.Segmenter`, puis un mot inconnu est redécoupé en mots connus si possible (去睡觉 → 去 + 睡觉).
+
+**Règles d'erreurs fréquentes** (`src/domain/sentence/`), appliquées par proposition (entre deux ponctuations), sur des mots où le nombre collé à son classificateur est redécoupé (一本 → 一 + 本) :
+
+| Règle | Exemple signalé | Correction proposée | Niveau |
+|---|---|---|---|
+| Classificateur oublié après un nombre (sauf 一, et sauf les noms qui s'en passent : 年, 天, 岁, 次, 人…) | 我有三书 | 三本书 | erreur |
+| 二 devant un classificateur (sauf 第二, 十二…) | 二个朋友 | 两个朋友 | erreur |
+| 们 après un nombre et un classificateur | 三个学生们 | 三个学生 | erreur |
+| 不有 (sauf 不有趣, 不有名…) | 我不有钱 | 我没有钱 | erreur |
+| 比 suivi de 很 (sauf 很多, 很久) | 他比我很高 | 他比我高 / 高得多 | erreur |
+| 是 devant un adjectif en fin de proposition | 我是高 | 我很高 | erreur |
+| 吗 avec un mot interrogatif (sauf question indirecte : 知道, 告诉, 能…) | 你叫什么名字吗？ | sans 吗 | **à vérifier** |
+
+Chaque règle a ses tests : la phrase fautive est signalée, sa correction ne l'est pas, et un test de non-régression vérifie que les fausses alertes sur un échantillon fixe de phrases de la banque restent sous 0,5 %. Une règle qui dépasse ce seuil passe en « à vérifier » ou est retirée.
 
 ## 6. Dictée
 
@@ -425,9 +462,10 @@ Le suivi se fait en deux étapes, pour livrer de la valeur sans back-end ni donn
 | 0.8.0 | PWA installable et hors ligne, import/export CSV, **import depuis un texte collé (mots nouveaux uniquement)**, packs partageables, profils multiples, page Confidentialité ; **import par photo lu sur l'appareil** (Tesseract.js `chi_sim+eng`, chargé à la première utilisation, aucune donnée ne quitte l'appareil) pour du **texte imprimé** : liste de vocabulaire ou texte, avec le même aperçu que l'import par texte collé (mots nouveaux uniquement) — décision de l'autrice, 2026-11-10 |
 | 0.9.0 | **Conversion de photo sur l'appareil (PaddleOCR) avec correction facile** (§8.1) : liste de vocabulaire en tableau, imprimée ou en partie manuscrite, ou page de texte ; colonnes et lignes reconstruites, français corrigé par dictionnaire seulement quand c'est sûr, pinyin calculé (celui du cahier en note), aperçu éditable sous la vignette de chaque ligne, cases à vérifier surlignées, zones ajustables en mode expert ; modèles téléchargés depuis l'appli au premier usage (~48 Mo), photo jamais envoyée |
 | 0.10.0 | **Consigne pour une IA externe** (décision de l'autrice du 2026-11-12 : pas d'import par Claude, pas de secret dans l'appli) : dans l'onglet Photo, une consigne prête à copier qui demande à une IA, hors de l'appli, le CSV `terme;pinyin;sens;exemple;labels` (pinyin avec tons, sens séparés par « / ») ; dans l'onglet Fichier CSV, une zone pour coller la réponse, dont seul le bloc de code est lu. Rappel de l'accord d'un parent, la photo partant chez le service choisi. L'appli n'envoie rien elle-même |
-| **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone |
+| 0.11.0 | **Construire des phrases** (§5 ter) : banque de phrases Tatoeba, table des classificateurs CC-CEDICT et règles d'erreurs fréquentes, embarquées et hors ligne ; trois jeux : `GapFill` (phrase à trous), `MeasureWord` (le bon classificateur), `SentenceWorkshop` (atelier de phrases, avancé de la 1.2.0) |
+| **1.0.0** | **MVP stable** : schéma figé, migrations testées, testé sur PC + téléphone ; onglet **« Mes phrases »** (demande de l'autrice, 2026-11-14) : le dictionnaire des phrases construites par l'élève, gardées depuis l'atelier ou ajoutées à la main, avec leurs mots |
 | 1.1.0 | ~~`ToneEcho`, `SentenceListen`, `BridgeMatch`~~ (livrés en 0.7.0) |
-| 1.2.0 | Atelier de phrases, vue parent (`SentenceShuffle` livré en 0.7.0) |
+| 1.2.0 | Vue parent (`SentenceShuffle` livré en 0.7.0, atelier de phrases en 0.11.0) |
 | 1.3.0 | Répéter à voix haute (reconnaissance vocale, option), ordre des traits en bonus |
 | 1.4.0 | ~~Import par photo~~ (avancé : 0.8.0 et 0.9.0 pour la lecture sur l'appareil, 0.10.0 pour la consigne à donner à une IA externe) |
 | 1.5.0 | Correction de dictée par photo (réutilise le Worker) |
