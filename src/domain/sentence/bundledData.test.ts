@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { isBlockedChinese, isBlockedTranslation } from '../../../scripts/sentences/blocklist';
+import { createRuleResources, findFrequentErrors, type ErrorRule } from './frequentErrors';
 import { parseHskWords, parseMeasureWords, parseSentenceBank } from './sentenceData';
 
 const dataFolder = join(
@@ -69,5 +70,30 @@ describe('the sentence data shipped with the app', () => {
   it('ships the measure words and the HSK words in the expected format', () => {
     expect(parseMeasureWords(json('measure-words.json')).ok).toBe(true);
     expect(parseHskWords(json('hsk-words.json')).ok).toBe(true);
+  });
+
+  it('raises a false alarm on fewer than 0.5 % of the bank sentences, rule by rule', () => {
+    const bank = parseSentenceBank(json('sentences-zh.json'));
+    const measureWords = parseMeasureWords(json('measure-words.json'));
+    const hsk = parseHskWords(json('hsk-words.json'));
+    if (!bank.ok || !measureWords.ok || !hsk.ok) {
+      throw new Error('Invalid data');
+    }
+    const resources = createRuleResources(measureWords.value, hsk.value);
+    const alarms = new Map<ErrorRule, number>();
+    let flagged = 0;
+    for (const { text } of bank.value.sentences) {
+      const found = findFrequentErrors(text, resources);
+      flagged += found.length > 0 ? 1 : 0;
+      for (const { rule } of found) {
+        alarms.set(rule, (alarms.get(rule) ?? 0) + 1);
+      }
+    }
+    const total = bank.value.sentences.length;
+    const rates = Object.fromEntries([...alarms].map(([rule, count]) => [rule, count / total]));
+
+    // Tatoeba sentences are checked by native speakers: any alarm on them is a false one.
+    expect(flagged / total).toBeLessThan(0.005);
+    expect(Object.values(rates).every((rate) => rate < 0.005)).toBe(true);
   });
 });

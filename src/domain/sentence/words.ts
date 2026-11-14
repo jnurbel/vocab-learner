@@ -45,6 +45,7 @@ const MAX_SEGMENTED_LENGTH = 200;
 const HAN = /\p{Script=Han}/u;
 const NUMBER = /^(?:[一二两三四五六七八九十百千万几]+|\d+)$/u;
 const NUMBER_PREFIX = /^([一二两三四五六七八九十百千万几]+|\d+)(.+)$/u;
+const NUMBER_SUFFIX = /(?<=\p{Script=Han})(?:[二两三四五六七八九十百千万几]+|\d+)$/u;
 
 /** A word is known if it is in HSK 1 to 3 or in the learner's list (any Chinese card). */
 export function createKnownWords(
@@ -116,18 +117,27 @@ export function segmentChinese(text: string): string[] {
 
 /**
  * Cuts a number glued to its measure word or to its noun (三本书 → 三 + 本 + 书, 三书 → 三 + 书),
- * as the segmenter often glues them: the frequent errors are looked for on these words.
+ * or to the word before it (有三 + 妹妹 → 有 + 三 + 妹妹), as the segmenter often glues them:
+ * the frequent errors are looked for on these words.
  */
 export function splitNumbers(
   words: readonly string[],
   classifiers: ReadonlySet<string>,
   nouns: ReadonlySet<string>,
 ): string[] {
-  return words.flatMap((word) => {
+  const countable = (word: string | undefined) =>
+    word !== undefined && (nouns.has(word) || classifiers.has(word.charAt(0)));
+  return words.flatMap((word, index) => {
+    if (NUMBER.test(word)) {
+      return [word];
+    }
     const parts = NUMBER_PREFIX.exec(word);
     const [number, rest] = [parts?.[1], parts?.[2]];
-    if (number === undefined || rest === undefined || NUMBER.test(word)) {
-      return [word];
+    if (number === undefined || rest === undefined) {
+      const end = NUMBER_SUFFIX.exec(word)?.[0];
+      return end !== undefined && countable(words[index + 1])
+        ? [word.slice(0, -end.length), end]
+        : [word];
     }
     const [first = '', ...others] = Array.from(rest);
     if (classifiers.has(first)) {

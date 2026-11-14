@@ -99,6 +99,19 @@ describe('a number glued to what follows it', () => {
     expect(splitNumbers(['三书'], classifiers, nouns)).toEqual(['三', '书']);
   });
 
+  it('is cut from the word before it when a noun or measure word follows', () => {
+    expect(splitNumbers(['他', '有三', '妹妹'], classifiers, new Set(['妹妹']))).toEqual([
+      '他',
+      '有',
+      '三',
+      '妹妹',
+    ]);
+    expect(splitNumbers(['有三', '个'], classifiers, nouns)).toEqual(['有', '三', '个']);
+    expect(splitNumbers(['统一', '思想'], classifiers, nouns)).toEqual(['统一', '思想']);
+    expect(splitNumbers(['我有三'], classifiers, nouns)).toEqual(['我有三']);
+    expect(splitNumbers(['三十', '个'], classifiers, nouns)).toEqual(['三十', '个']);
+  });
+
   it('stays whole when nothing known follows it', () => {
     expect(splitNumbers(['一般', '三十', '三个'], classifiers, nouns)).toEqual([
       '一般',
