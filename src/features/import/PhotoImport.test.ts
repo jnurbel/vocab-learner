@@ -326,6 +326,26 @@ describe('PhotoImport', () => {
     );
   });
 
+  it('cuts a list of Chinese words read on the photo two characters by two', async () => {
+    const { user, reader } = setup();
+    reader.analysis = {
+      size: { width: 1000, height: 300 },
+      blocks: [block(10, 10, '分量费力起风信封')],
+    };
+
+    await choosePhoto(user);
+    await user.click(screen.getByRole('radio', { name: fr.photoImport.modes.chinesePairs }));
+    await user.click(screen.getByRole('button', { name: fr.photoImport.read }));
+
+    const list = await screen.findByRole('region', { name: fr.photoImport.chinesePairsTitle });
+    expect(within(list).getByRole('checkbox', { name: fr.textImport.chinesePairs })).toBeChecked();
+    expect(
+      within(list)
+        .getAllByRole('rowheader')
+        .map((header) => header.querySelector('.term')?.textContent),
+    ).toEqual(['分量', '费力', '起风', '信封']);
+  });
+
   it('says honestly when nothing could be read', async () => {
     const { user, reader } = setup();
     reader.analysis = { size: { width: 10, height: 10 }, blocks: [] };
