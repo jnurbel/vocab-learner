@@ -252,6 +252,7 @@ function mergeProgress(
     ...optional('level', highest(local.level, incoming.level)),
     ...optional('bestStreak', highest(local.bestStreak, incoming.bestStreak)),
     ...optional('islandLevelSeen', highest(local.islandLevelSeen, incoming.islandLevelSeen)),
+    ...optional('sentenceBanners', highest(local.sentenceBanners, incoming.sentenceBanners)),
     ...optional('unlocks', unlocks),
   };
 }

@@ -178,6 +178,38 @@ describe('pathStatus', () => {
     expect(met(enough)).toBe(true);
   });
 
+  it('counts the words with a bank sentence too, and asks shuffles of the examples only', () => {
+    const cards = [card('x', { example: `例句 x` }), ...['y', 'z', 'w'].map((id) => card(id))];
+    const withBank = (one: Card) => one.id !== 'w';
+    const progress = path(
+      {},
+      {
+        stepAttempts: { sentences: { x: true, y: true, z: true } },
+        shuffledSentences: { x: true },
+      },
+    );
+
+    const sentences = statusOf(
+      pathStatus(input(progress, { cards, hasSentence: withBank }), PATH_CONFIG),
+      'sentences',
+    );
+
+    expect(sentences).toMatchObject({
+      status: 'locked',
+      done: 3,
+      required: 3,
+      total: 3,
+      met: true,
+    });
+  });
+
+  it('skips the sentences step when fewer than 3 words have a sentence of any kind', () => {
+    const cards = ['x', 'y'].map((id) => card(id));
+    const view = pathStatus(input(undefined, { cards, hasSentence: () => true }), PATH_CONFIG);
+
+    expect(statusOf(view, 'sentences')?.status).toBe('skipped');
+  });
+
   it('meets the recognize step on bridgeMatch alone when too few words suit toneEcho', () => {
     const progress = path({}, { stepAttempts: { recognize: allRight } });
 

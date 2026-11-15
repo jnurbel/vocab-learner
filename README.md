@@ -82,6 +82,8 @@ Code **source disponible** sous [PolyForm Noncommercial 1.0.0](LICENSE.md) :
 
 Les bibliothèques tierces gardent leur propre licence : pinyin-pro (MIT), zod (MIT), dexie (Apache-2.0) et Workbox (MIT, service worker). Textes complets dans [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
 
+Les données livrées dans `public/data/` ne sont pas sous PolyForm : phrases de [Tatoeba](https://tatoeba.org) (CC BY 2.0 FR, certaines CC0), classificateurs adaptés de [CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cc-cedict) (CC BY-SA 4.0), liste HSK de [complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary) (MIT). Détails dans [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+
 ## Contribuer
 
 Voir [CONTRIBUTING.md](CONTRIBUTING.md).

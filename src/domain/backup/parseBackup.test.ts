@@ -257,6 +257,17 @@ describe('parseBackup', () => {
       });
     });
 
+    it('keeps the sentences of the workshop: those of today and the banners', async () => {
+      const data = sampleData();
+      data.progress = { ...data.progress, dailyWorkshopSentences: 2, sentenceBanners: 5 };
+      const backup = await createBackup(data, metadata, sha256);
+
+      expect(await parseBackup(serializeBackup(backup), sha256)).toEqual({
+        ok: true,
+        value: backup,
+      });
+    });
+
     it('keeps the expert setting of the photo import', async () => {
       const data = sampleData();
       data.settings = { ...data.settings, photoZonesAlways: true };

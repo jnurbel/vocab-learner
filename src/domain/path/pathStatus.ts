@@ -15,6 +15,11 @@ export interface PathInput {
    * step. By default: the Chinese words with a pinyin, and no English word.
    */
   toneEchoEligible?: (card: Card) => boolean;
+  /**
+   * Words with a sentence to be asked in, for the sentences step: by default those with an
+   * example; with the sentence bank, those with a bank sentence too (GAME_DESIGN.md 5.1).
+   */
+  hasSentence?: (card: Card) => boolean;
 }
 
 /** One step of the path, as the path screen shows it (GAME_DESIGN.md 8.4). */
@@ -79,14 +84,17 @@ export function pathStatus(input: PathInput, config: PathConfigUsed): PathView {
 function statusOf(
   step: PathStep,
   { met }: Count,
-  { cards, progress }: PathInput,
+  { cards, progress, hasSentence = hasExample }: PathInput,
   config: PathConfigUsed,
   firstOpen: boolean,
 ): PathStepStatus {
   if (progress?.steps?.[step] === 'validated' || (step === 'finalChallenge' && met)) {
     return 'validated';
   }
-  if (step === 'sentences' && cards.filter(hasExample).length < config.minExamplesForSentenceStep) {
+  if (
+    step === 'sentences' &&
+    cards.filter(hasSentence).length < config.minExamplesForSentenceStep
+  ) {
     return 'skipped';
   }
   return firstOpen ? 'current' : 'locked';
@@ -103,7 +111,7 @@ export interface StepWords {
 /** Undefined for the final challenge, which is judged on its score, not word by word. */
 export function stepWords(
   step: PathStep,
-  { cards, states, progress }: PathInput,
+  { cards, states, progress, hasSentence = hasExample }: PathInput,
 ): StepWords | undefined {
   switch (step) {
     case 'finalChallenge':
@@ -113,7 +121,7 @@ export function stepWords(
       return { words: [...cards], meets: ({ id }) => introduced.has(id) };
     }
     case 'sentences':
-      return { words: cards.filter(hasExample), meets: rightIn(progress, step) };
+      return { words: cards.filter(hasSentence), meets: rightIn(progress, step) };
     default:
       return { words: [...cards], meets: rightIn(progress, step) };
   }
@@ -132,8 +140,10 @@ function countStep(step: PathStep, input: PathInput, config: PathConfigUsed): Co
     return { ...words, met: words.met && toneEchoMet(input, config) };
   }
   if (step === 'sentences') {
-    const shuffled = counted.words.filter(({ id }) => progress?.shuffledSentences?.[id] === true);
-    const enoughShuffled = shuffled.length >= Math.min(3, counted.words.length);
+    // Only an example can be put back in order: a bank sentence is not the learner's own.
+    const examples = counted.words.filter(hasExample);
+    const shuffled = examples.filter(({ id }) => progress?.shuffledSentences?.[id] === true);
+    const enoughShuffled = shuffled.length >= Math.min(3, examples.length);
     return { ...words, met: words.met && enoughShuffled };
   }
   return words;

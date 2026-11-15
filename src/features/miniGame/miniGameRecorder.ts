@@ -6,6 +6,7 @@ import {
   recordGameAnswer,
 } from '../../domain/game/adaptiveDifficulty';
 import { answerEvents } from '../../domain/game/answerEvents';
+import type { GameEvent } from '../../domain/game/applyEvent';
 import { MINI_GAME_CONFIG, type Difficulty } from '../../domain/game/miniGameConfig';
 import type { ExerciseType, GameLevel, SessionResultRecord } from '../../domain/progressRecords';
 import { applyAnswer } from '../../domain/srs/applyAnswer';
@@ -200,6 +201,12 @@ export class MiniGameRecorder {
     this.answered += 1;
     this.correct += outcome === 'correct' ? 1 : 0;
     return { rated: applied?.rated ?? false };
+  }
+
+  /** Points that come with no answer of a word, such as a sentence of the workshop. */
+  async recordEvents(events: readonly GameEvent[]): Promise<void> {
+    await this.deps.store.recordProgress(this.gameRewards.update(events, this.today));
+    this.gameRewards.confirm();
   }
 
   /** The round is over: its points, then the end of the session. */
