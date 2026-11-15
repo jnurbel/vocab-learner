@@ -1,0 +1,83 @@
+/** A plain release version, MAJOR.MINOR.PATCH. */
+const RELEASE_VERSION = /^(\d+)\.(\d+)\.(\d+)$/;
+const TYPE = /^\w+$/;
+const BREAKING_FOOTER = /^BREAKING[ -]CHANGE:/m;
+/** The types that make release-please publish a release (see release-please-config.json). */
+const MINOR_TYPES = new Set(['feat']);
+const PATCH_TYPES = new Set(['fix', 'perf', 'revert', 'deps']);
+
+type Bump = 'none' | 'patch' | 'minor' | 'major';
+const BUMP_ORDER: readonly Bump[] = ['none', 'patch', 'minor', 'major'];
+
+/**
+ * The type of a Conventional Commit header ("type(scope)!: subject"), and whether it is marked
+ * as breaking; undefined for another message (a merge commit).
+ */
+function headerOf(message: string): { type: string; breaking: boolean } | undefined {
+  const newline = message.indexOf('\n');
+  const firstLine = newline === -1 ? message : message.slice(0, newline);
+  const colon = firstLine.indexOf(':');
+  if (colon === -1) {
+    return undefined;
+  }
+  let prefix = firstLine.slice(0, colon);
+  const breaking = prefix.endsWith('!');
+  if (breaking) {
+    prefix = prefix.slice(0, -1);
+  }
+  const scope = prefix.indexOf('(');
+  if (scope !== -1) {
+    if (!prefix.endsWith(')')) {
+      return undefined;
+    }
+    prefix = prefix.slice(0, scope);
+  }
+  return TYPE.test(prefix) ? { type: prefix, breaking } : undefined;
+}
+
+function bumpOf(message: string): Bump {
+  const header = headerOf(message);
+  if (header === undefined) {
+    return 'none';
+  }
+  const { type, breaking } = header;
+  if (breaking || BREAKING_FOOTER.test(message)) {
+    return 'major';
+  }
+  if (MINOR_TYPES.has(type)) {
+    return 'minor';
+  }
+  return PATCH_TYPES.has(type) ? 'patch' : 'none';
+}
+
+/**
+ * The version the app shows. A release (its commit, or a build of its tag) shows its own version.
+ * A build of commits made since the last release shows the next version as a beta, computed as
+ * release-please will (bump-minor-pre-major: before 1.0, a breaking change bumps the minor version).
+ */
+export function betaVersion(
+  packageVersion: string,
+  latestTag: string | undefined,
+  commitsSinceTag: readonly string[],
+): string {
+  const parts = RELEASE_VERSION.exec(packageVersion);
+  // Without the tag of this version, it is being released (or there is no history to read).
+  if (parts === null || latestTag !== `v${packageVersion}`) {
+    return packageVersion;
+  }
+  const bump = commitsSinceTag
+    .map(bumpOf)
+    .reduce((a, b) => (BUMP_ORDER.indexOf(b) > BUMP_ORDER.indexOf(a) ? b : a), 'none');
+  const [major, minor, patch] = parts.slice(1).map(Number) as [number, number, number];
+  const effective = bump === 'major' && major === 0 ? 'minor' : bump;
+  switch (effective) {
+    case 'none':
+      return packageVersion;
+    case 'patch':
+      return `${String(major)}.${String(minor)}.${String(patch + 1)}-beta`;
+    case 'minor':
+      return `${String(major)}.${String(minor + 1)}.0-beta`;
+    case 'major':
+      return `${String(major + 1)}.0.0-beta`;
+  }
+}
