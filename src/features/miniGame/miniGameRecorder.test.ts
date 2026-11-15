@@ -119,4 +119,17 @@ describe('a mini-game recorder', () => {
 
     expect(store.sessions).toEqual([]);
   });
+
+  it('stores the points of a sentence of the workshop without any answer of a word', async () => {
+    const store = new FakeStore();
+    const recorder = await open(store);
+
+    await recorder.recordEvents([
+      { type: 'SentenceWritten', language: 'zh', clean: true, judgedRight: true },
+    ]);
+
+    expect(store.progress).toMatchObject({ xp: 15, sentenceBanners: 1 });
+    expect(store.answers).toEqual([]);
+    expect(recorder.rewards()?.xpGained).toBe(15);
+  });
 });

@@ -5,6 +5,8 @@ import type { Card } from '../../domain/card';
 import { card } from '../flashcards/flashcards.fixtures';
 import { fakeSpeaker } from './miniGame.fixtures';
 import MiniGameMenu from './MiniGameMenu.svelte';
+import { bankSentence, sentenceResources } from './sentence.fixtures';
+import type { SentenceResources } from '../../services/sentence/sentenceLoader';
 
 const words: Card[] = [
   card('time', undefined, { term: '时间', pinyin: 'shíjiān', example: '我没有时间吃饭。' }),
@@ -25,12 +27,70 @@ const item = (name: string) =>
     .getAllByRole('listitem')
     .find((each) => within(each).queryByRole('heading', { name }) !== null);
 
+describe('MiniGameMenu with the sentence data', () => {
+  it('loads the sentence data for Chinese, then counts the nouns of the measure words', async () => {
+    let resolve: (resources: SentenceResources) => void = () => undefined;
+    const loadSentences = vi.fn(
+      () =>
+        new Promise<SentenceResources>((done) => {
+          resolve = done;
+        }),
+    );
+    const nouns = ['书', '猫', '狗', '朋友'].map((term) => card(term, undefined, { term }));
+    render(MiniGameMenu, {
+      cards: nouns,
+      speaker: fakeSpeaker(true),
+      onOpen: vi.fn(),
+      loadSentences,
+    });
+
+    expect(await screen.findByText('Chargement des phrases…')).toBeVisible();
+    resolve(sentenceResources([bankSentence(1, '我 的 朋友 来 了 。')]));
+
+    await vi.waitFor(() => {
+      expect(item('Le bon classificateur')).toHaveTextContent('4 mots éligibles');
+    });
+    expect(item('La phrase à trous')).toHaveTextContent('1 mot éligible');
+    expect(loadSentences).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells that the sentence data could not be loaded', async () => {
+    render(MiniGameMenu, {
+      cards: words,
+      speaker: fakeSpeaker(true),
+      onOpen: vi.fn(),
+      loadSentences: () => Promise.reject(new Error('offline')),
+    });
+
+    await vi.waitFor(() => {
+      expect(item('Le bon classificateur')).toHaveTextContent(/connecte-toi une fois/);
+    });
+  });
+
+  it('never loads the sentence data for English', async () => {
+    const loadSentences = vi.fn(() => Promise.resolve(sentenceResources()));
+    render(MiniGameMenu, {
+      cards: words,
+      speaker: fakeSpeaker(true),
+      onOpen: vi.fn(),
+      loadSentences,
+      language: 'en',
+    });
+
+    await vi.waitFor(() => {
+      expect(item('La phrase à trous')).toBeDefined();
+    });
+    expect(item('Le bon classificateur')).toBeUndefined();
+    expect(loadSentences).not.toHaveBeenCalled();
+  });
+});
+
 describe('MiniGameMenu', () => {
-  it('lists the five games with their eligible words, and opens one in the chosen language', async () => {
+  it('lists the eight games with their eligible words, and opens one in the chosen language', async () => {
     const { user, onOpen } = setup();
 
     await vi.waitFor(() => {
-      expect(within(list()).getAllByRole('listitem')).toHaveLength(5);
+      expect(within(list()).getAllByRole('listitem')).toHaveLength(8);
     });
     expect(item('Le mot dans la phrase')).toHaveTextContent('1 mot éligible');
     expect(item('Relier les deux rives')).toHaveTextContent('3 mots éligibles');
@@ -65,7 +125,7 @@ describe('MiniGameMenu', () => {
     setup(fakeSpeaker(false));
 
     await vi.waitFor(() => {
-      expect(within(list()).getAllByRole('listitem')).toHaveLength(4);
+      expect(within(list()).getAllByRole('listitem')).toHaveLength(7);
     });
     expect(item('Échos des tons')).toBeUndefined();
   });

@@ -17,7 +17,13 @@ describe('stepOfExercise', () => {
     expect(stepOfExercise(exercise)).toBe(step);
   });
 
-  it.each(['audioFlashcard', 'typeMeaning', 'seasonRush', 'measureWord'] as const)(
+  it.each([
+    'audioFlashcard',
+    'typeMeaning',
+    'seasonRush',
+    'measureWord',
+    'sentenceWorkshop',
+  ] as const)(
     'leaves %s out of every step, as it belongs to none',
     (exercise) => {
       expect(stepOfExercise(exercise)).toBeUndefined();

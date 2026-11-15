@@ -1,10 +1,12 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { VitePWA } from 'vite-plugin-pwa';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { paddleAssets } from './config/paddleAssets.ts';
+import { sentenceDataCacheName } from './config/sentenceData.ts';
 import packageJson from './package.json' with { type: 'json' };
 import { manifestColors, webManifest } from './src/app/webManifest.ts';
 import { themeTokens } from './src/ui/contrast.ts';
@@ -48,7 +50,8 @@ function progressiveWebApp() {
       // The on-device photo reader (PaddleOCR models, runtime, worker and dictionary, ~48 MB) is
       // not precached: most learners never open it. Its files are kept on first use instead, so
       // that a photo read once online can be read again offline.
-      globIgnores: ['paddle/**'],
+      // The sentence data (~1.6 MB, public/data/) is loaded on the first sentence game only.
+      globIgnores: ['paddle/**', 'data/**'],
       runtimeCaching: [
         {
           urlPattern: /\/vocab-learner\/paddle\//,
@@ -57,6 +60,14 @@ function progressiveWebApp() {
             // Unhashed model names: a new reader version gets a cache of its own.
             cacheName: `paddle-ocr-${packageJson.dependencies['ppu-paddle-ocr']}-${packageJson.dependencies['onnxruntime-web']}`,
             expiration: { maxEntries: 20 },
+          },
+        },
+        {
+          urlPattern: /\/vocab-learner\/data\/[a-z-]+\.json$/,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: sentenceDataCacheName(fileURLToPath(new URL('.', import.meta.url))),
+            expiration: { maxEntries: 5 },
           },
         },
       ],
@@ -127,6 +138,11 @@ export default defineConfig(({ mode }) => ({
         },
         // Backups are the way back after a lost database: fully covered too.
         'src/services/backup/**': {
+          100: true,
+          perFile: true,
+        },
+        // The sentence data is untrusted input fetched at run time: fully covered as well.
+        'src/services/sentence/**': {
           100: true,
           perFile: true,
         },

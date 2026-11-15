@@ -1,4 +1,6 @@
 import type { Card, Language } from '../card';
+import { isGapFillEligible, type BankLookup } from './gapFill';
+import { isMeasureWordEligible, type MeasureWordTable } from './measureWord';
 import type { MiniGameConfig } from './miniGameConfig';
 import { isSentenceListenEligible } from './sentenceListen';
 import { shuffleSentenceOf } from './sentenceShuffle';
@@ -11,12 +13,30 @@ export const MINI_GAMES = [
   'toneEcho',
   'sentenceListen',
   'sentenceShuffle',
+  'gapFill',
+  'measureWord',
+  'sentenceWorkshop',
 ] as const;
+
+/** Games of Chinese only (GAME_DESIGN.md 6.11, 6.12): not offered in English. */
+const CHINESE_ONLY: ReadonlySet<MiniGame> = new Set(['measureWord', 'sentenceWorkshop']);
 
 export type MiniGame = (typeof MINI_GAMES)[number];
 
 /** Why a game cannot be played yet: the words lack what it needs. */
-export type ClosedReason = 'fewWords' | 'noPinyin' | 'noExamples';
+export type ClosedReason =
+  | 'fewWords'
+  | 'noPinyin'
+  | 'noExamples'
+  | 'fewNouns'
+  /** The sentence data could not be loaded (yet): offline before its first use. */
+  | 'noSentenceData';
+
+/** The sentence data of public/data/, once loaded. */
+export interface CatalogSentences {
+  bank: BankLookup;
+  measureWords: MeasureWordTable;
+}
 
 export type MiniGameEntry =
   | { game: MiniGame; eligibleWords: number; open: true }
@@ -24,7 +44,7 @@ export type MiniGameEntry =
 
 type CatalogConfig = Pick<
   MiniGameConfig,
-  'minOptions' | 'bridgeMinPairs' | 'shuffleMinChunks' | 'shuffleMaxChunks'
+  'minOptions' | 'bridgeMinPairs' | 'shuffleMinChunks' | 'shuffleMaxChunks' | 'measureWordMinNouns'
 >;
 
 /**
@@ -35,6 +55,7 @@ export function miniGameCatalog(
   cards: readonly Card[],
   language: Language,
   config: CatalogConfig,
+  data?: CatalogSentences,
 ): MiniGameEntry[] {
   const words = cards.filter((card) => card.language === language);
   const enough = words.length >= config.minOptions;
@@ -50,7 +71,12 @@ export function miniGameCatalog(
   const tones = toneEchoEligibleCount(words, language);
   const sentences = words.filter(isSentenceListenEligible).length;
   const shuffles = words.filter((card) => shuffleSentenceOf(card, config) !== undefined).length;
-  return [
+  const gaps = words.filter((card) => isGapFillEligible(card, data?.bank)).length;
+  const nouns =
+    data === undefined
+      ? 0
+      : words.filter((card) => isMeasureWordEligible(card, data.measureWords)).length;
+  const all: MiniGameEntry[] = [
     entry('listenMeaning', words.length, enough ? undefined : 'fewWords'),
     entry(
       'bridgeMatch',
@@ -65,5 +91,17 @@ export function miniGameCatalog(
       sentences === 0 ? 'noExamples' : enough ? undefined : 'fewWords',
     ),
     entry('sentenceShuffle', shuffles, shuffles === 0 ? 'noExamples' : undefined),
+    entry('gapFill', gaps, gaps === 0 ? 'noExamples' : undefined),
+    entry(
+      'measureWord',
+      nouns,
+      data === undefined
+        ? 'noSentenceData'
+        : nouns < config.measureWordMinNouns
+          ? 'fewNouns'
+          : undefined,
+    ),
+    entry('sentenceWorkshop', words.length, words.length === 0 ? 'fewWords' : undefined),
   ];
+  return language === 'zh' ? all : all.filter(({ game }) => !CHINESE_ONLY.has(game));
 }
