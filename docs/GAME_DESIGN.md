@@ -799,6 +799,17 @@ Dans `listenMeaning`, les options affichées sont des **sens**, mais la proximit
 
 ---
 
+### 6.13 Mise en œuvre des jeux de phrases (0.11.0, 2026-11-15)
+
+Écarts et précisions par rapport aux fiches 6.10 à 6.12 et aux §1.3, §4.5 et §5.1 :
+
+- **§1.3, rotation** : le code n'a pas encore de composition automatique de la séance (`exerciseFor`) ; la séance du jour reste celle des flashcards. `gapFill` est donc proposé depuis le jardin, le parcours (étape 6) et les séances d'étape, pas encore par la rotation.
+- **§5.1, étape 6** : un mot compte s'il a un exemple **ou** une phrase de la banque (une fois les données chargées ; hors ligne avant le premier usage, les exemples seuls). L'étape est sautée s'il y a moins de 3 mots **avec une phrase** ; le nombre de phrases à remettre en ordre est `min(3, nombre d'exemples)`, car seule une phrase de l'élève se remet en ordre.
+- **`GapFill`** : sans autre mot à proposer, l'élève tape le mot (au lieu de rendre le mot inéligible). Le trou est la première occurrence du mot. Pas de banque pour l'anglais.
+- **`MeasureWord`** : la phrase entendue est « déterminant + classificateur + nom » ; son pinyin complet n'est pas affiché (seul celui du nom), pour ne pas charger pinyin-pro. Une séance d'étape impose ses noms, même moins de 4.
+- **`SentenceWorkshop`** : les chiffres sont acceptés avec les hanzi et la ponctuation. Sans mot au stade `stem`, n'importe quel mot chinois est proposé. L'atelier a besoin des données de phrases (règles, mots connus) : hors ligne avant le premier usage, il n'est pas proposé. Les XP sont donnés quand l'élève juge sa phrase (une fois par mot), pas à chaque vérification ; la manche ne donne pas l'XP de fin de séance. Les phrases ne sont jamais enregistrées dans l'historique ; seule « Garder comme exemple du mot » les écrit, dans la carte.
+- **§4.5, banderole-phrase** : chaque phrase jugée juste sans erreur détectée est comptée (`sentenceBanners`, gardé dans les sauvegardes, fusionné au plus grand) et annoncée en fin de manche ; elle n'est pas encore dessinée sur l'île.
+
 ## 7. Retours et « juice »
 
 Objectif : des retours **nets et rapides**, qui font plaisir sans créer de dépendance. Une seule « grosse » célébration par écran, toujours passable (`Entrée`, clic, `Échap`).
