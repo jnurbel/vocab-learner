@@ -24,7 +24,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The tags and the history tell a release from the commits made since the last one.
+          fetch-depth: 0
       - uses: ./.github/actions/setup
+      - name: Choose the version shown (the next one as a beta before its release)
+        run: echo "APP_VERSION=$(node scripts/version/printAppVersion.ts)" >> "$GITHUB_ENV"
       - run: npm run build
       - name: Check that the build ships the service worker and the web manifest
         run: bash .github/scripts/check-pwa-build.sh dist

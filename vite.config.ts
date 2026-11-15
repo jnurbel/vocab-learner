@@ -9,6 +9,24 @@ import packageJson from './package.json' with { type: 'json' };
 import { manifestColors, webManifest } from './src/app/webManifest.ts';
 import { themeTokens } from './src/ui/contrast.ts';
 
+/** The same bound as the version read back from a backup (src/domain/backup/backupSchema.ts). */
+const APP_VERSION_FORMAT = /^\d[0-9A-Za-z.-]{0,39}$/;
+
+/**
+ * The version of package.json, or the one given by the deployment in APP_VERSION: a beta of the
+ * next release for the commits made since the last one (scripts/version/printAppVersion.ts).
+ */
+function appVersion(): string {
+  const given = process.env.APP_VERSION?.trim();
+  if (given === undefined || given === '') {
+    return packageJson.version;
+  }
+  if (!APP_VERSION_FORMAT.test(given)) {
+    throw new Error(`APP_VERSION is not a version: ${given}`);
+  }
+  return given;
+}
+
 /**
  * The CSP in index.html is the production policy. The dev server injects styles
  * inline and uses a WebSocket for HMR, so relax the policy for `vite serve` only.
@@ -90,7 +108,7 @@ export default defineConfig(({ mode }) => ({
   },
   // Written into backups, so that a later app knows which version produced a file.
   define: {
-    __APP_VERSION__: JSON.stringify(packageJson.version),
+    __APP_VERSION__: JSON.stringify(appVersion()),
   },
   build: {
     sourcemap: false,
