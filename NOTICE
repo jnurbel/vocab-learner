@@ -3,3 +3,5 @@ Required Notice: Copyright (c) 2026 jnurbel (https://github.com/jnurbel/vocab-le
 This software is licensed under the PolyForm Noncommercial License 1.0.0 (see LICENSE.md).
 Commercial licenses are available from the author on request: open an issue on
 https://github.com/jnurbel/vocab-learner to get in touch.
+
+The data files in public/data/ are not covered by the PolyForm Noncommercial License. They keep their own licenses: Tatoeba sentences (CC BY 2.0 FR, some CC0 1.0), measure words adapted from CC-CEDICT (CC BY-SA 4.0), HSK word list from complete-hsk-vocabulary (MIT). See THIRD_PARTY_LICENSES.
