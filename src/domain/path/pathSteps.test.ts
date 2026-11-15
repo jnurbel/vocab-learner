@@ -17,12 +17,15 @@ describe('stepOfExercise', () => {
     expect(stepOfExercise(exercise)).toBe(step);
   });
 
-  it.each(['audioFlashcard', 'typeMeaning', 'seasonRush', 'measureWord'] as const)(
-    'leaves %s out of every step, as it belongs to none',
-    (exercise) => {
-      expect(stepOfExercise(exercise)).toBeUndefined();
-    },
-  );
+  it.each([
+    'audioFlashcard',
+    'typeMeaning',
+    'seasonRush',
+    'measureWord',
+    'sentenceWorkshop',
+  ] as const)('leaves %s out of every step, as it belongs to none', (exercise) => {
+    expect(stepOfExercise(exercise)).toBeUndefined();
+  });
 
   it('knows every exercise type', () => {
     for (const exercise of EXERCISE_TYPES) {

@@ -24,6 +24,8 @@ export const EXERCISE_TYPES = [
   'gapFill',
   /** The measure word of a noun: never rated, the word itself is not tested (6.11). */
   'measureWord',
+  /** A sentence of the workshop: the round is a session, its sentences are never stored. */
+  'sentenceWorkshop',
   'typeEcho',
   /** The flashcard shows the word, the learner types its French meaning. */
   'typeMeaning',
