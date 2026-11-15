@@ -53,4 +53,20 @@ if grep -q 'url:"paddle/' "${dist}/sw.js"; then
   missing=1
 fi
 
+# The sentence data (DESIGN.md 5 ter): served by the app, kept on first use, never precached.
+for file in data/sentences-zh.json data/measure-words.json data/hsk-words.json; do
+  if [[ ! -s "${dist}/${file}" ]]; then
+    echo "::error::${dist}/${file} (sentence data) is missing from the build"
+    missing=1
+  fi
+done
+if ! grep -q 'sentence-data-' "${dist}/sw.js"; then
+  echo "::error::${dist}/sw.js does not cache the sentence data on first use"
+  missing=1
+fi
+if grep -q 'url:"data/' "${dist}/sw.js"; then
+  echo "::error::${dist}/sw.js precaches the sentence data"
+  missing=1
+fi
+
 exit "${missing}"
