@@ -132,6 +132,8 @@ const progressSchema = z.strictObject({
   dailyAnswers: count.optional(),
   lastStreakDay: day.optional(),
   islandLevelSeen: count.optional(),
+  dailyWorkshopSentences: count.optional(),
+  sentenceBanners: count.optional(),
 });
 
 const settingsSchema = z.strictObject({

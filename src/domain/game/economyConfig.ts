@@ -12,6 +12,10 @@ export interface XpTable {
   readonly stageReached: number;
   readonly pathStepValidated: number;
   readonly finalChallengePassed: number;
+  /** A sentence written and checked in the workshop (GAME_DESIGN.md 6.12). */
+  readonly sentenceChecked: number;
+  /** More for a sentence of the workshop where no frequent error was found. */
+  readonly sentenceWithoutError: number;
 }
 
 /** From this many times the daily goal on, the gains are multiplied by `factor`. */
@@ -56,6 +60,8 @@ export interface EconomyConfig {
   readonly firefliesVisualCap: number;
   readonly floatingLanternPerLanterns: number;
   readonly streakUnlockMilestones: readonly number[];
+  /** Sentences of the workshop rewarded a day; the next ones earn nothing. */
+  readonly workshopRewardedPerDay: number;
 }
 
 function unlock(level: number, ...ids: string[]): LevelUnlock {
@@ -74,6 +80,8 @@ export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
     stageReached: 15,
     pathStepValidated: 50,
     finalChallengePassed: 100,
+    sentenceChecked: 10,
+    sentenceWithoutError: 5,
   }),
   maxRewardedAnswersPerCardPerDay: 3,
   repeatedAnswerXp: 1,
@@ -113,4 +121,5 @@ export const ECONOMY_CONFIG: EconomyConfig = Object.freeze({
   firefliesVisualCap: 50,
   floatingLanternPerLanterns: 5,
   streakUnlockMilestones: Object.freeze([7, 30]),
+  workshopRewardedPerDay: 3,
 });

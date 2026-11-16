@@ -5,6 +5,7 @@ import type { PathProgressRecord, SessionResultRecord } from '../../domain/progr
 import { GAME_CONFIG } from '../../domain/srs/config';
 import type { SrsDependencies } from '../../domain/srs/dependencies';
 import { createInitialReviewState } from '../../domain/srs/reviewState';
+import { bankSentence, sentenceResources } from '../miniGame/sentence.fixtures';
 import { beginPlacement, finishPlacement, loadPath, type PathStore } from './pathSession';
 
 function card(id: string, language: Card['language'] = 'zh', labelIds = ['lesson']): Card {
@@ -81,6 +82,34 @@ describe('loadPath', () => {
     const loaded = await loadPath({ cards, label, language: 'zh' }, deps(store(path)));
 
     expect(loaded.stepWords('listen')).toEqual(['b', 'a']);
+  });
+});
+
+describe('the sentences step of a Chinese path', () => {
+  const bankFor = (terms: readonly string[]) =>
+    sentenceResources(
+      terms.map((term, index) => bankSentence(index + 1, `我 的 ${term} 来 了 。`)),
+    );
+
+  it('counts the words with a bank sentence, as the sentence data allows', async () => {
+    const loaded = await loadPath(
+      { cards, label, language: 'zh' },
+      { ...deps(store()), loadSentences: () => Promise.resolve(bankFor(['zh-a', 'zh-b', 'zh-c'])) },
+    );
+
+    expect(loaded.view.steps.find(({ step }) => step === 'sentences')).toMatchObject({
+      status: 'locked',
+      total: 3,
+    });
+  });
+
+  it('counts the examples only when the sentence data cannot be loaded', async () => {
+    const loaded = await loadPath(
+      { cards, label, language: 'zh' },
+      { ...deps(store()), loadSentences: () => Promise.reject(new Error('offline')) },
+    );
+
+    expect(loaded.view.steps.find(({ step }) => step === 'sentences')?.status).toBe('skipped');
   });
 });
 

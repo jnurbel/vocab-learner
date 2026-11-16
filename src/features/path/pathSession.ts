@@ -2,7 +2,13 @@ import type { Card, Language } from '../../domain/card';
 import { selectCards } from '../../domain/cardSelection';
 import type { Label } from '../../domain/label';
 import { PATH_CONFIG, type PathConfig } from '../../domain/path/pathConfig';
-import { pathStatus, type PathInput, type PathView } from '../../domain/path/pathStatus';
+import {
+  hasExample,
+  pathStatus,
+  type PathInput,
+  type PathView,
+} from '../../domain/path/pathStatus';
+import { bankLookupFor, type SentenceResources } from '../../services/sentence/sentenceLoader';
 import {
   drawPlacementTest,
   scorePlacementTest,
@@ -27,6 +33,11 @@ export interface PathDependencies {
   clock: () => Date;
   newId: () => string;
   config?: PathConfig;
+  /**
+   * The sentence data: a Chinese word with a bank sentence counts in the sentences step
+   * (GAME_DESIGN.md 5.1). Without it, or offline before its first use, the examples only.
+   */
+  loadSentences?: () => Promise<SentenceResources>;
 }
 
 /** A pinned label's path in one language (GAME_DESIGN.md 5.1). */
@@ -65,9 +76,11 @@ export interface PlacementOutcome extends PlacementScore {
 /** Reads the stored progress now and computes the path of the label in the language. */
 export async function loadPath(
   { cards, label, language }: PathSelection,
-  { store, srs, clock, newId, config = PATH_CONFIG }: PathDependencies,
+  { store, srs, clock, newId, config = PATH_CONFIG, loadSentences }: PathDependencies,
 ): Promise<LoadedPath> {
   const now = clock();
+  const resources = language === 'zh' ? await loadSentences?.().catch(() => undefined) : undefined;
+  const bank = resources === undefined ? undefined : bankLookupFor(resources, cards);
   const [data, progress] = await Promise.all([
     store.load(new Date(now.getTime() - RECENT_SESSIONS_MS).toISOString()),
     store.pathProgress(label.id, language),
@@ -77,6 +90,9 @@ export async function loadPath(
     cards: words,
     states: data.reviewStates,
     ...(progress === undefined ? {} : { progress }),
+    ...(bank === undefined
+      ? {}
+      : { hasSentence: (card: Card) => hasExample(card) || bank(card).length > 0 }),
   };
   const stateOf = new Map(data.reviewStates.map((state) => [state.cardId, state]));
   const retrievability = (cardId: string) => {

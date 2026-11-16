@@ -1,6 +1,9 @@
 import type { Page } from '@playwright/test';
 
-/** Validates the first five steps in the stored path, to reach the final challenge at once. */
+/**
+ * Validates the first six steps in the stored path, to reach the final challenge at once. The
+ * sentences step counts the bank sentences since 0.11.0: common words no longer skip it.
+ */
 export async function reachFinalChallenge(page: Page, labelName = 'Leçon 7') {
   await page.evaluate(
     (wanted) =>
@@ -25,6 +28,7 @@ export async function reachFinalChallenge(page: Page, labelName = 'Leçon 7') {
                 recognize: 'validated',
                 type: 'validated',
                 dictation: 'validated',
+                sentences: 'validated',
               },
             });
           };

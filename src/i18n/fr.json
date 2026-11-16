@@ -479,7 +479,9 @@
       "messengerCompleted": "Dictée du Messager",
       "stageReached": "Plantes qui ont grandi",
       "pathStepValidated": "Étapes de parcours",
-      "finalChallengePassed": "Défi final"
+      "finalChallengePassed": "Défi final",
+      "sentenceChecked": "Phrases de l’atelier",
+      "sentenceWithoutError": "Phrases sans erreur fréquente trouvée"
     },
     "dailyGoal": "Objectif du jour",
     "dailyGoalProgress": "Objectif du jour : {xp} / {goal} XP",
@@ -832,6 +834,18 @@
       "sentenceShuffle": {
         "name": "Remettre la phrase dans l'ordre",
         "description": "Replace les morceaux d'une phrase d'exemple."
+      },
+      "gapFill": {
+        "name": "La phrase à trous",
+        "description": "Retrouve le mot de ta liste qui manque dans une vraie phrase."
+      },
+      "measureWord": {
+        "name": "Le bon classificateur",
+        "description": "Choisis le classificateur (量词) qui va avec un nom de ta liste : 一 __ 信封."
+      },
+      "sentenceWorkshop": {
+        "name": "Atelier de phrases",
+        "description": "Écris ta propre phrase avec un mot de ta liste : l’appli cherche les erreurs fréquentes."
       }
     },
     "eligible": {
@@ -841,10 +855,13 @@
     "reasons": {
       "fewWords": "Ajoute d'autres mots dans cette langue.",
       "noPinyin": "Ajoute le pinyin de tes mots.",
-      "noExamples": "Ajoute des phrases d'exemple."
+      "noExamples": "Ajoute des phrases d'exemple.",
+      "fewNouns": "Il faut au moins 4 noms de ta liste dont on connaît le classificateur.",
+      "noSentenceData": "Les phrases se téléchargent au premier usage : connecte-toi une fois à Internet."
     },
     "play": "Jouer",
-    "back": "Retour aux mini-jeux"
+    "back": "Retour aux mini-jeux",
+    "loadingSentences": "Chargement des phrases…"
   },
   "home": {
     "title": "Aujourd’hui",
@@ -1158,6 +1175,14 @@
           "Avant 15 ans, elle demandera l’accord d’un parent. La photo ne sera pas conservée. Cette page dira alors précisément ce qui est envoyé, et à qui."
         ]
       },
+      "sentences": {
+        "title": "Les phrases",
+        "paragraphs": [
+          "Les jeux de phrases utilisent des phrases d’exemple, des classificateurs et une liste de mots HSK. Au premier jeu de phrases, l’appli les télécharge depuis son propre site (environ 1,6 Mo) et les garde dans le navigateur, pour jouer ensuite sans réseau.",
+          "Les phrases que tu écris dans l’atelier restent sur cet appareil : elles ne sont envoyées nulle part. Une phrase n’est enregistrée que si tu choisis « Garder comme exemple du mot ».",
+          "Les liens « Tatoeba n° … » sous une phrase ouvrent sa page sur tatoeba.org, seulement si tu cliques dessus."
+        ]
+      },
       "erase": {
         "title": "Comment tout effacer",
         "paragraphs": [
@@ -1173,7 +1198,8 @@
         "title": "Licence et contact",
         "paragraphs": [
           "vocab-learner est gratuit pour tout usage non commercial (élèves, familles, professeurs, établissements, associations), sous licence PolyForm Noncommercial 1.0.0. La revente ou un usage commercial demande l’accord de l’autrice.",
-          "Les bibliothèques utilisées gardent leur propre licence (fichier THIRD_PARTY_LICENSES du projet)."
+          "Les bibliothèques utilisées gardent leur propre licence (fichier THIRD_PARTY_LICENSES du projet).",
+          "Les phrases d’exemple viennent de Tatoeba (tatoeba.org) : chaque phrase appartient à la personne qui l’a écrite, citée avec la phrase, et est sous licence CC BY 2.0 FR (certaines en CC0). Nous les avons sélectionnées et parfois converties en caractères simplifiés. Les classificateurs sont adaptés du dictionnaire CC-CEDICT (MDBG), sous licence CC BY-SA 4.0. La liste de mots HSK et les catégories grammaticales viennent du projet complete-hsk-vocabulary (Dr.Kameleon), sous licence MIT. Ces données ne sont pas sous la licence PolyForm de l’appli."
         ]
       }
     },
@@ -1441,5 +1467,144 @@
     "reread": "Relire avec ces zones",
     "confirm": "Les zones sont bonnes",
     "back": "Revenir aux mots sans changer les zones"
+  },
+  "gapFill": {
+    "title": "Mini-jeu : la phrase à trous",
+    "intro": "Une vraie phrase avec un trou : retrouve le mot de ta liste qui manque.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "unknown": "Je ne sais pas",
+    "right": "Juste.",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "score": "{correct} / {total} justes",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "startFailed": "Le mini-jeu n’a pas pu démarrer.",
+    "saveFailed": "La réponse n’a pas pu être enregistrée. Réessaie.",
+    "progress": "Phrases · {position} / {total}",
+    "gap": "mot manquant",
+    "optionsLabel": "Quel mot manque dans la phrase ?",
+    "typedLabel": "Tape le mot qui manque",
+    "keysHelp": "Touches 1 à 4 pour choisir · T pour la traduction · 0 pour « Je ne sais pas »",
+    "typedHelp": "Entrée pour valider. La traduction et les indices sont sous la phrase.",
+    "showTranslation": "Voir la traduction",
+    "translationFr": "Traduction",
+    "translationEn": "Traduction (en anglais)",
+    "noTranslation": "Cette phrase d’exemple n’a pas de traduction.",
+    "hint": "Indice",
+    "hintPinyin": "Pinyin : {pinyin}",
+    "hintFirst": "Premier caractère : {char}",
+    "validate": "Valider",
+    "wrong": "C’était {term}",
+    "chose": "Tu as répondu : {term}",
+    "unknownChosen": "Tu as répondu « Je ne sais pas ».",
+    "sameSound": "Bon son, mauvais caractère : {given} au lieu de {term}.",
+    "almost": "Presque : {term}.",
+    "replay": "Réécouter la phrase",
+    "summaryTitle": "Phrases à trous",
+    "notEligible": "Ajoute des phrases d’exemple qui contiennent tes mots, ou des mots chinois courants, pour jouer à ce jeu."
+  },
+  "measureWord": {
+    "title": "Mini-jeu : le bon classificateur",
+    "intro": "Un nom de ta liste, un trou devant : choisis le bon classificateur (量词).",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "unknown": "Je ne sais pas",
+    "right": "Juste.",
+    "continue": "Continuer",
+    "quit": "Quitter",
+    "score": "{correct} / {total} justes",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "startFailed": "Le mini-jeu n’a pas pu démarrer.",
+    "saveFailed": "La réponse n’a pas pu être enregistrée. Réessaie.",
+    "progress": "Classificateurs · {position} / {total}",
+    "optionsLabel": "Quel classificateur va dans le trou ?",
+    "keysHelp": "Touches 1 à 4 pour choisir · 0 pour « Je ne sais pas »",
+    "gap": "classificateur manquant",
+    "wrong": "Ce n’était pas le bon classificateur.",
+    "allRight": "Classificateurs justes pour {term} : {list}",
+    "unknownChosen": "Tu as répondu « Je ne sais pas ».",
+    "listen": "Écouter",
+    "groups": {
+      "people": "{word} est pour les personnes.",
+      "animals": "{word} est pour les animaux.",
+      "flat": "{word} est pour les objets plats : feuille, table, photo…",
+      "books": "{word} est pour les livres et les cahiers.",
+      "clothes": "{word} est pour les vêtements.",
+      "vehicles": "{word} est pour les véhicules et les machines.",
+      "buildings": "{word} est pour les bâtiments et les pièces.",
+      "long": "{word} est pour les choses longues et fines.",
+      "containers": "{word} est pour ce qu’on boit ou mange dans un récipient.",
+      "texts": "{word} est pour les textes, les lettres et la musique.",
+      "events": "{word} est pour les fois et les événements."
+    },
+    "summaryTitle": "Classificateurs",
+    "notEligible": "Il faut au moins 4 noms de ta liste dont on connaît le classificateur. Les données se téléchargent au premier usage."
+  },
+  "sentenceWorkshop": {
+    "title": "Atelier de phrases",
+    "intro": "Écris ta propre phrase avec un mot de ta liste. L’appli cherche les erreurs fréquentes, puis te montre une phrase modèle : à toi de juger.",
+    "start": "Commencer",
+    "starting": "Préparation…",
+    "quit": "Quitter",
+    "again": "Nouvelle manche",
+    "back": "Retour aux mini-jeux",
+    "startFailed": "L’atelier n’a pas pu démarrer.",
+    "saveFailed": "Ta phrase n’a pas pu être enregistrée. Réessaie.",
+    "progress": "Phrase {position} / {total}",
+    "wordLabel": "Ton mot",
+    "chooseLabel": "Choisir un autre mot de ta liste",
+    "sentenceLabel": "Ta phrase avec {term}",
+    "sentenceHelp": "4 à 40 caractères, en hanzi. Entrée pour vérifier.",
+    "check": "Vérifier",
+    "noErrorFound": "Aucune erreur fréquente trouvée. Compare avec la phrase modèle.",
+    "errorsTitle": "À corriger",
+    "toCheckTitle": "À vérifier",
+    "missingWord": "Le mot {term} n’est pas dans ta phrase.",
+    "tooShort": "Ta phrase est trop courte : 4 caractères au moins.",
+    "tooLong": "Ta phrase est trop longue : 40 caractères au plus.",
+    "foreign": "Écris ta phrase en hanzi : {chars} n’en sont pas.",
+    "rules": {
+      "missingClassifier": "Il manque le classificateur entre le nombre et le nom : {excerpt}.",
+      "erBeforeClassifier": "Devant un classificateur, on dit 两, pas 二 : {excerpt}.",
+      "menAfterNumber": "Pas de 们 après un nombre : {excerpt}.",
+      "buYou": "La négation de 有 est 没有, pas {excerpt}.",
+      "biWithHen": "Avec 比, pas de {excerpt} devant l’adjectif.",
+      "shiBeforeAdjective": "Devant un adjectif seul, on met 很, pas 是 : {excerpt}.",
+      "maWithQuestionWord": "Ta phrase a déjà un mot interrogatif : le {excerpt} final est-il utile ?"
+    },
+    "suggestion": "Proposition : {suggestion}",
+    "unknownWords": "Mots hors HSK 1-3 et hors de ta liste (pour info) : {words}",
+    "modelTitle": "Phrase modèle",
+    "noModel": "Pas de phrase modèle pour ce mot.",
+    "judgeRight": "Ma phrase est juste",
+    "judgeWrong": "Je me suis trompé",
+    "keep": "Garder comme exemple du mot",
+    "kept": "Phrase gardée comme exemple de {term}.",
+    "keepFailed": "La phrase n’a pas pu être gardée.",
+    "banner": "Une banderole-phrase de plus sur ton île !",
+    "summaryTitle": "Phrases de la manche",
+    "summaryCount": {
+      "one": "{count} phrase écrite.",
+      "other": "{count} phrases écrites."
+    },
+    "reviewIntro": "Pour faire vérifier tes phrases par ton professeur ou par une IA, en dehors de l’appli, copie cette consigne :",
+    "reviewCopy": "Faire vérifier mes phrases",
+    "reviewCopied": "Consigne copiée.",
+    "reviewFailed": "La copie n’a pas marché : sélectionne le texte à la main.",
+    "reviewPrompt": "Voici des phrases en chinois écrites par un élève de collège (niveau HSK 3). Pour chaque phrase, dis si elle est juste ; sinon, donne la phrase corrigée et explique l’erreur en une phrase simple, en français.\n\n{sentences}",
+    "notEligible": "L’atelier a besoin de mots chinois dans ta liste et des données de phrases, téléchargées au premier usage."
+  },
+  "sentenceSource": {
+    "label": "Source de la phrase",
+    "sentence": "Phrase : Tatoeba",
+    "number": "n° {id}",
+    "by": "par {author}",
+    "translation": "Traduction :",
+    "license": "CC BY 2.0 FR",
+    "cc0": "CC BY 2.0 FR, aussi CC0",
+    "converted": "convertie en simplifié"
   }
 }

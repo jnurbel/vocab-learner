@@ -187,16 +187,20 @@ describe('applying an answer (GAME_DESIGN.md 9.2)', () => {
     expect(progress.gameLevels).toEqual({ 'listenMeaning:zh': { level: 2, window: [true] } });
   });
 
-  it.each(['bridgeMatch', 'toneEcho', 'sentenceListen', 'sentenceShuffle'] as const)(
-    'moves the adaptive level of %s too',
-    (exercise) => {
-      const played: GameEvent = { ...answer('c1'), exercise };
+  it.each([
+    'bridgeMatch',
+    'toneEcho',
+    'sentenceListen',
+    'sentenceShuffle',
+    'gapFill',
+    'measureWord',
+  ] as const)('moves the adaptive level of %s too', (exercise) => {
+    const played: GameEvent = { ...answer('c1'), exercise };
 
-      const { progress } = applyEvent({}, played, context);
+    const { progress } = applyEvent({}, played, context);
 
-      expect(progress.gameLevels).toEqual({ [`${exercise}:zh`]: { level: 2, window: [true] } });
-    },
-  );
+    expect(progress.gameLevels).toEqual({ [`${exercise}:zh`]: { level: 2, window: [true] } });
+  });
 
   it('leaves the mini-game levels alone for a flashcard', () => {
     expect(applyEvent({}, answer('c1'), context).progress.gameLevels).toBeUndefined();
@@ -324,6 +328,56 @@ describe('applying a path step validated', () => {
 
   it('never makes the day active: the answers behind it already count', () => {
     expect(applyEvent({}, validated, context).progress.streakDays ?? 0).toBe(0);
+  });
+});
+
+describe('applying a sentence written in the workshop (GAME_DESIGN.md 6.12)', () => {
+  const written = (clean: boolean, judgedRight = false): GameEvent => ({
+    type: 'SentenceWritten',
+    language: 'zh',
+    clean,
+    judgedRight,
+  });
+
+  it('awards 10 points for a sentence checked, 5 more when no error was detected', () => {
+    expect(applyEvent({}, written(false), context).progress.xp).toBe(10);
+    expect(applyEvent({}, written(true), context).progress.xp).toBe(15);
+  });
+
+  it('rewards 3 sentences a day, then none', () => {
+    const { progress } = play([written(true), written(true), written(true), written(true)]);
+
+    expect(progress.xp).toBe(45);
+    expect(progress.dailyWorkshopSentences).toBe(4);
+  });
+
+  it('rewards 3 sentences again on the next day', () => {
+    const yesterday: ProgressRecord = {
+      xp: 45,
+      dailyXp: 45,
+      dailyXpDay: addDays(today, -1),
+      dailyWorkshopSentences: 3,
+    };
+
+    const { progress } = applyEvent(yesterday, written(false), context);
+
+    expect(progress.xp).toBe(55);
+    expect(progress.dailyWorkshopSentences).toBe(1);
+  });
+
+  it('hangs a sentence banner when the learner judges right a sentence without error found', () => {
+    const { progress, effects } = applyEvent({ sentenceBanners: 2 }, written(true, true), context);
+
+    expect(progress.sentenceBanners).toBe(3);
+    expect(effects).toContainEqual({ type: 'UnlockGranted', unlockId: 'sentenceBanner' });
+    expect(applyEvent({}, written(true, true), context).progress.sentenceBanners).toBe(1);
+  });
+
+  it('hangs no banner for a sentence with an error found, even judged right', () => {
+    const { progress, effects } = applyEvent({}, written(false, true), context);
+
+    expect(progress.sentenceBanners).toBeUndefined();
+    expect(effects).not.toContainEqual({ type: 'UnlockGranted', unlockId: 'sentenceBanner' });
   });
 });
 

@@ -57,6 +57,13 @@ export interface MiniGameConfig {
   /** SentenceShuffle: sentences of this many chunks only (GAME_DESIGN.md 6.6). */
   readonly shuffleMinChunks: number;
   readonly shuffleMaxChunks: number;
+  /** Sentences in a GapFill round (GAME_DESIGN.md 6.10). */
+  readonly gapFillPerRound: number;
+  /** Nouns in a MeasureWord round, and the nouns needed to open it (6.11). */
+  readonly measureWordPerRound: number;
+  readonly measureWordMinNouns: number;
+  /** Words in a round of the sentence workshop (6.12). */
+  readonly workshopPerRound: number;
 }
 
 export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
@@ -121,4 +128,8 @@ export const MINI_GAME_CONFIG: MiniGameConfig = Object.freeze({
   bridgeBoardsPerRound: 2,
   shuffleMinChunks: 3,
   shuffleMaxChunks: 8,
+  gapFillPerRound: 6,
+  measureWordPerRound: 10,
+  measureWordMinNouns: 4,
+  workshopPerRound: 3,
 });

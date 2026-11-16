@@ -24,6 +24,13 @@
   import SentenceListen from '../features/miniGame/SentenceListen.svelte';
   import SentenceShuffle from '../features/miniGame/SentenceShuffle.svelte';
   import ToneEcho from '../features/miniGame/ToneEcho.svelte';
+  import GapFill from '../features/miniGame/GapFill.svelte';
+  import MeasureWord from '../features/miniGame/MeasureWord.svelte';
+  import SentenceWorkshop from '../features/miniGame/SentenceWorkshop.svelte';
+  import { startGapFillSession } from '../features/miniGame/gapFillSession';
+  import { startMeasureWordSession } from '../features/miniGame/measureWordSession';
+  import { startSentenceWorkshopSession } from '../features/miniGame/sentenceWorkshopSession';
+  import { createSentenceLoader, fetchAppText } from '../services/sentence/sentenceLoader';
   import {
     startBridgeMatchSession,
     type BridgeMatchSelection,
@@ -394,6 +401,30 @@
   const startSentenceShuffle = (selection: MiniGameSelection) =>
     startSentenceShuffleSession(selection, gameDeps());
 
+  /** The sentence data of public/data/, loaded on the first sentence game (DESIGN.md 5 ter). */
+  const loadSentences = createSentenceLoader(fetchAppText, import.meta.env.BASE_URL);
+  const startGapFill = (selection: MiniGameSelection) =>
+    startGapFillSession(selection, {
+      ...gameDeps(),
+      loadSentences,
+      loadPinyin: loadPinyinGenerator,
+    });
+  const startMeasureWord = (selection: MiniGameSelection) =>
+    startMeasureWordSession(selection, { ...gameDeps(), loadSentences });
+  const startWorkshop = (selection: MiniGameSelection) =>
+    startSentenceWorkshopSession(selection, {
+      ...gameDeps(),
+      loadSentences,
+      keepExample: (card, sentence) =>
+        save({
+          newLabel: undefined,
+          changes: {
+            cardsToCreate: [],
+            cardsToUpdate: [{ ...card, example: sentence, updatedAt: clock() }],
+          },
+        }),
+    });
+
   /** Typing suits a computer; on a touch screen, writing on paper is the default. */
   const dictationMode =
     typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
@@ -630,7 +661,7 @@
     },
   };
 
-  const pathDeps = () => ({ store: pathStore, srs, clock: now, newId });
+  const pathDeps = () => ({ store: pathStore, srs, clock: now, newId, loadSentences });
 
   const languagesOf = (label: Label): Language[] =>
     (['zh', 'en'] as const).filter((code) =>
@@ -716,7 +747,9 @@
     stepLanguage = language;
     stepCardIds = cardIds;
     stepGames =
-      step === 'recognize' ? ['bridgeMatch', 'toneEcho'] : ['sentenceListen', 'sentenceShuffle'];
+      step === 'recognize'
+        ? ['bridgeMatch', 'toneEcho']
+        : ['sentenceListen', 'gapFill', 'sentenceShuffle'];
     openGame = undefined;
     page = 'miniGame';
   }
@@ -1078,6 +1111,7 @@
           <MiniGameMenu
             {cards}
             {speaker}
+            {loadSentences}
             onOpen={(game: MiniGame, language: Language) => {
               openGame = { game, language };
             }}
@@ -1109,6 +1143,34 @@
             {speaker}
             {speechRate}
             startSession={startToneEcho}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'gapFill'}
+          <GapFill
+            {cards}
+            language={openGame.language}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startGapFill}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'measureWord'}
+          <MeasureWord
+            {cards}
+            cardIds={openGame.cardIds}
+            {speaker}
+            {speechRate}
+            startSession={startMeasureWord}
+            onSessionEnd={() => void sessionEnded()}
+            onExit={backToMiniGames}
+          />
+        {:else if openGame.game === 'sentenceWorkshop'}
+          <SentenceWorkshop
+            {cards}
+            startSession={startWorkshop}
             onSessionEnd={() => void sessionEnded()}
             onExit={backToMiniGames}
           />

@@ -27,9 +27,22 @@ describe('PrivacyPage', () => {
       'La sauvegarde',
       'La lecture d’une photo',
       'Les fonctions en ligne à venir',
+      'Les phrases',
       'Comment tout effacer',
       'Licence et contact',
     ]);
+  });
+
+  it('credits the sources of the sentence data and keeps the workshop sentences local', () => {
+    const page = renderPage();
+
+    expect(page).toHaveTextContent('Les phrases d’exemple viennent de Tatoeba');
+    expect(page).toHaveTextContent('CC BY 2.0 FR');
+    expect(page).toHaveTextContent('CC-CEDICT (MDBG), sous licence CC BY-SA 4.0');
+    expect(page).toHaveTextContent('complete-hsk-vocabulary (Dr.Kameleon), sous licence MIT');
+    expect(page).toHaveTextContent(
+      'Les phrases que tu écris dans l’atelier restent sur cet appareil',
+    );
   });
 
   it('says that everything stays on the device and that nothing is sent', () => {

@@ -186,7 +186,7 @@ function composeDailySession(input: ComposeInput, cfg: GameConfig): SessionPlan 
 | `seed` (nouveau) | `discovery` puis vérification `listenMeaning` niveau 1 | — |
 | `sprout` | `listenMeaning` | — |
 | `stem` | alternance `listenMeaning` / `typeEcho` (selon `reps % 2`) | `typeEcho` si l'étape « taper » est débloquée pour ce label, sinon `listenMeaning` |
-| `bud` et plus | rotation `listenType` (Messager) / `typeEcho` / `sentenceListen` (selon `reps % 3`) | `sentenceListen` seulement si le mot a un exemple ; `listenType` si l'étape « dictée » est débloquée (ou mot hors label épinglé) |
+| `bud` et plus | rotation `listenType` (Messager) / `typeEcho` / `sentenceListen` (selon `reps % 3`) | `sentenceListen` seulement si le mot a un exemple, sinon `gapFill` s'il a une phrase de la banque (0.11.0), sinon `typeEcho` ; `listenType` si l'étape « dictée » est débloquée (ou mot hors label épinglé) |
 
 Pour un mot **hors label épinglé**, toutes les étapes sont considérées débloquées. Pour un mot de **plusieurs** labels épinglés, on prend l'étape la plus avancée.
 
@@ -526,7 +526,7 @@ Le parcours existe **par label épinglé et par langue**. Il se dessine comme un
 | 3 | `recognize` | Reconnaître | `bridgeMatch` + `toneEcho` (zh) / paires proches (en) | ≥ 80 % des mots réussis en `bridgeMatch` **et**, si au moins 5 mots sont éligibles à `toneEcho`, ≥ 80 % de réussite sur les 20 derniers items `toneEcho` du label |
 | 4 | `type` | Taper | `typeEcho` (sens → mot tapé) | ≥ 80 % des mots avec un dernier essai `correct` en `typeEcho` |
 | 5 | `dictation` | Dictée | `listenType` (Le Messager) | ≥ 80 % des mots avec un dernier essai `correct` en `listenType` |
-| 6 | `sentences` | Phrases | `sentenceListen` + `sentenceShuffle` | ≥ 80 % des mots **ayant un exemple** réussis en `sentenceListen` **et** au moins `min(3, nb d'exemples)` phrases remises en ordre |
+| 6 | `sentences` | Phrases | `sentenceListen` + `gapFill` + `sentenceShuffle` | ≥ 80 % des mots **ayant une phrase** (exemple, ou banque depuis 0.11.0) réussis en `sentenceListen` ou `gapFill` **et** au moins `min(3, nb d'exemples)` phrases remises en ordre |
 | 7 | `finalChallenge` | Défi final | mélange, simulation du contrôle | note ≥ 16/20 |
 
 Précisions :
@@ -755,7 +755,60 @@ Dans `listenMeaning`, les options affichées sont des **sens**, mais la proximit
 | **Retours** | Minimaux pour garder le rythme : bordure verte/ocre 150 ms, pas de son long ; les erreurs sont listées à la fin avec audio. |
 | **Accessibilité** | Durée ×1,5 ou ×2 ; mode sans audio = variante écrite ; en `prefers-reduced-motion`, le décor change par fondu simple. Record = « ton meilleur score », jamais comparé à d'autres. |
 
+### 6.10 `GapFill` — La phrase à trous (0.11.0)
+
+| | |
+|---|---|
+| **But** | Retrouver un mot de sa liste **dans une vraie phrase** : le sens en contexte, et l'écriture. |
+| **Source des phrases** | 1. L'`example` de la carte, s'il contient `term` (règle d'éligibilité de §6.5). 2. Sinon (zh seulement), une phrase de la **banque de phrases** (`DESIGN.md` §5 ter) qui contient `term` et dont tous les autres mots sont **connus** : HSK 1 à 3, ou un mot de la liste de l'élève. Parmi les phrases possibles, tirage à graine en préférant les plus courtes (pas toujours la même phrase). Phrase ≤ 20 caractères (zh) / 15 mots (en). |
+| **Éligibilité** | La carte a au moins une phrase source. Un mot sans phrase n'est pas proposé (le catalogue l'indique : « Ajoute une phrase d'exemple »). |
+| **Déroulé** | La phrase s'affiche avec un trou à la place du mot (autant de cases que de caractères en `d1`), et sa traduction repliée (français si la banque en a une, sinon anglais ; aucune si l'exemple de la carte n'en a pas). `d1` : 3 mots proposés ; `d2` : 4 mots dont 1 proche ; `d3` : l'élève **tape** le mot (IME, comparaison de §6.2). Un item ≈ 12 s ; une manche = 6 phrases. |
+| **Entrées** | Comme `listenMeaning` (`d1`/`d2`) ou `listenType` (`d3`), plus `T` pour déplier la traduction. |
+| **Distracteurs** | Règles communes, proximité **écrite** (critères de §6.0 sans les tons), en excluant tout mot **présent dans la phrase**. |
+| **Indices** | Déplier la traduction n'est **pas** un indice (c'est l'aide de base). 1er indice : le pinyin du mot ; 2e : son 1er caractère → `correctWithHint`. |
+| **Retours** | Communs ; la phrase complète s'affiche avec le mot surligné, son pinyin et la traduction, et elle est **lue** (voix TTS) ; bouton « Réécouter ». Mention discrète « Phrase : Tatoeba » pour une phrase de la banque. |
+| **Sans audio** | Identique, sans lecture. |
+| **FSRS / XP** | Comme `sentenceListen` (§1.2, §4.1). |
+
+### 6.11 `MeasureWord` — Le bon classificateur (0.11.0, zh)
+
+| | |
+|---|---|
+| **But** | Choisir le **classificateur** (量词) d'un nom : un point classique des contrôles. |
+| **Éligibilité** | Nom de l'élève présent dans la **table des classificateurs** (`DESIGN.md` §5 ter, tirée de CC-CEDICT). Au moins 4 noms éligibles pour ouvrir le jeu. |
+| **Déroulé** | `一 __ 信封`, `两 __ 朋友`, `这 __ 书`… (déterminant tiré parmi 一, 两, 三, 这, 那 ; jamais 二) ; pinyin et sens du nom affichés. `d1` : 3 options ; `d2`/`d3` : 4 options. Un item ≈ 6 s ; une manche = 10 noms. |
+| **Bonne réponse** | **Tout** classificateur de la table pour ce nom est juste ; le retour les montre tous (« 朋友 : 个 ou 位 »). |
+| **Distracteurs** | Tirés d'une liste fermée de classificateurs courants, **jamais dans le même groupe de sens** qu'un classificateur juste, pour qu'un faux choix soit vraiment faux : personnes (个 位 名 口), animaux (只 头 匹 条), objets plats (张 片 块), livres (本 册 部), vêtements (件 套 条 双), véhicules et machines (辆 台 部 架), bâtiments (座 栋 间), longs et fins (条 根 支), récipients (杯 瓶 碗 盒), textes et musique (篇 首 段 封), événements (次 场 顿). **个 n'est jamais un distracteur** (il est souvent toléré à l'oral). `d3` : distracteurs tirés des classificateurs les plus fréquents en 3e (本 张 条 件 只 辆). |
+| **Retours** | Communs ; « 一个信封 (yí ge xìnfēng) » est lu. Sur erreur, une phrase par groupe : « 本 est pour les livres et les cahiers. » |
+| **FSRS / XP** | **Pas de note FSRS** (on teste le classificateur, pas le mot), comme `toneEcho` ; XP communs. |
+
+### 6.12 `SentenceWorkshop` — Atelier de phrases (0.11.0, zh)
+
+> Avancé de la 1.2.0 (décision de l'autrice du 2026-11-14) : l'élève doit savoir **construire des phrases avec ses mots**.
+
+| | |
+|---|---|
+| **But** | **Produire** une phrase avec un mot de sa liste, et apprendre de ses erreurs. |
+| **Déroulé** | 1. Un mot s'affiche (hanzi, pinyin, sens), tiré parmi les mots au stade `stem` ou plus, ou choisi par l'élève dans sa liste. 2. L'élève tape **sa** phrase (IME). 3. « Vérifier » : l'appli contrôle ce qu'elle **sait** contrôler (ci-dessous). 4. Elle montre une **phrase modèle** avec le même mot (exemple de la carte, sinon banque). 5. L'élève s'auto-évalue : « Ma phrase est juste » / « Je me suis trompé ». Une manche = 3 mots. |
+| **Contrôles automatiques** | (a) le mot est **dans** la phrase ; (b) 4 à 40 caractères, en hanzi et ponctuation ; (c) les **règles d'erreurs fréquentes** (`DESIGN.md` §5 ter), chacune avec un message court et une correction proposée ; (d) les mots **inconnus** (hors HSK 1-3 et hors liste) sont listés pour information, sans être une erreur. |
+| **Honnêteté** | L'appli **n'affiche jamais « phrase correcte »** : sans erreur détectée, le message est « Aucune erreur fréquente trouvée. Compare avec la phrase modèle. » Une règle « à vérifier » (吗 avec un mot interrogatif) n'est jamais présentée comme une faute. |
+| **Après la vérification** | Erreur détectée : l'élève peut corriger et revérifier, sans pénalité. « Garder comme exemple du mot » si la carte n'a pas d'`example` et qu'aucune erreur n'est détectée : sa phrase nourrit ensuite `sentenceShuffle` et `gapFill`. « Faire vérifier mes phrases » copie une consigne (comme en 0.10.0) avec les phrases de la manche, pour une IA ou le professeur, en dehors de l'appli. |
+| **Déblocage** | « Ma phrase est juste » sans erreur détectée → la banderole-phrase de §4.5. |
+| **FSRS / XP** | **Pas de note FSRS**. XP : 10 par phrase vérifiée, 5 de plus si aucune erreur détectée, 3 phrases récompensées par jour (`workshopRewardedPerDay`). |
+| **Accessibilité** | Pas de limite de temps ; les messages d'erreur sont dans une région `aria-live` ; le mot fautif est souligné **et** cité dans le texte. |
+
 ---
+
+### 6.13 Mise en œuvre des jeux de phrases (0.11.0, 2026-11-15)
+
+Écarts et précisions par rapport aux fiches 6.10 à 6.12 et aux §1.3, §4.5 et §5.1 :
+
+- **§1.3, rotation** : le code n'a pas encore de composition automatique de la séance (`exerciseFor`) ; la séance du jour reste celle des flashcards. `gapFill` est donc proposé depuis le jardin, le parcours (étape 6) et les séances d'étape, pas encore par la rotation.
+- **§5.1, étape 6** : un mot compte s'il a un exemple **ou** une phrase de la banque (une fois les données chargées ; hors ligne avant le premier usage, les exemples seuls). L'étape est sautée s'il y a moins de 3 mots **avec une phrase** ; le nombre de phrases à remettre en ordre est `min(3, nombre d'exemples)`, car seule une phrase de l'élève se remet en ordre.
+- **`GapFill`** : sans autre mot à proposer, l'élève tape le mot (au lieu de rendre le mot inéligible). Le trou est la première occurrence du mot. Pas de banque pour l'anglais.
+- **`MeasureWord`** : la phrase entendue est « déterminant + classificateur + nom » ; son pinyin complet n'est pas affiché (seul celui du nom), pour ne pas charger pinyin-pro. Une séance d'étape impose ses noms, même moins de 4.
+- **`SentenceWorkshop`** : les chiffres sont acceptés avec les hanzi et la ponctuation. Sans mot au stade `stem`, n'importe quel mot chinois est proposé. L'atelier a besoin des données de phrases (règles, mots connus) : hors ligne avant le premier usage, il n'est pas proposé. Les XP sont donnés quand l'élève juge sa phrase (une fois par mot), pas à chaque vérification ; la manche ne donne pas l'XP de fin de séance. Les phrases ne sont jamais enregistrées dans l'historique ; seule « Garder comme exemple du mot » les écrit, dans la carte.
+- **§4.5, banderole-phrase** : chaque phrase jugée juste sans erreur détectée est comptée (`sentenceBanners`, gardé dans les sauvegardes, fusionné au plus grand) et annoncée en fin de manche ; elle n'est pas encore dessinée sur l'île.
 
 ## 7. Retours et « juice »
 

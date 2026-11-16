@@ -1,9 +1,15 @@
 <script lang="ts">
   import type { Card, Language } from '../../domain/card';
-  import { miniGameCatalog, type MiniGame } from '../../domain/game/miniGameCatalog';
+  import {
+    miniGameCatalog,
+    type CatalogSentences,
+    type MiniGame,
+    type MiniGameEntry,
+  } from '../../domain/game/miniGameCatalog';
   import { MINI_GAME_CONFIG } from '../../domain/game/miniGameConfig';
   import { formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
+  import { bankLookupFor, type SentenceResources } from '../../services/sentence/sentenceLoader';
   import type { Speaker } from '../../services/tts/speaker';
 
   interface Props {
@@ -12,9 +18,17 @@
     /** Opens a game on every word of the language. */
     onOpen: (game: MiniGame, language: Language) => void;
     language?: Language;
+    /** The sentence data of the Chinese games, loaded when the Chinese games are shown. */
+    loadSentences?: () => Promise<SentenceResources>;
   }
 
-  const { cards, speaker, onOpen, language: initialLanguage = 'zh' }: Props = $props();
+  const {
+    cards,
+    speaker,
+    onOpen,
+    language: initialLanguage = 'zh',
+    loadSentences,
+  }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
 
@@ -38,11 +52,41 @@
       });
   });
 
+  /** The sentence data: not asked yet, loading, loaded, or failed (offline before first use). */
+  let sentences = $state.raw<SentenceResources | 'idle' | 'loading' | 'failed'>('idle');
+
+  $effect(() => {
+    if (language !== 'zh' || loadSentences === undefined || sentences !== 'idle') {
+      return;
+    }
+    sentences = 'loading';
+    loadSentences()
+      .then((loaded) => {
+        sentences = loaded;
+      })
+      .catch(() => {
+        // Not tried again in this screen: opening the list again tries again.
+        sentences = 'failed';
+      });
+  });
+
+  const data = $derived<CatalogSentences | undefined>(
+    typeof sentences === 'string'
+      ? undefined
+      : { bank: bankLookupFor(sentences, cards), measureWords: sentences.measureWords },
+  );
+
   const entries = $derived(
-    miniGameCatalog(cards, language, MINI_GAME_CONFIG).filter(
+    miniGameCatalog(cards, language, MINI_GAME_CONFIG, data).filter(
       ({ game }) => game !== 'toneEcho' || voice === true,
     ),
   );
+
+  function reasonOf(entry: MiniGameEntry & { open: false }): string {
+    return entry.reason === 'noSentenceData' && sentences === 'loading'
+      ? fr.miniGames.loadingSentences
+      : fr.miniGames.reasons[entry.reason];
+  }
 
   function nameOf(game: MiniGame): string {
     const texts = fr.miniGames.games[game];
@@ -80,7 +124,7 @@
         <p class="count">{formatCount(fr.miniGames.eligible, entry.eligibleWords)}</p>
         {#if !entry.open}
           <p class="reason" id="mini-game-{entry.game}-reason">
-            {fr.miniGames.reasons[entry.reason]}
+            {reasonOf(entry)}
           </p>
         {/if}
         <button
