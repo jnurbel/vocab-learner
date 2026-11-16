@@ -373,7 +373,7 @@
     "title": "Dictée",
     "languageLegend": "Langue",
     "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
-    "wordCount": "Nombre de mots (5 à 20)",
+    "wordCount": "Nombre de mots (5 à 200)",
     "optionsLegend": "Lecture",
     "shuffle": "Ordre aléatoire",
     "readTwice": "Lire chaque mot deux fois",

@@ -43,10 +43,18 @@ describe('dictationPlan', () => {
     expect(plan.words.every((word) => word.labelIds.includes('lesson7'))).toBe(true);
   });
 
-  it('dictates between 5 and 20 words, and fewer when fewer are available', () => {
+  it('dictates up to 200 words, a whole long list at once', () => {
+    const many = Array.from({ length: 250 }, (_, index) => card(`many${String(index)}`));
+
+    expect(dictationPlan(many, options({ wordCount: 100 })).words).toHaveLength(100);
+    expect(dictationPlan(many, options({ wordCount: 200 })).words).toHaveLength(200);
+    expect(dictationPlan(many, options({ wordCount: 500 })).words).toHaveLength(200);
+  });
+
+  it('dictates at least 5 words, and fewer when fewer are available', () => {
     expect(dictationPlan(cards, options({ wordCount: 7 })).words).toHaveLength(7);
     expect(dictationPlan(cards, options({ wordCount: 2 })).words).toHaveLength(5);
-    expect(dictationPlan(cards, options({ wordCount: 50 })).words).toHaveLength(20);
+    expect(dictationPlan(cards, options({ wordCount: 50 })).words).toHaveLength(25);
     expect(dictationPlan(cards, options({ wordCount: Number.NaN })).words).toHaveLength(10);
     expect(dictationPlan(cards, options({ wordCount: 6.5 })).words).toHaveLength(6);
     expect(dictationPlan(cards, options({ language: 'en' })).words).toHaveLength(2);

@@ -3,7 +3,8 @@ import { selectCards } from '../cardSelection';
 import { SPEECH_RATES, type SpeechSpeed } from '../speechRate';
 import { createRng, type Rng } from '../srs/random';
 
-export const DICTATION_WORD_COUNT = { min: 5, max: 20, default: 10 } as const;
+/** Up to 200 words: a whole long list can be dictated at once (asked by the owner, 2026-11-16). */
+export const DICTATION_WORD_COUNT = { min: 5, max: 200, default: 10 } as const;
 
 /** Seconds of silence between two words, or 'manual': the learner moves on. */
 export const DICTATION_DELAYS = [3, 5, 8, 12, 'manual'] as const;
