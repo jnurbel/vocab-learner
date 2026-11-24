@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Card, Language } from '../../domain/card';
+  import { selectCards } from '../../domain/cardSelection';
   import {
     miniGameCatalog,
     type CatalogSentences,
@@ -10,13 +11,18 @@
   import { formatCount } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import { bankLookupFor, type SentenceResources } from '../../services/sentence/sentenceLoader';
+  import type { Label } from '../../domain/label';
   import type { Speaker } from '../../services/tts/speaker';
+  import StudyListPicker from '../labels/StudyListPicker.svelte';
+  import type { StudyList } from './studyList';
 
   interface Props {
     cards: readonly Card[];
     speaker: Speaker;
-    /** Opens a game on every word of the language. */
-    onOpen: (game: MiniGame, language: Language) => void;
+    /** The word lists the learner may restrict the games to. */
+    labels?: readonly Label[];
+    /** Opens a game on every word of the language, or on the words of the chosen lists. */
+    onOpen: (game: MiniGame, language: Language, list?: StudyList) => void;
     language?: Language;
     /** The sentence data of the Chinese games, loaded when the Chinese games are shown. */
     loadSentences?: () => Promise<SentenceResources>;
@@ -25,6 +31,7 @@
   const {
     cards,
     speaker,
+    labels = [],
     onOpen,
     language: initialLanguage = 'zh',
     loadSentences,
@@ -34,6 +41,9 @@
 
   // svelte-ignore state_referenced_locally
   let language = $state<Language>(initialLanguage);
+  let labelIds = $state<string[]>([]);
+  /** The words the games ask: those of the chosen lists, or every word of the language. */
+  const chosen = $derived(selectCards(cards, { language, labelIds }));
   /** Whether a voice reads the language: the tone game is hidden without one (GAME_DESIGN.md 6.3). */
   let voice = $state<boolean>();
 
@@ -77,7 +87,7 @@
   );
 
   const entries = $derived(
-    miniGameCatalog(cards, language, MINI_GAME_CONFIG, data).filter(
+    miniGameCatalog(chosen, language, MINI_GAME_CONFIG, data).filter(
       ({ game }) => game !== 'toneEcho' || voice === true,
     ),
   );
@@ -116,6 +126,8 @@
     {/each}
   </fieldset>
 
+  <StudyListPicker {labels} {cards} {language} bind:labelIds />
+
   <ul class="games" aria-label={fr.miniGames.listLabel}>
     {#each entries as entry (entry.game)}
       <li class="game" class:closed={!entry.open}>
@@ -133,7 +145,14 @@
           disabled={!entry.open}
           aria-describedby={entry.open ? undefined : `mini-game-${entry.game}-reason`}
           onclick={() => {
-            onOpen(entry.game, language);
+            if (labelIds.length === 0) {
+              onOpen(entry.game, language);
+            } else {
+              onOpen(entry.game, language, {
+                labelIds: [...labelIds],
+                cardIds: chosen.map(({ id }) => id),
+              });
+            }
           }}>{fr.miniGames.play}<span class="visually-hidden"> {nameOf(entry.game)}</span></button
         >
       </li>

@@ -62,6 +62,32 @@ async function begin(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Commencer le mini-jeu' }));
 }
 
+describe('ListenMeaning on the lists chosen in the list of mini-games', () => {
+  it('starts in the chosen language, on the words of the chosen lists', async () => {
+    const startSession = vi.fn((selection: ListenMeaningSelection) =>
+      startListenMeaningSession(selection, {
+        store: new FakeStore({ reviewStates: words.map(({ id }) => reviewed(id)) }),
+        srs,
+        clock: () => morning,
+        newId: () => 'g1',
+      }),
+    );
+    render(ListenMeaning, {
+      cards: words,
+      speaker: fakeSpeaker(),
+      startSession,
+      onSessionEnd: vi.fn(),
+      language: 'en',
+      labelIds: ['l7'],
+    });
+
+    expect(screen.getByRole('radio', { name: 'Anglais' })).toBeChecked();
+    await begin(userEvent.setup());
+
+    expect(startSession).toHaveBeenCalledWith({ cards: words, language: 'en', labelIds: ['l7'] });
+  });
+});
+
 describe('ListenMeaning', () => {
   it('unlocks the speech in the click on Start, before any await, so that phones play it', async () => {
     const { speaker, user } = setup();

@@ -28,9 +28,21 @@
      * the words of the labels as distractors. The voice was unlocked by the click that opened it.
      */
     startWith?: ListenMeaningLaunch;
+    /** The language chosen in the list of mini-games. */
+    language?: Language;
+    /** The word lists chosen in the list of mini-games; empty: every word. */
+    labelIds?: readonly string[];
   }
 
-  const { cards, speaker, startSession, onSessionEnd, startWith }: Props = $props();
+  const {
+    cards,
+    speaker,
+    startSession,
+    onSessionEnd,
+    startWith,
+    language: initialLanguage = 'zh',
+    labelIds = [],
+  }: Props = $props();
 
   const LANGUAGES: readonly Language[] = ['zh', 'en'];
 
@@ -47,7 +59,8 @@
     | { kind: 'playing' }
     | { kind: 'summary'; summary: ListenMeaningSummary };
 
-  let language = $state<Language>('zh');
+  // svelte-ignore state_referenced_locally
+  let language = $state<Language>(initialLanguage);
   let view = $state<Screen>({ kind: 'setup' });
   let error = $state<'startFailed' | 'saveFailed' | undefined>();
   let session: ListenMeaningSession | undefined;
@@ -85,7 +98,7 @@
     try {
       session = await startSession(
         startWith === undefined
-          ? { cards, language, labelIds: [] }
+          ? { cards, language, labelIds: [...labelIds] }
           : { cards, ...startWith, labelIds: [...startWith.labelIds] },
       );
       voice = (await speaker.hasVoice(language)) ? 'available' : 'missing';
