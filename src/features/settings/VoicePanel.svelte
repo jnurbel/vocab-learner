@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Language } from '../../domain/card';
   import { SPEECH_SPEEDS, type SpeechSpeed } from '../../domain/speechRate';
   import { format } from '../../i18n/format';
   import fr from '../../i18n/fr.json';
   import {
     isSpeechBlocked,
     type Speaker,
+    type SpeechLanguage,
     type VoiceCatalog,
     type VoiceInfo,
     type VoiceReport,
@@ -27,7 +27,11 @@
   const { speaker, voices, speed, onSpeedChange }: Props = $props();
 
   /** What the test buttons read: hello in each language. */
-  const SAMPLES: Readonly<Record<Language, string>> = { zh: '你好', en: 'hello' };
+  const SAMPLES: Readonly<Record<SpeechLanguage, string>> = {
+    zh: '你好',
+    en: 'hello',
+    fr: 'bonjour',
+  };
 
   let report = $state.raw<VoiceReport>();
   let loading = $state(false);
@@ -60,7 +64,7 @@
   }
 
   /** Called in the click itself: a phone speaks only when unlocked during a user gesture. */
-  function test(language: Language) {
+  function test(language: SpeechLanguage) {
     speaker.unlock();
     testStatus = undefined;
     speaker.speak(SAMPLES[language], language).catch((caught: unknown) => {
@@ -124,6 +128,12 @@
         test('en');
       }}>{fr.voice.testEn}</button
     >
+    <button
+      type="button"
+      onclick={() => {
+        test('fr');
+      }}>{fr.voice.testFr}</button
+    >
     <button type="button" disabled={loading} onclick={() => load(() => voices.reloadVoices())}
       >{fr.voice.reload}</button
     >
@@ -145,12 +155,14 @@
         {#each report.voices as voice, index (index)}
           {@const forZh = isSame(voice, report.chosen.zh)}
           {@const forEn = isSame(voice, report.chosen.en)}
-          <li class={{ chosen: forZh || forEn }}>
+          {@const forFr = isSame(voice, report.chosen.fr)}
+          <li class={{ chosen: forZh || forEn || forFr }}>
             <span class="name">{voice.name}</span>
             <code>{voice.lang}</code>
             <span class="service">{serviceOf(voice)}</span>
             {#if forZh}<strong>{fr.voice.chosenZh}</strong>{/if}
             {#if forEn}<strong>{fr.voice.chosenEn}</strong>{/if}
+            {#if forFr}<strong>{fr.voice.chosenFr}</strong>{/if}
           </li>
         {/each}
       </ul>
