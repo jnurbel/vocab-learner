@@ -11,7 +11,8 @@ declare global {
 }
 
 /**
- * Replaces the browser's speech synthesis before the app loads: a Chinese and a British voice,
+ * Replaces the browser's speech synthesis before the app loads: a Chinese, a British and a French
+ * voice,
  * and every utterance ends shortly after it starts, as a real one would.
  */
 async function installFakeSpeech(page: Page) {
@@ -29,6 +30,7 @@ async function installFakeSpeech(page: Page) {
     const voices = [
       { lang: 'zh-CN', name: 'Fake Chinese', default: false, localService: true, voiceURI: 'zh' },
       { lang: 'en-GB', name: 'Fake English', default: true, localService: true, voiceURI: 'en' },
+      { lang: 'fr-FR', name: 'Fake French', default: false, localService: true, voiceURI: 'fr' },
     ];
     const synthesis = {
       getVoices: () => voices,
@@ -192,6 +194,40 @@ test('a keyboard dictation of three words: one right, one same-sounding, one unk
     'listenType',
     'listenType',
   ]);
+  expect(errors).toEqual([]);
+});
+
+test('a dictation from the meaning: the French meaning is heard, the word is written', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('./');
+  await openWords(page);
+  await addWords(page, '控制 | kòng zhì | contrôler / maîtriser\n猫 | māo | chat', 2);
+
+  await page
+    .getByRole('navigation', { name: 'Menu' })
+    .getByRole('button', { name: 'Dictée' })
+    .click();
+  const dictation = page.getByRole('region', { name: 'Dictée' });
+  await dictation.getByRole('radio', { name: 'Au clavier' }).check();
+  await dictation.getByRole('radio', { name: 'Le sens en français : tu écris le mot' }).check();
+  await dictation.getByRole('button', { name: 'Commencer la dictée' }).click();
+  const field = dictation.getByRole('textbox', { name: 'Ta réponse' });
+
+  const wordOf: Readonly<Record<string, string>> = { 'contrôler, maîtriser': '控制', chat: '猫' };
+  const remaining = Object.keys(wordOf);
+  for (let position = 1; position <= 2; position++) {
+    await expect(dictation.getByRole('status')).toHaveText(`Mot ${String(position)} sur 2`);
+    const meaning = await currentWord(page, remaining);
+    remaining.splice(remaining.indexOf(meaning), 1);
+    await field.fill(wordOf[meaning] ?? '');
+    await field.press('Enter');
+    await expect(dictation.getByText('Juste.')).toBeVisible();
+    await dictation.getByRole('button', { name: 'Continuer' }).click();
+  }
+
+  await expect(dictation.getByText('Score : 2 / 2')).toBeVisible();
   expect(errors).toEqual([]);
 });
 

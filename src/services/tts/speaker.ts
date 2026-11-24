@@ -1,15 +1,21 @@
 import type { Language } from '../../domain/card';
 
+/**
+ * A language the voice reads: the languages of the words, and French for their meanings (a
+ * dictation from the meaning reads it aloud, DESIGN.md 6).
+ */
+export type SpeechLanguage = Language | 'fr';
+
 /** Reads words aloud; injected so that tests and browsers without voices can do without. */
 export interface Speaker {
   /** Whether a voice exists for the language; the first call waits for the voice list. */
-  hasVoice(language: Language): Promise<boolean>;
+  hasVoice(language: SpeechLanguage): Promise<boolean>;
   /**
    * Resolves once the word was read (at the end of the utterance, which is how iOS chains
    * readings); rejects when it cannot be read: no voice, error, or a SpeechBlockedError when
    * the browser refused to speak without a user gesture.
    */
-  speak(text: string, language: Language, options?: SpeakOptions): Promise<void>;
+  speak(text: string, language: SpeechLanguage, options?: SpeakOptions): Promise<void>;
   cancel(): void;
   /**
    * Lets the browser speak: iOS Safari and Chrome Android only start speech from a user
@@ -57,7 +63,7 @@ export interface VoiceReport {
   /** Every voice the browser offers, in its order. */
   voices: readonly VoiceInfo[];
   /** The voice used for each language; undefined when none suits it. */
-  chosen: Record<Language, VoiceInfo | undefined>;
+  chosen: Record<Language, VoiceInfo | undefined> & { fr?: VoiceInfo | undefined };
 }
 
 /** Tells which voices the browser offers, e.g. after installing the Chinese voice on Android. */
@@ -108,7 +114,7 @@ export interface SpeakerOptions {
 const END_TIMEOUT_BASE_MS = 3_000;
 const END_TIMEOUT_PER_CHAR_MS = 500;
 
-const BCP47_OF: Record<Language, string> = { zh: 'zh-CN', en: 'en-GB' };
+const BCP47_OF: Record<SpeechLanguage, string> = { zh: 'zh-CN', en: 'en-GB', fr: 'fr-FR' };
 
 /** Errors raised when a reading is stopped on purpose, e.g. by the next word. */
 const STOPPED = new Set(['interrupted', 'canceled']);
@@ -136,15 +142,16 @@ function tagOf(voice: VoiceLike): VoiceTag {
 /**
  * How well a voice suits the language, the higher the better; undefined when it does not.
  * Chinese: mainland Mandarin (zh or cmn), never Cantonese (yue, zh-HK) nor traditional
- * Chinese (zh-TW, Hant). English: British, as taught in France, then any English.
+ * Chinese (zh-TW, Hant). English: British, as taught in France, then any English. French: of
+ * France, then any French.
  */
-function scoreOf(voice: VoiceLike, language: Language): number | undefined {
+function scoreOf(voice: VoiceLike, language: SpeechLanguage): number | undefined {
   const { language: code, script, region } = tagOf(voice);
-  if (language === 'en') {
-    if (code !== 'en') {
+  if (language === 'en' || language === 'fr') {
+    if (code !== language) {
       return undefined;
     }
-    return region === 'gb' ? 2 : 1;
+    return region === (language === 'en' ? 'gb' : 'fr') ? 2 : 1;
   }
   if ((code !== 'zh' && code !== 'cmn') || script === 'hant') {
     return undefined;
@@ -155,7 +162,10 @@ function scoreOf(voice: VoiceLike, language: Language): number | undefined {
   return region === undefined ? 1 : undefined;
 }
 
-export function pickVoice(voices: readonly VoiceLike[], language: Language): VoiceLike | undefined {
+export function pickVoice(
+  voices: readonly VoiceLike[],
+  language: SpeechLanguage,
+): VoiceLike | undefined {
   let best: { voice: VoiceLike; score: number } | undefined;
   for (const voice of voices) {
     const score = scoreOf(voice, language);
@@ -222,7 +232,7 @@ export function createWebSpeechSpeaker(
    * The voice for the language. A list without it is never trusted for good: the browser is
    * asked again, as a voice may have been installed since (Chrome sends no event then).
    */
-  async function voiceFor(language: Language): Promise<VoiceLike | undefined> {
+  async function voiceFor(language: SpeechLanguage): Promise<VoiceLike | undefined> {
     if (synthesis === undefined || createUtterance === undefined) {
       return undefined;
     }
@@ -243,11 +253,14 @@ export function createWebSpeechSpeaker(
       lang,
       localService,
     });
-    const chosen = (language: Language) => {
+    const chosen = (language: SpeechLanguage) => {
       const picked = pickVoice(listed, language);
       return picked === undefined ? undefined : info(picked);
     };
-    return { voices: listed.map(info), chosen: { zh: chosen('zh'), en: chosen('en') } };
+    return {
+      voices: listed.map(info),
+      chosen: { zh: chosen('zh'), en: chosen('en'), fr: chosen('fr') },
+    };
   }
 
   function play(available: SynthesisLike, utterance: UtteranceLike, text: string): Promise<void> {

@@ -1,18 +1,23 @@
 import { vi } from 'vitest';
-import type { Card, Language } from '../../domain/card';
+import type { Card } from '../../domain/card';
 import type { ProgressRecord, SessionRecord } from '../../domain/progressRecords';
 import { GAME_CONFIG } from '../../domain/srs/config';
 import { createFsrsMemoryModel } from '../../domain/srs/fsrsMemoryModel';
 import type { ReviewState } from '../../domain/srs/reviewState';
 import type { AnswerRecord, ProgressUpdate, StudyData } from '../../storage/studyRepository';
-import { SpeechBlockedError, type SpeakOptions, type Speaker } from '../../services/tts/speaker';
+import {
+  SpeechBlockedError,
+  type SpeakOptions,
+  type Speaker,
+  type SpeechLanguage,
+} from '../../services/tts/speaker';
 import type { DictationStore } from './dictationSession';
 
 /** Test helpers shared by the dictation tests. */
 
 export interface Reading {
   text: string;
-  language: Language;
+  language: SpeechLanguage;
   rate: number | undefined;
   /** Ends the utterance, as the browser's `onend` would. */
   end: () => void;
@@ -24,6 +29,8 @@ export interface Reading {
 /** A speaker whose readings end only when the test says so. */
 export class FakeSpeaker implements Speaker {
   readonly readings: Reading[] = [];
+  /** Languages without a voice on this device, e.g. French on a phone set up in English. */
+  readonly silent = new Set<SpeechLanguage>();
 
   /** `autoEnd`: every reading ends at once, for screen tests. */
   constructor(
@@ -44,12 +51,12 @@ export class FakeSpeaker implements Speaker {
   /** The speed chosen in the settings. */
   readonly setRate = vi.fn();
 
-  hasVoice(): Promise<boolean> {
-    return Promise.resolve(this.voice);
+  hasVoice(language: SpeechLanguage): Promise<boolean> {
+    return Promise.resolve(this.voice && !this.silent.has(language));
   }
 
-  speak(text: string, language: Language, options: SpeakOptions = {}): Promise<void> {
-    if (!this.voice) {
+  speak(text: string, language: SpeechLanguage, options: SpeakOptions = {}): Promise<void> {
+    if (!this.voice || this.silent.has(language)) {
       this.readings.push({
         text,
         language,

@@ -92,7 +92,7 @@ describe('Dictation, start screen', () => {
     setup();
 
     expect(screen.getByRole('radio', { name: fr.languages.zh })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Leçon 7' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' })).not.toBeChecked();
     expect(screen.getByRole('spinbutton', { name: fr.dictation.wordCount })).toHaveValue(10);
     expect(screen.getByRole('checkbox', { name: fr.dictation.shuffle })).not.toBeChecked();
     // Twice by default: a word heard once on a phone speaker is easily missed.
@@ -125,13 +125,38 @@ describe('Dictation, start screen', () => {
   it('dictates the words of the chosen labels', async () => {
     const { user, startSession } = setup();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' }));
     await startDictation(user);
 
     expect(startSession).toHaveBeenCalledWith({
       language: 'zh',
       labelIds: ['l7'],
       words: [zai, cat],
+    });
+  });
+
+  it('tells how many words the chosen lists hold', async () => {
+    const { user } = setup();
+
+    expect(screen.getByText('3 mot(s) dans ce choix')).toBeVisible();
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' }));
+
+    expect(screen.getByText('2 mot(s) dans ce choix')).toBeVisible();
+  });
+
+  it('offers only the lists of the chosen language, and forgets those of the other', async () => {
+    const { user, startSession } = setup();
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' }));
+
+    await user.click(screen.getByRole('radio', { name: fr.languages.en }));
+
+    expect(screen.queryByRole('checkbox', { name: /Leçon 7/ })).toBeNull();
+    expect(screen.getByText(fr.studyLists.none)).toBeVisible();
+    await startDictation(user);
+    expect(startSession).toHaveBeenCalledWith({
+      language: 'en',
+      labelIds: [],
+      words: [necessary],
     });
   });
 
@@ -302,6 +327,52 @@ describe('Dictation, listening again', () => {
     await user.click(screen.getByRole('heading', { name: fr.dictation.title }));
     await user.keyboard('r');
     expect(speaker.readings).toHaveLength(3);
+  });
+});
+
+describe('Dictation from the meaning', () => {
+  const kongzhi = card('kongzhi', {
+    term: '控制',
+    pinyin: 'kòng zhì',
+    translation: 'contrôler / maîtriser',
+  });
+
+  it('reads the French meaning with a French voice, and the learner writes the word', async () => {
+    const { user, speaker, store } = setup({ cards: [kongzhi] });
+    await user.click(screen.getByRole('radio', { name: fr.dictation.prompts.meaning }));
+    const field = await startDictation(user);
+
+    expect(speaker.last()).toMatchObject({ text: 'contrôler, maîtriser', language: 'fr' });
+    expect(field).toHaveAttribute('lang', 'zh-CN');
+    expect(within(region()).queryByText('控制')).toBeNull();
+    await user.type(field, '控制{Enter}');
+
+    expect(await screen.findByText(fr.dictation.correct)).toBeVisible();
+    expect(store.answers[0]?.result).toMatchObject({ cardId: 'kongzhi', outcome: 'correct' });
+  });
+
+  it('reads the word itself by default', async () => {
+    const { user, speaker } = setup({ cards: [kongzhi] });
+
+    expect(screen.getByRole('radio', { name: fr.dictation.prompts.word })).toBeChecked();
+    await startDictation(user);
+
+    expect(speaker.last()).toMatchObject({ text: '控制', language: 'zh' });
+  });
+
+  it('writes the meaning instead without a French voice, never the pinyin', async () => {
+    const speaker = new FakeSpeaker(true, true);
+    speaker.silent.add('fr');
+    const { user, store } = setup({ cards: [kongzhi], speaker });
+    await user.click(screen.getByRole('radio', { name: fr.dictation.prompts.meaning }));
+    const field = await startDictation(user);
+
+    expect(screen.getByText(fr.dictation.writtenMeaningPrompt.zh)).toBeVisible();
+    expect(within(region()).getByText('contrôler / maîtriser')).toBeVisible();
+    expect(within(region()).queryByText('kòng')).toBeNull();
+    await user.type(field, '控制{Enter}');
+
+    expect(store.answers[0]?.result.outcome).toBe('correct');
   });
 });
 

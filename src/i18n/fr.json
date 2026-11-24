@@ -245,7 +245,6 @@
   "flashcards": {
     "title": "Flashcards",
     "languageLegend": "Langue",
-    "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
     "answerModeLegend": "Je réponds",
     "answerModes": {
       "selfAssess": "S'auto-évaluer",
@@ -269,6 +268,8 @@
     "hintUsed": "Pinyin affiché : compte comme un indice.",
     "flip": "Retourner",
     "example": "Exemple :",
+    "sensesLabel": "Les sens du mot",
+    "oneSenseEnough": "Un seul sens suffit : si tu en connaissais un, tu le savais.",
     "evaluationLegend": "Tu le savais ?",
     "evaluations": {
       "again": "À revoir",
@@ -369,11 +370,21 @@
     "reminderAction": "Sauvegarder maintenant",
     "reminderDismiss": "Masquer ce rappel"
   },
+  "studyLists": {
+    "legend": "Listes de mots (facultatif : sinon tous les mots de la langue)",
+    "count": "· {count} mot(s)",
+    "none": "Aucune liste dans cette langue. Pour travailler une seule liste, pose un label sur ses mots à l'import ou dans « Mes mots »."
+  },
   "dictation": {
     "title": "Dictée",
     "languageLegend": "Langue",
-    "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
     "wordCount": "Nombre de mots (5 à 200)",
+    "available": "{count} mot(s) dans ce choix",
+    "promptLegend": "La voix lit",
+    "prompts": {
+      "word": "Le mot : tu l'écris",
+      "meaning": "Le sens en français : tu écris le mot"
+    },
     "optionsLegend": "Lecture",
     "shuffle": "Ordre aléatoire",
     "readTwice": "Lire chaque mot deux fois",
@@ -441,6 +452,10 @@
       "en": "Pas de voix anglaise : écris en anglais le mot qui a ce sens."
     },
     "audioError": "Le son n'a pas pu être lu : la consigne est écrite à la place.",
+    "writtenMeaningPrompt": {
+      "zh": "Pas de voix française : écris en hanzi le mot qui a ce sens.",
+      "en": "Pas de voix française : écris en anglais le mot qui a ce sens."
+    },
     "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie.",
     "correctionTitle": "Correction",
     "correctionHelp": "Compare avec ta feuille, puis coche ton résultat pour chaque mot.",
@@ -962,6 +977,7 @@
     "intro": "Pour comprendre pourquoi un mot n’est pas lu : les voix que le navigateur a trouvées sur cet appareil.",
     "testZh": "Tester la voix chinoise",
     "testEn": "Tester la voix anglaise",
+    "testFr": "Tester la voix française (dictée du sens)",
     "reload": "Recharger la liste des voix",
     "detected": "Voix détectées par le navigateur : {count}",
     "none": "Aucune voix détectée.",
@@ -970,6 +986,7 @@
     "unknownService": "emplacement inconnu",
     "chosenZh": "retenue pour le chinois",
     "chosenEn": "retenue pour l’anglais",
+    "chosenFr": "retenue pour le français",
     "noChinese": "Aucune voix chinoise trouvée : les dictées en chinois s’affichent en pinyin.",
     "testStatus": {
       "failed": "La voix n’a pas pu être lue.",

@@ -1,12 +1,9 @@
-import type { Language } from '../../domain/card';
-import type { DictationPlan } from '../../domain/dictation/dictationPlan';
+import type { DictationPlan, DictationReading } from '../../domain/dictation/dictationPlan';
 import { slowRateOf } from '../../domain/speechRate';
 import { isSpeechBlocked, type Speaker } from '../../services/tts/speaker';
 
-export interface DictationWord {
-  text: string;
-  language: Language;
-}
+/** The word, or its French meaning (a dictation from the meaning). */
+export type DictationWord = DictationReading;
 
 export type PlayerSettings = Pick<DictationPlan, 'readingsPerWord' | 'delayMs' | 'rate'>;
 

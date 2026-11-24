@@ -43,6 +43,7 @@ describe('VoicePanel', () => {
     expect(items[0]).toHaveTextContent(fr.voice.chosenEn);
     expect(items[1]).not.toHaveTextContent(fr.voice.chosenZh);
     expect(items[2]).toHaveTextContent(fr.voice.unknownService);
+    expect(items[2]).toHaveTextContent(fr.voice.chosenFr);
     expect(items[3]).toHaveTextContent(fr.voice.online);
     expect(items[3]).toHaveTextContent(fr.voice.chosenZh);
     expect(screen.queryByText(fr.voice.noChinese)).toBeNull();
@@ -61,7 +62,7 @@ describe('VoicePanel', () => {
     expect(await screen.findByText(fr.voice.none, {}, { timeout: 3_000 })).toBeVisible();
   });
 
-  it('reads a Chinese and an English sample, unlocking the speech in the click', async () => {
+  it('reads a Chinese, an English and a French sample, unlocking the speech in the click', async () => {
     const { speech, user } = setup({ voices: [...ANDROID_VOICES, MANDARIN], requireGesture: true });
     await list();
 
@@ -79,6 +80,12 @@ describe('VoicePanel', () => {
       expect(speech.heard).toEqual(['你好', 'hello']);
     });
     expect(speech.spoken.at(-1)?.voice?.name).toBe('English United Kingdom');
+    speech.endCurrent();
+    await user.click(screen.getByRole('button', { name: fr.voice.testFr }));
+    await vi.waitFor(() => {
+      expect(speech.heard).toEqual(['你好', 'hello', 'bonjour']);
+    });
+    expect(speech.spoken.at(-1)?.voice?.name).toBe('Mystery');
   });
 
   it('says why a sample could not be read', async () => {

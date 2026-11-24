@@ -3,6 +3,7 @@
   import { answerExerciseFor } from '../../domain/answerExercise';
   import type { Card, Language } from '../../domain/card';
   import type { Label } from '../../domain/label';
+  import { splitSenses } from '../../domain/meaning/senses';
   import type { PinyinGenerator } from '../../domain/pinyinGeneration';
   import type { Outcome } from '../../domain/srs/reviewState';
   import { ANSWER_MODES, DEFAULT_ANSWER_MODE, type AnswerMode } from '../../domain/studySettings';
@@ -12,6 +13,7 @@
   import { isSpeechBlocked, type Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
   import VoiceHelp from '../../ui/VoiceHelp.svelte';
+  import StudyListPicker from '../labels/StudyListPicker.svelte';
   import {
     PracticeSession,
     type PracticeItem,
@@ -145,6 +147,10 @@
   });
 
   const lang = (code: Language) => (code === 'zh' ? 'zh-CN' : 'en');
+  /** The senses of the word on the card: knowing one is enough to rate it as known. */
+  const senses = $derived(
+    item === undefined ? [] : splitSenses(item.card.translation).filter((sense) => sense !== ''),
+  );
   const showWord = $derived(voice !== 'available' || flipped);
   /** How the current card is answered; the session id seeds the mixed mode. */
   const exercise = $derived(answerExerciseFor(runMode, sessionSeed, position));
@@ -447,17 +453,7 @@
           </label>
         {/each}
       </fieldset>
-      {#if labels.length > 0}
-        <fieldset>
-          <legend>{fr.flashcards.labelsLegend}</legend>
-          {#each labels as label (label.id)}
-            <label class="choice">
-              <input type="checkbox" value={label.id} bind:group={labelIds} />
-              {label.name}
-            </label>
-          {/each}
-        </fieldset>
-      {/if}
+      <StudyListPicker {labels} {cards} {language} bind:labelIds />
       <fieldset>
         <legend>{fr.flashcards.answerModeLegend}</legend>
         {#each ANSWER_MODES as option (option)}
@@ -542,7 +538,16 @@
               {#if item.card.pinyin !== undefined}
                 <p lang="zh-CN"><Pinyin pinyin={item.card.pinyin} /></p>
               {/if}
-              <p class="translation">{item.card.translation}</p>
+              {#if senses.length > 1}
+                <ul class="translation senses" aria-label={fr.flashcards.sensesLabel}>
+                  {#each senses as sense, index (index)}
+                    <li>{sense}</li>
+                  {/each}
+                </ul>
+                <p class="hint">{fr.flashcards.oneSenseEnough}</p>
+              {:else}
+                <p class="translation">{item.card.translation}</p>
+              {/if}
               {#if item.card.example !== undefined}
                 <p>
                   {fr.flashcards.example}
@@ -732,6 +737,12 @@
   .translation {
     font-size: var(--text-xl);
     font-weight: var(--weight-heavy);
+  }
+
+  .senses {
+    margin: 0;
+    padding-left: var(--space-5);
+    text-align: left;
   }
 
   /* Rating buttons keep their text and shortcut; the tint is only a second cue. */
