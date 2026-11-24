@@ -1,5 +1,6 @@
 import type { Card, Language } from '../card';
 import { selectCards } from '../cardSelection';
+import { splitSenses } from '../meaning/senses';
 import { SPEECH_RATES, type SpeechSpeed } from '../speechRate';
 import { createRng, type Rng } from '../srs/random';
 
@@ -13,6 +14,19 @@ export type DictationDelay = (typeof DICTATION_DELAYS)[number];
 /** Speech rates of the three speeds (DESIGN.md 6), the same as the voice's elsewhere. */
 export const DICTATION_RATES = SPEECH_RATES;
 export type DictationSpeed = SpeechSpeed;
+
+/**
+ * What the voice reads: the word, or its French meaning, the learner then writing the word
+ * (asked by the owner for 1.0.0, 2026-11-24).
+ */
+export const DICTATION_PROMPTS = ['word', 'meaning'] as const;
+export type DictationPrompt = (typeof DICTATION_PROMPTS)[number];
+
+/** A text read aloud, and the language of the voice that reads it. */
+export interface DictationReading {
+  text: string;
+  language: Language | 'fr';
+}
 
 export interface DictationOptions {
   language: Language;
@@ -28,6 +42,8 @@ export interface DictationOptions {
   delay?: DictationDelay;
   /** Normal by default. */
   speed?: DictationSpeed;
+  /** The word by default. */
+  prompt?: DictationPrompt;
 }
 
 export interface DictationPlan {
@@ -36,11 +52,13 @@ export interface DictationPlan {
   /** Undefined: the next word waits for the learner. */
   delayMs: number | undefined;
   rate: number;
+  prompt: DictationPrompt;
 }
 
 /** What a dictation reads, and how (DESIGN.md 6). */
 export function dictationPlan(cards: readonly Card[], options: DictationOptions): DictationPlan {
   const { language, labelIds, shuffle = false, seed = '', delay = 5, speed = 'normal' } = options;
+  const { prompt = 'word' } = options;
   const candidates = selectCards(cards, { language, labelIds });
   const ordered = shuffle ? shuffled(candidates, createRng(seed)) : candidates;
   return {
@@ -48,7 +66,17 @@ export function dictationPlan(cards: readonly Card[], options: DictationOptions)
     readingsPerWord: options.readTwice === true ? 2 : 1,
     delayMs: delay === 'manual' ? undefined : delay * 1_000,
     rate: DICTATION_RATES[speed],
+    prompt,
   };
+}
+
+/** What is read for a word: the word itself, or its senses, one after a comma, in French. */
+export function dictationReading(card: Card, prompt: DictationPrompt): DictationReading {
+  if (prompt === 'word') {
+    return { text: card.term, language: card.language };
+  }
+  const senses = splitSenses(card.translation).filter((sense) => sense !== '');
+  return { text: senses.join(', '), language: 'fr' };
 }
 
 function wordCountOf(requested: number | undefined): number {

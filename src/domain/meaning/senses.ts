@@ -19,6 +19,8 @@ const SEPARATOR_TEXT: Readonly<Record<SenseSeparator, string>> = {
  */
 const SPACED_SEPARATOR = /(?<!\s)\s*([,/|])\s*/g;
 const DIGIT = /\d/;
+/** The word "ou" joins two senses, unless it is between parentheses. */
+const OR_WORD = /\s+ou\s+(?![^(]*\))/iu;
 
 export function isSenseSeparator(character: string): character is SenseSeparator {
   return SENSE_SEPARATOR.test(character);
@@ -48,4 +50,26 @@ export function normalizeSenses(meaning: string): string {
     (match: string, separator: SenseSeparator, offset: number, text: string) =>
       isInNumber(match, offset, text) ? match : senseSeparatorText(separator),
   );
+}
+
+/** The senses of a translation, as written; a separator between parentheses splits nothing. */
+export function splitSenses(translation: string): string[] {
+  const senses: string[] = [];
+  let depth = 0;
+  let sense = '';
+  for (const char of translation) {
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth = Math.max(depth - 1, 0);
+    }
+    if (depth === 0 && isSenseSeparator(char)) {
+      senses.push(sense);
+      sense = '';
+    } else {
+      sense += char;
+    }
+  }
+  senses.push(sense);
+  return senses.flatMap((part) => part.split(OR_WORD)).map((part) => part.trim());
 }

@@ -305,6 +305,52 @@ describe('Dictation, listening again', () => {
   });
 });
 
+describe('Dictation from the meaning', () => {
+  const kongzhi = card('kongzhi', {
+    term: '控制',
+    pinyin: 'kòng zhì',
+    translation: 'contrôler / maîtriser',
+  });
+
+  it('reads the French meaning with a French voice, and the learner writes the word', async () => {
+    const { user, speaker, store } = setup({ cards: [kongzhi] });
+    await user.click(screen.getByRole('radio', { name: fr.dictation.prompts.meaning }));
+    const field = await startDictation(user);
+
+    expect(speaker.last()).toMatchObject({ text: 'contrôler, maîtriser', language: 'fr' });
+    expect(field).toHaveAttribute('lang', 'zh-CN');
+    expect(within(region()).queryByText('控制')).toBeNull();
+    await user.type(field, '控制{Enter}');
+
+    expect(await screen.findByText(fr.dictation.correct)).toBeVisible();
+    expect(store.answers[0]?.result).toMatchObject({ cardId: 'kongzhi', outcome: 'correct' });
+  });
+
+  it('reads the word itself by default', async () => {
+    const { user, speaker } = setup({ cards: [kongzhi] });
+
+    expect(screen.getByRole('radio', { name: fr.dictation.prompts.word })).toBeChecked();
+    await startDictation(user);
+
+    expect(speaker.last()).toMatchObject({ text: '控制', language: 'zh' });
+  });
+
+  it('writes the meaning instead without a French voice, never the pinyin', async () => {
+    const speaker = new FakeSpeaker(true, true);
+    speaker.silent.add('fr');
+    const { user, store } = setup({ cards: [kongzhi], speaker });
+    await user.click(screen.getByRole('radio', { name: fr.dictation.prompts.meaning }));
+    const field = await startDictation(user);
+
+    expect(screen.getByText(fr.dictation.writtenMeaningPrompt.zh)).toBeVisible();
+    expect(within(region()).getByText('contrôler / maîtriser')).toBeVisible();
+    expect(within(region()).queryByText('kòng')).toBeNull();
+    await user.type(field, '控制{Enter}');
+
+    expect(store.answers[0]?.result.outcome).toBe('correct');
+  });
+});
+
 describe('Dictation without a voice', () => {
   it('shows the pinyin in Chinese as the instruction, and the word is typed', async () => {
     const { user, store } = setup({ speaker: new FakeSpeaker(false) });

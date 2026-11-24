@@ -374,6 +374,11 @@
     "languageLegend": "Langue",
     "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
     "wordCount": "Nombre de mots (5 à 200)",
+    "promptLegend": "La voix lit",
+    "prompts": {
+      "word": "Le mot : tu l'écris",
+      "meaning": "Le sens en français : tu écris le mot"
+    },
     "optionsLegend": "Lecture",
     "shuffle": "Ordre aléatoire",
     "readTwice": "Lire chaque mot deux fois",
@@ -441,6 +446,10 @@
       "en": "Pas de voix anglaise : écris en anglais le mot qui a ce sens."
     },
     "audioError": "Le son n'a pas pu être lu : la consigne est écrite à la place.",
+    "writtenMeaningPrompt": {
+      "zh": "Pas de voix française : écris en hanzi le mot qui a ce sens.",
+      "en": "Pas de voix française : écris en anglais le mot qui a ce sens."
+    },
     "saveFailed": "La réponse n'a pas pu être enregistrée. Réessaie.",
     "correctionTitle": "Correction",
     "correctionHelp": "Compare avec ta feuille, puis coche ton résultat pour chaque mot.",
