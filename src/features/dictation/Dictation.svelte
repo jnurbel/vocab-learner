@@ -1,14 +1,18 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import type { Card, Language } from '../../domain/card';
+  import { selectCards } from '../../domain/cardSelection';
   import { compareAnswer } from '../../domain/dictation/answerCompare';
   import type { DiffPart } from '../../domain/dictation/characterDiff';
   import {
     DICTATION_DELAYS,
+    DICTATION_PROMPTS,
     DICTATION_RATES,
     DICTATION_WORD_COUNT,
     dictationPlan,
+    dictationReading,
     type DictationDelay,
+    type DictationPrompt,
     type DictationSpeed,
   } from '../../domain/dictation/dictationPlan';
   import type { Label } from '../../domain/label';
@@ -19,6 +23,7 @@
   import type { Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
   import VoiceHelp from '../../ui/VoiceHelp.svelte';
+  import StudyListPicker from '../labels/StudyListPicker.svelte';
   import { belongsToInputMethod } from '../typing/imeKeys';
   import AnswerDiff from './AnswerDiff.svelte';
   import RewardsPanel from '../game/RewardsPanel.svelte';
@@ -82,6 +87,7 @@
   let shuffle = $state(false);
   // Twice by default: a word heard once on a phone speaker is easily missed.
   let readTwice = $state(true);
+  let prompt = $state<DictationPrompt>('word');
   let delay = $state('5');
   // svelte-ignore state_referenced_locally
   let speed = $state<DictationSpeed>(defaultSpeed);
@@ -94,6 +100,7 @@
   // The dictation under way; raw state, replaced as a whole.
   let words = $state.raw<Card[]>([]);
   let runMode = $state<AnswerMode>('keyboard');
+  let runPrompt = $state<DictationPrompt>('word');
   let snapshot = $state.raw<PlayerSnapshot>();
   let voice = $state<'available' | 'missing'>('available');
   let results = $state.raw<{ card: Card; outcome: Outcome }[]>([]);
@@ -124,6 +131,8 @@
   let continueButton = $state<HTMLButtonElement>();
 
   const lang = (code: Language) => (code === 'zh' ? 'zh-CN' : 'en');
+  /** How many words the chosen language and lists hold. */
+  const available = $derived(selectCards(cards, { language, labelIds }).length);
   const current = $derived(snapshot === undefined ? undefined : words[snapshot.index]);
   const allMarked = $derived(words.every((word) => marks[word.id] !== undefined));
   const written = $derived(voice === 'missing' || snapshot?.audioFailed === true);
@@ -160,6 +169,7 @@
       readTwice,
       delay: delayOf(delay),
       speed,
+      prompt,
     });
     if (plan.words.length === 0) {
       error = 'noWords';
@@ -168,7 +178,8 @@
     view = 'starting';
     try {
       session = await startSession({ language, labelIds: [...labelIds], words: plan.words });
-      voice = (await speaker.hasVoice(language)) ? 'available' : 'missing';
+      const voiceLanguage = plan.prompt === 'meaning' ? 'fr' : language;
+      voice = (await speaker.hasVoice(voiceLanguage)) ? 'available' : 'missing';
     } catch {
       error = 'startFailed';
       view = 'setup';
@@ -176,12 +187,13 @@
     }
     words = plan.words;
     runMode = mode;
+    runPrompt = plan.prompt;
     results = [];
     marks = {};
     delayMs = plan.delayMs;
     resetAnswer();
     const reader = new DictationPlayer(
-      plan.words.map((word) => ({ text: word.term, language: word.language })),
+      plan.words.map((word) => dictationReading(word, plan.prompt)),
       { ...plan, delayMs: runMode === 'keyboard' ? undefined : plan.delayMs },
       { speaker, ...(timers === undefined ? {} : { timers }) },
     );
@@ -427,6 +439,8 @@
       {fr.voice.blocked}
     {:else if snapshot?.audioFailed === true && voice === 'available'}
       {fr.dictation.audioError}
+    {:else if runPrompt === 'meaning'}
+      {fr.dictation.writtenMeaningPrompt[card.language]}
     {:else}
       {fr.dictation.writtenPrompt[card.language]}
     {/if}
@@ -434,10 +448,10 @@
   {#if blocked}
     <button type="button" class="dark" onclick={enableAudio}>{fr.voice.enable}</button>
   {/if}
-  {#if voice === 'missing'}
+  {#if voice === 'missing' && runPrompt === 'word'}
     <VoiceHelp language={card.language} />
   {/if}
-  {#if card.language === 'zh' && card.pinyin !== undefined}
+  {#if runPrompt === 'word' && card.language === 'zh' && card.pinyin !== undefined}
     <p class="prompt" lang="zh-CN"><Pinyin pinyin={card.pinyin} /></p>
   {:else}
     <p class="prompt">{card.translation}</p>
@@ -467,17 +481,16 @@
           </label>
         {/each}
       </fieldset>
-      {#if labels.length > 0}
-        <fieldset>
-          <legend>{fr.dictation.labelsLegend}</legend>
-          {#each labels as label (label.id)}
-            <label class="choice">
-              <input type="checkbox" value={label.id} bind:group={labelIds} />
-              {label.name}
-            </label>
-          {/each}
-        </fieldset>
-      {/if}
+      <StudyListPicker {labels} {cards} {language} bind:labelIds />
+      <fieldset>
+        <legend>{fr.dictation.promptLegend}</legend>
+        {#each DICTATION_PROMPTS as option (option)}
+          <label class="choice">
+            <input type="radio" name="dictation-prompt" value={option} bind:group={prompt} />
+            {fr.dictation.prompts[option]}
+          </label>
+        {/each}
+      </fieldset>
       <fieldset>
         <legend>{fr.dictation.optionsLegend}</legend>
         <p class="option">
@@ -488,7 +501,11 @@
             min={DICTATION_WORD_COUNT.min}
             max={DICTATION_WORD_COUNT.max}
             bind:value={wordCount}
+            aria-describedby="dictation-available"
           />
+          <span id="dictation-available" class="help"
+            >{format(fr.dictation.available, { count: available })}</span
+          >
         </p>
         <label class="choice"
           ><input type="checkbox" bind:checked={shuffle} /> {fr.dictation.shuffle}</label

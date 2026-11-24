@@ -71,4 +71,27 @@ describe('betaVersion', () => {
   it('keeps a version that is not plain MAJOR.MINOR.PATCH', () => {
     expect(betaVersion('1.0.0-rc.1', 'v1.0.0-rc.1', ['feat: x'])).toBe('1.0.0-rc.1');
   });
+
+  it('announces the version asked by a Release-As footer, as release-please releases it', () => {
+    expect(
+      betaVersion('0.11.0', 'v0.11.0', [
+        'feat: add the dictation from the meaning',
+        'chore: release 1.0.0 next\n\nRelease-As: 1.0.0',
+        'fix: x',
+      ]),
+    ).toBe('1.0.0-beta');
+  });
+
+  it('takes the newest Release-As footer, even without a commit that would make a release', () => {
+    expect(
+      betaVersion('0.11.0', 'v0.11.0', [
+        'chore: aim higher\n\nrelease-as: 2.0.0',
+        'chore: release 1.0.0 next\n\nRelease-As: 1.0.0',
+      ]),
+    ).toBe('2.0.0-beta');
+  });
+
+  it('ignores a Release-As footer that is not a plain version', () => {
+    expect(betaVersion('0.11.0', 'v0.11.0', ['chore: x\n\nRelease-As: soon'])).toBe('0.11.0');
+  });
 });

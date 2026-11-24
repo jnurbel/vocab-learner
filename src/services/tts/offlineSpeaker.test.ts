@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { offlineAwareSpeaker, onlineOnlyLanguages, VoiceOfflineError } from './offlineSpeaker';
-import type { Speaker, VoiceCatalog, VoiceInfo, VoiceReport } from './speaker';
+import type { Speaker, SpeechLanguage, VoiceCatalog, VoiceInfo, VoiceReport } from './speaker';
 
 const ONLINE_ZH: VoiceInfo = {
   name: 'Microsoft Xiaoxiao Online (Natural)',
@@ -8,6 +8,7 @@ const ONLINE_ZH: VoiceInfo = {
   localService: false,
 };
 const LOCAL_EN: VoiceInfo = { name: 'Microsoft Hazel', lang: 'en-GB', localService: true };
+const ONLINE_FR: VoiceInfo = { name: 'Google français', lang: 'fr-FR', localService: false };
 const UNTOLD_EN: VoiceInfo = { name: 'Old voice', lang: 'en-GB', localService: undefined };
 
 function report(zh: VoiceInfo | undefined, en: VoiceInfo | undefined): VoiceReport {
@@ -19,7 +20,7 @@ function fakeBase(voices: VoiceReport) {
   return {
     voiceReport: vi.fn(() => Promise.resolve(voices)),
     reloadVoices: vi.fn(() => Promise.resolve(voices)),
-    hasVoice: vi.fn((language: 'zh' | 'en') =>
+    hasVoice: vi.fn((language: SpeechLanguage) =>
       Promise.resolve(voices.chosen[language] !== undefined),
     ),
     speak: vi.fn(() => Promise.resolve()),
@@ -32,6 +33,15 @@ function fakeBase(voices: VoiceReport) {
 describe('onlineOnlyLanguages', () => {
   it('lists the languages read by an online voice', () => {
     expect(onlineOnlyLanguages(report(ONLINE_ZH, LOCAL_EN))).toEqual(['zh']);
+  });
+
+  it('leaves the French voice of the meanings out: the offline notice is about the words', () => {
+    const voices = {
+      ...report(undefined, LOCAL_EN),
+      chosen: { zh: undefined, en: LOCAL_EN, fr: ONLINE_FR },
+    };
+
+    expect(onlineOnlyLanguages(voices)).toEqual([]);
   });
 
   it('takes a voice that does not tell where it runs as local, and no voice as no problem', () => {
@@ -57,6 +67,17 @@ describe('offlineAwareSpeaker', () => {
     expect(await speaker.hasVoice('zh')).toBe(false);
     await expect(speaker.speak('你好', 'zh')).rejects.toBeInstanceOf(VoiceOfflineError);
     expect(base.speak).not.toHaveBeenCalled();
+  });
+
+  it('offline, treats an online French voice as missing too', async () => {
+    const voices = {
+      ...report(undefined, LOCAL_EN),
+      chosen: { zh: undefined, en: LOCAL_EN, fr: ONLINE_FR },
+    };
+    const speaker = offlineAwareSpeaker(fakeBase(voices), () => false);
+
+    expect(await speaker.hasVoice('fr')).toBe(false);
+    await expect(speaker.speak('contrôler', 'fr')).rejects.toBeInstanceOf(VoiceOfflineError);
   });
 
   it('offline, still reads with a voice of the device', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from '../card';
-import { dictationPlan, type DictationOptions } from './dictationPlan';
+import { dictationPlan, dictationReading, type DictationOptions } from './dictationPlan';
 
 function card(id: string, overrides: Partial<Card> = {}): Card {
   return {
@@ -72,6 +72,11 @@ describe('dictationPlan', () => {
     expect(first.words.every((word) => word.language === 'zh')).toBe(true);
   });
 
+  it('dictates the words by default, or their meanings on request', () => {
+    expect(dictationPlan(cards, options()).prompt).toBe('word');
+    expect(dictationPlan(cards, options({ prompt: 'meaning' })).prompt).toBe('meaning');
+  });
+
   it('reads each word once, or twice on request', () => {
     expect(dictationPlan(cards, options()).readingsPerWord).toBe(1);
     expect(dictationPlan(cards, options({ readTwice: true })).readingsPerWord).toBe(2);
@@ -88,5 +93,30 @@ describe('dictationPlan', () => {
     expect(dictationPlan(cards, options()).rate).toBe(0.7);
     expect(dictationPlan(cards, options({ speed: 'slow' })).rate).toBe(0.5);
     expect(dictationPlan(cards, options({ speed: 'fast' })).rate).toBe(0.9);
+  });
+});
+
+describe('dictationReading', () => {
+  const kongzhi = card('k', { term: '控制', translation: 'contrôler / contrôle ; maîtriser' });
+
+  it('reads the word itself by default, in its language', () => {
+    expect(dictationReading(kongzhi, 'word')).toEqual({ text: '控制', language: 'zh' });
+    expect(dictationReading(card('apple', { language: 'en' }), 'word')).toEqual({
+      text: 'apple',
+      language: 'en',
+    });
+  });
+
+  it('reads the French meaning for a dictation from the meaning, each sense after a comma', () => {
+    expect(dictationReading(kongzhi, 'meaning')).toEqual({
+      text: 'contrôler, contrôle, maîtriser',
+      language: 'fr',
+    });
+  });
+
+  it('keeps the comments between parentheses, and skips the empty senses', () => {
+    const tired = card('lei', { translation: 'fatigué (physiquement), , las' });
+
+    expect(dictationReading(tired, 'meaning').text).toBe('fatigué (physiquement), las');
   });
 });

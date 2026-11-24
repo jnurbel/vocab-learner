@@ -96,7 +96,7 @@ describe('Flashcards', () => {
   it('starts a session on Chinese words by default, optionally filtered by labels', async () => {
     const { user, startSession } = setup();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Animaux' }));
+    await user.click(screen.getByRole('checkbox', { name: /^Animaux · / }));
     await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
 
     expect(startSession).toHaveBeenCalledWith(
@@ -188,6 +188,35 @@ describe('Flashcards', () => {
     expect(within(region()).getByText('māo')).toBeVisible();
     expect(within(region()).getByText('chat')).toBeVisible();
     expect(within(region()).getByText('我有一只猫。')).toBeVisible();
+  });
+
+  it('lists the senses of a word with several, and says that knowing one is enough', async () => {
+    const kongzhi = card('kongzhi', '2026-10-01T00:00:00.000Z', {
+      term: '控制',
+      translation: 'contrôler / maîtriser',
+    });
+    const { user } = setup({ cards: [kongzhi] });
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+
+    await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
+
+    const senses = within(region()).getByRole('list', { name: fr.flashcards.sensesLabel });
+    expect(
+      within(senses)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['contrôler', 'maîtriser']);
+    expect(within(region()).getByText(fr.flashcards.oneSenseEnough)).toBeVisible();
+  });
+
+  it('shows a single meaning as it is, without the note', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
+
+    await user.click(await screen.findByRole('button', { name: fr.flashcards.flip }));
+
+    expect(within(region()).queryByRole('list', { name: fr.flashcards.sensesLabel })).toBeNull();
+    expect(within(region()).queryByText(fr.flashcards.oneSenseEnough)).toBeNull();
   });
 
   it('rates the word, stores the answer and moves on to the next card', async () => {

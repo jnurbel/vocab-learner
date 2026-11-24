@@ -1,22 +1,23 @@
 import type { Language } from '../../domain/card';
-import type { Speaker, VoiceCatalog, VoiceReport } from './speaker';
+import type { Speaker, SpeechLanguage, VoiceCatalog, VoiceReport } from './speaker';
 
 /** The voice chosen for the language goes through the Internet, and the device is offline. */
 export class VoiceOfflineError extends Error {
-  constructor(language: Language) {
+  constructor(language: SpeechLanguage) {
     super(`The ${language} voice needs the network, and the device is offline`);
     this.name = 'VoiceOfflineError';
   }
 }
 
-const LANGUAGES: readonly Language[] = ['zh', 'en'];
+/** The languages of the words, those the offline banner tells about. */
+const WORD_LANGUAGES: readonly Language[] = ['zh', 'en'];
 
 /**
- * The languages whose chosen voice is an online one (Edge "Natural", Chrome "Google"):
+ * The languages of the words whose chosen voice is an online one (Edge "Natural", Chrome "Google"):
  * they are silent without a network. A voice that does not tell is taken as local.
  */
 export function onlineOnlyLanguages(report: VoiceReport): Language[] {
-  return LANGUAGES.filter((language) => report.chosen[language]?.localService === false);
+  return WORD_LANGUAGES.filter((language) => report.chosen[language]?.localService === false);
 }
 
 /**
@@ -27,11 +28,11 @@ export function offlineAwareSpeaker(
   base: Speaker & VoiceCatalog,
   isOnline: () => boolean,
 ): Speaker & VoiceCatalog {
-  async function silentOffline(language: Language): Promise<boolean> {
+  async function silentOffline(language: SpeechLanguage): Promise<boolean> {
     if (isOnline()) {
       return false;
     }
-    return onlineOnlyLanguages(await base.voiceReport()).includes(language);
+    return (await base.voiceReport()).chosen[language]?.localService === false;
   }
 
   return {

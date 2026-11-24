@@ -1,6 +1,6 @@
 import { cleanAnswer } from '../dictation/answerText';
 import { editDistance } from '../dictation/characterDiff';
-import { isSenseSeparator } from './senses';
+import { splitSenses } from './senses';
 
 export type MeaningOutcome = 'correct' | 'almost' | 'wrong';
 
@@ -13,8 +13,6 @@ export interface MeaningComparison {
 /** A single typo is tolerated in senses at least this long, as in a dictation (GAME_DESIGN 6.2). */
 const TYPO_MIN_LETTERS = 6;
 const LETTER = /\p{L}/gu;
-/** The word "ou" joins two senses, unless it is between parentheses. */
-const OR_WORD = /\s+ou\s+(?![^(]*\))/iu;
 const COMBINING_MARKS = /\p{M}/gu;
 /** Right and left single quotes, modifier apostrophe, backtick, acute accent, prime. */
 const APOSTROPHES = /[’‘ʼ`´′]/g;
@@ -55,28 +53,6 @@ function isTypo(sense: string, typed: string): boolean {
 
 function letterCount(text: string): number {
   return text.match(LETTER)?.length ?? 0;
-}
-
-/** The senses of a translation, as written; a separator between parentheses splits nothing. */
-function splitSenses(translation: string): string[] {
-  const senses: string[] = [];
-  let depth = 0;
-  let sense = '';
-  for (const char of translation) {
-    if (char === '(') {
-      depth += 1;
-    } else if (char === ')') {
-      depth = Math.max(depth - 1, 0);
-    }
-    if (depth === 0 && isSenseSeparator(char)) {
-      senses.push(sense);
-      sense = '';
-    } else {
-      sense += char;
-    }
-  }
-  senses.push(sense);
-  return senses.flatMap((part) => part.split(OR_WORD)).map((part) => part.trim());
 }
 
 /** The form two spellings of the same French meaning share; untrusted text is bounded first. */
