@@ -17,6 +17,8 @@
   interface Props {
     /** Every word: the workshop keeps the Chinese ones. */
     cards: readonly Card[];
+    /** The words of the lists chosen in the list of mini-games: the only words asked. */
+    cardIds?: readonly string[] | undefined;
     startSession: (selection: MiniGameSelection) => Promise<SentenceWorkshopSession>;
     onSessionEnd: () => void;
     onExit?: () => void;
@@ -26,6 +28,7 @@
 
   const {
     cards,
+    cardIds,
     startSession,
     onSessionEnd,
     onExit,
@@ -63,7 +66,12 @@
     error = undefined;
     view = { kind: 'starting' };
     try {
-      session = await startSession({ cards, language: 'zh', labelIds: [] });
+      session = await startSession({
+        cards,
+        language: 'zh',
+        labelIds: [],
+        ...(cardIds === undefined ? {} : { cardIds }),
+      });
     } catch {
       error = 'startFailed';
       view = { kind: 'intro' };

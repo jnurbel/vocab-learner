@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '../../domain/card';
+import type { Label } from '../../domain/label';
 import { card } from '../flashcards/flashcards.fixtures';
 import { fakeSpeaker } from './miniGame.fixtures';
 import MiniGameMenu from './MiniGameMenu.svelte';
@@ -15,9 +16,17 @@ const words: Card[] = [
   card('sheep', undefined, { language: 'en', term: 'sheep' }),
 ];
 
-function setup(speaker = fakeSpeaker(true)) {
+const lesson: Label = {
+  id: 'l7',
+  name: 'Leçon 7',
+  isFocus: false,
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+};
+
+function setup(speaker = fakeSpeaker(true), cards: readonly Card[] = words) {
   const onOpen = vi.fn();
-  render(MiniGameMenu, { cards: words, speaker, onOpen });
+  render(MiniGameMenu, { cards, speaker, labels: [lesson], onOpen });
   return { onOpen, user: userEvent.setup() };
 }
 
@@ -101,6 +110,31 @@ describe('MiniGameMenu', () => {
     await user.click(within(bridge).getByRole('button', { name: /Jouer/ }));
 
     expect(onOpen).toHaveBeenCalledWith('bridgeMatch', 'zh');
+  });
+
+  it('plays on the words of the chosen lists only, and counts them', async () => {
+    const listed = words.map((word) =>
+      word.id === 'cat' || word.id === 'dog' ? { ...word, labelIds: ['l7'] } : word,
+    );
+    const { user, onOpen } = setup(fakeSpeaker(true), listed);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' }));
+
+    const bridge = item('Relier les deux rives');
+    expect(bridge).toHaveTextContent('2 mots éligibles');
+    expect(within(bridge ?? list()).getByRole('button', { name: /Jouer/ })).toBeDisabled();
+    const tones = await vi.waitFor(() => {
+      const found = item('Échos des tons');
+      expect(found).toBeDefined();
+      return found ?? list();
+    });
+    expect(tones).toHaveTextContent('2 mots éligibles');
+    await user.click(within(tones).getByRole('button', { name: /Jouer/ }));
+
+    expect(onOpen).toHaveBeenCalledWith('toneEcho', 'zh', {
+      labelIds: ['l7'],
+      cardIds: ['cat', 'dog'],
+    });
   });
 
   it('keeps a closed game visible but disabled, with the reason', async () => {
