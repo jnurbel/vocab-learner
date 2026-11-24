@@ -65,6 +65,14 @@ describe('pickVoice', () => {
     expect(pickVoice([voice('fr-FR'), voice('en-US', 'Zira')], 'en')?.name).toBe('Zira');
   });
 
+  it('prefers a voice of France for French, then any French voice', () => {
+    const voices = [voice('en-GB'), voice('fr-CA', 'Amelie'), voice('fr_FR', 'Thomas')];
+
+    expect(pickVoice(voices, 'fr')?.name).toBe('Thomas');
+    expect(pickVoice([voice('fr-CA', 'Amelie'), voice('en-GB')], 'fr')?.name).toBe('Amelie');
+    expect(pickVoice([voice('en-GB'), voice('zh-CN')], 'fr')).toBeUndefined();
+  });
+
   it('finds no voice when the language is not installed', () => {
     expect(pickVoice([voice('fr-FR'), voice('zh-TW')], 'zh')).toBeUndefined();
   });
@@ -117,6 +125,21 @@ describe('the Web Speech speaker', () => {
     const [utterance] = speech.spoken;
     expect(utterance).toMatchObject({ text: '你好', lang: 'zh-CN', rate: 0.85 });
     expect(utterance?.voice?.name).toBe('Huihui');
+    speech.endCurrent();
+
+    await expect(speaking).resolves.toBeUndefined();
+  });
+
+  it('reads a French meaning with a French voice', async () => {
+    const speech = fakeSpeech({ voices: [voice('zh-CN'), voice('fr-FR', 'Thomas')] });
+    const speaker = speakerOf(speech.host);
+
+    const speaking = speaker.speak('contrôler', 'fr');
+    await vi.waitFor(() => {
+      expect(speech.spoken).toHaveLength(1);
+    });
+    expect(speech.spoken[0]).toMatchObject({ text: 'contrôler', lang: 'fr-FR' });
+    expect(speech.spoken[0]?.voice?.name).toBe('Thomas');
     speech.endCurrent();
 
     await expect(speaking).resolves.toBeUndefined();
@@ -432,7 +455,10 @@ describe('the voices found by the speaker', () => {
   it('reports no voice in a browser without speech synthesis', async () => {
     const report = await createWebSpeechSpeaker({}).reloadVoices();
 
-    expect(report).toEqual({ voices: [], chosen: { zh: undefined, en: undefined } });
+    expect(report).toEqual({
+      voices: [],
+      chosen: { zh: undefined, en: undefined, fr: undefined },
+    });
   });
 
   it('never keeps "no Chinese voice": the next session asks the browser again', async () => {
