@@ -21,6 +21,7 @@
   import ListenMeaning from '../features/miniGame/ListenMeaning.svelte';
   import BridgeMatch from '../features/miniGame/BridgeMatch.svelte';
   import MiniGameMenu from '../features/miniGame/MiniGameMenu.svelte';
+  import type { StudyList } from '../features/miniGame/studyList';
   import SentenceListen from '../features/miniGame/SentenceListen.svelte';
   import SentenceShuffle from '../features/miniGame/SentenceShuffle.svelte';
   import ToneEcho from '../features/miniGame/ToneEcho.svelte';
@@ -372,8 +373,10 @@
   let openGame = $state.raw<{
     game: MiniGame;
     language: Language;
-    /** Words imposed by a step session of the path. */
+    /** Words imposed by a step session of the path, or by the lists chosen in the menu. */
     cardIds?: readonly string[];
+    /** The lists chosen in the menu. */
+    labelIds?: readonly string[];
   }>();
   /** The games of a path step (recognize, sentences) offered on the step's words. */
   let stepGames = $state.raw<readonly MiniGame[]>();
@@ -1111,9 +1114,10 @@
           <MiniGameMenu
             {cards}
             {speaker}
+            {labels}
             {loadSentences}
-            onOpen={(game: MiniGame, language: Language) => {
-              openGame = { game, language };
+            onOpen={(game: MiniGame, language: Language, list?: StudyList) => {
+              openGame = { game, language, ...list };
             }}
           />
         {:else if openGame.game === 'listenMeaning'}
@@ -1122,6 +1126,8 @@
             {speaker}
             startSession={startMiniGame}
             onSessionEnd={() => void sessionEnded()}
+            language={openGame.language}
+            labelIds={openGame.labelIds ?? []}
           />
           <button type="button" onclick={backToMiniGames}>{fr.miniGames.back}</button>
         {:else if openGame.game === 'bridgeMatch'}
@@ -1170,6 +1176,7 @@
         {:else if openGame.game === 'sentenceWorkshop'}
           <SentenceWorkshop
             {cards}
+            cardIds={openGame.cardIds}
             startSession={startWorkshop}
             onSessionEnd={() => void sessionEnded()}
             onExit={backToMiniGames}
