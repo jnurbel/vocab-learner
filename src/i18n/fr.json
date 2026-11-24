@@ -268,6 +268,8 @@
     "hintUsed": "Pinyin affiché : compte comme un indice.",
     "flip": "Retourner",
     "example": "Exemple :",
+    "sensesLabel": "Les sens du mot",
+    "oneSenseEnough": "Un seul sens suffit : si tu en connaissais un, tu le savais.",
     "evaluationLegend": "Tu le savais ?",
     "evaluations": {
       "again": "À revoir",
