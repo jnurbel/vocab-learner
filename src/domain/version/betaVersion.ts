@@ -51,6 +51,25 @@ function bumpOf(message: string): Bump {
 }
 
 /**
+ * The version asked by the newest "Release-As: X.Y.Z" footer (the commits come newest first),
+ * which release-please releases whatever the types of the commits, e.g. 1.0.0.
+ */
+function releaseAsOf(commits: readonly string[]): string | undefined {
+  for (const message of commits) {
+    for (const line of message.split('\n')) {
+      const colon = line.indexOf(':');
+      if (colon !== -1 && line.slice(0, colon).trim().toLowerCase() === 'release-as') {
+        const version = line.slice(colon + 1).trim();
+        if (RELEASE_VERSION.test(version)) {
+          return version;
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
  * The version the app shows. A release (its commit, or a build of its tag) shows its own version.
  * A build of commits made since the last release shows the next version as a beta, computed as
  * release-please will (bump-minor-pre-major: before 1.0, a breaking change bumps the minor version).
@@ -64,6 +83,10 @@ export function betaVersion(
   // Without the tag of this version, it is being released (or there is no history to read).
   if (parts === null || latestTag !== `v${packageVersion}`) {
     return packageVersion;
+  }
+  const asked = releaseAsOf(commitsSinceTag);
+  if (asked !== undefined) {
+    return `${asked}-beta`;
   }
   const bump = commitsSinceTag
     .map(bumpOf)
