@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import type { Card, Language } from '../../domain/card';
+  import { selectCards } from '../../domain/cardSelection';
   import { compareAnswer } from '../../domain/dictation/answerCompare';
   import type { DiffPart } from '../../domain/dictation/characterDiff';
   import {
@@ -22,6 +23,7 @@
   import type { Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
   import VoiceHelp from '../../ui/VoiceHelp.svelte';
+  import StudyListPicker from '../labels/StudyListPicker.svelte';
   import { belongsToInputMethod } from '../typing/imeKeys';
   import AnswerDiff from './AnswerDiff.svelte';
   import RewardsPanel from '../game/RewardsPanel.svelte';
@@ -129,6 +131,8 @@
   let continueButton = $state<HTMLButtonElement>();
 
   const lang = (code: Language) => (code === 'zh' ? 'zh-CN' : 'en');
+  /** How many words the chosen language and lists hold. */
+  const available = $derived(selectCards(cards, { language, labelIds }).length);
   const current = $derived(snapshot === undefined ? undefined : words[snapshot.index]);
   const allMarked = $derived(words.every((word) => marks[word.id] !== undefined));
   const written = $derived(voice === 'missing' || snapshot?.audioFailed === true);
@@ -477,17 +481,7 @@
           </label>
         {/each}
       </fieldset>
-      {#if labels.length > 0}
-        <fieldset>
-          <legend>{fr.dictation.labelsLegend}</legend>
-          {#each labels as label (label.id)}
-            <label class="choice">
-              <input type="checkbox" value={label.id} bind:group={labelIds} />
-              {label.name}
-            </label>
-          {/each}
-        </fieldset>
-      {/if}
+      <StudyListPicker {labels} {cards} {language} bind:labelIds />
       <fieldset>
         <legend>{fr.dictation.promptLegend}</legend>
         {#each DICTATION_PROMPTS as option (option)}
@@ -507,7 +501,11 @@
             min={DICTATION_WORD_COUNT.min}
             max={DICTATION_WORD_COUNT.max}
             bind:value={wordCount}
+            aria-describedby="dictation-available"
           />
+          <span id="dictation-available" class="help"
+            >{format(fr.dictation.available, { count: available })}</span
+          >
         </p>
         <label class="choice"
           ><input type="checkbox" bind:checked={shuffle} /> {fr.dictation.shuffle}</label

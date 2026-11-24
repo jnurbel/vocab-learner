@@ -96,7 +96,7 @@ describe('Flashcards', () => {
   it('starts a session on Chinese words by default, optionally filtered by labels', async () => {
     const { user, startSession } = setup();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Animaux' }));
+    await user.click(screen.getByRole('checkbox', { name: /^Animaux · / }));
     await user.click(screen.getByRole('button', { name: fr.flashcards.start }));
 
     expect(startSession).toHaveBeenCalledWith(

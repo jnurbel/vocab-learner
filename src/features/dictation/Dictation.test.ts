@@ -92,7 +92,7 @@ describe('Dictation, start screen', () => {
     setup();
 
     expect(screen.getByRole('radio', { name: fr.languages.zh })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Leçon 7' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' })).not.toBeChecked();
     expect(screen.getByRole('spinbutton', { name: fr.dictation.wordCount })).toHaveValue(10);
     expect(screen.getByRole('checkbox', { name: fr.dictation.shuffle })).not.toBeChecked();
     // Twice by default: a word heard once on a phone speaker is easily missed.
@@ -125,13 +125,38 @@ describe('Dictation, start screen', () => {
   it('dictates the words of the chosen labels', async () => {
     const { user, startSession } = setup();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' }));
     await startDictation(user);
 
     expect(startSession).toHaveBeenCalledWith({
       language: 'zh',
       labelIds: ['l7'],
       words: [zai, cat],
+    });
+  });
+
+  it('tells how many words the chosen lists hold', async () => {
+    const { user } = setup();
+
+    expect(screen.getByText('3 mot(s) dans ce choix')).toBeVisible();
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' }));
+
+    expect(screen.getByText('2 mot(s) dans ce choix')).toBeVisible();
+  });
+
+  it('offers only the lists of the chosen language, and forgets those of the other', async () => {
+    const { user, startSession } = setup();
+    await user.click(screen.getByRole('checkbox', { name: 'Leçon 7 · 2 mot(s)' }));
+
+    await user.click(screen.getByRole('radio', { name: fr.languages.en }));
+
+    expect(screen.queryByRole('checkbox', { name: /Leçon 7/ })).toBeNull();
+    expect(screen.getByText(fr.studyLists.none)).toBeVisible();
+    await startDictation(user);
+    expect(startSession).toHaveBeenCalledWith({
+      language: 'en',
+      labelIds: [],
+      words: [necessary],
     });
   });
 

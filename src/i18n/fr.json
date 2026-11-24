@@ -245,7 +245,6 @@
   "flashcards": {
     "title": "Flashcards",
     "languageLegend": "Langue",
-    "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
     "answerModeLegend": "Je réponds",
     "answerModes": {
       "selfAssess": "S'auto-évaluer",
@@ -369,11 +368,16 @@
     "reminderAction": "Sauvegarder maintenant",
     "reminderDismiss": "Masquer ce rappel"
   },
+  "studyLists": {
+    "legend": "Listes de mots (facultatif : sinon tous les mots de la langue)",
+    "count": "· {count} mot(s)",
+    "none": "Aucune liste dans cette langue. Pour travailler une seule liste, pose un label sur ses mots à l'import ou dans « Mes mots »."
+  },
   "dictation": {
     "title": "Dictée",
     "languageLegend": "Langue",
-    "labelsLegend": "Labels (facultatif : sinon tous les mots de la langue)",
     "wordCount": "Nombre de mots (5 à 200)",
+    "available": "{count} mot(s) dans ce choix",
     "promptLegend": "La voix lit",
     "prompts": {
       "word": "Le mot : tu l'écris",

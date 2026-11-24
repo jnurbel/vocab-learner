@@ -12,6 +12,7 @@
   import { isSpeechBlocked, type Speaker } from '../../services/tts/speaker';
   import Pinyin from '../../ui/Pinyin.svelte';
   import VoiceHelp from '../../ui/VoiceHelp.svelte';
+  import StudyListPicker from '../labels/StudyListPicker.svelte';
   import {
     PracticeSession,
     type PracticeItem,
@@ -447,17 +448,7 @@
           </label>
         {/each}
       </fieldset>
-      {#if labels.length > 0}
-        <fieldset>
-          <legend>{fr.flashcards.labelsLegend}</legend>
-          {#each labels as label (label.id)}
-            <label class="choice">
-              <input type="checkbox" value={label.id} bind:group={labelIds} />
-              {label.name}
-            </label>
-          {/each}
-        </fieldset>
-      {/if}
+      <StudyListPicker {labels} {cards} {language} bind:labelIds />
       <fieldset>
         <legend>{fr.flashcards.answerModeLegend}</legend>
         {#each ANSWER_MODES as option (option)}
